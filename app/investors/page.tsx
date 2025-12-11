@@ -420,17 +420,6 @@ export default function InvestorsPage() {
               </ul>
             </div>
           </div>
-
-          <div className="bg-gradient-to-r from-olive-700 to-olive-800 rounded-xl p-8 shadow-xl text-white text-center">
-            <h3 className="text-3xl font-serif font-bold mb-4">Exit Strategy</h3>
-            <p className="text-lg text-olive-50 max-w-3xl mx-auto mb-6">
-              Terra Trionfo is building toward acquisition by major food/retail players (Whole Foods, Williams Sonoma, 
-              Eataly) or Series A/B funding to accelerate national expansion. Projected 5-7 year timeline to exit event.
-            </p>
-            <p className="text-olive-100 italic">
-              Comparable marketplace exits: Good Eggs ($150M valuation), Thrive Market ($300M+), Goldbelly ($180M funding)
-            </p>
-          </div>
         </div>
       </section>
 
