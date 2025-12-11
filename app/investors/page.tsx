@@ -1,8 +1,13 @@
 import Link from 'next/link'
+import Header from '@/components/layout/Header'
+import Footer from '@/components/layout/Footer'
 
 export default function InvestorsPage() {
   return (
-    <div className="min-h-screen bg-parchment-50">
+    <div className="min-h-screen flex flex-col">
+      <Header />
+      
+      <main className="flex-grow bg-parchment-50">
       {/* Hero Section */}
       <section className="relative bg-gradient-to-b from-olive-900 via-olive-800 to-olive-700 py-20 overflow-hidden">
         <div className="absolute inset-0 opacity-10">
@@ -457,6 +462,9 @@ export default function InvestorsPage() {
           </p>
         </div>
       </section>
+      </main>
+      
+      <Footer />
     </div>
   )
 }
