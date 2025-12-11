@@ -133,8 +133,8 @@ export default function SignUpPage() {
                 }
                 className="input-field"
               >
-                <option value="CONSUMER">Consumer (Shop Products)</option>
-                <option value="VENDOR">Vendor (Sell Products)</option>
+                <option value="CONSUMER">Consumer - Shop Products</option>
+                <option value="VENDOR">Vendor - Sell via Marketplace or Wholesale</option>
               </select>
             </div>
 
