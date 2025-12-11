@@ -30,7 +30,7 @@ export async function GET(request: Request) {
     const orders = await prisma.order.findMany({
       where: { status: { in: ['CONFIRMED', 'SHIPPED', 'DELIVERED'] } },
     })
-    const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0)
+    const totalRevenue = orders.reduce((sum: number, order: any) => sum + order.total, 0)
 
     // Recent orders
     const recentOrders = await prisma.order.findMany({

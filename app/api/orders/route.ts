@@ -93,7 +93,7 @@ export async function POST(request: Request) {
     const orderItems: any[] = []
 
     for (const item of items) {
-      const product = products.find((p) => p.id === item.productId)
+      const product = products.find((p: any) => p.id === item.productId)
       if (!product) continue
 
       if (product.inventory < item.quantity) {
@@ -121,7 +121,7 @@ export async function POST(request: Request) {
     }
 
     // Create order in transaction
-    const order = await prisma.$transaction(async (tx) => {
+    const order = await prisma.$transaction(async (tx: any) => {
       // Create the order
       const newOrder = await tx.order.create({
         data: {

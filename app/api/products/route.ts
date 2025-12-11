@@ -40,7 +40,7 @@ export async function GET(request: Request) {
         where: { ownerId: session.user.id },
         select: { id: true },
       })
-      where.companyId = { in: companies.map((c) => c.id) }
+      where.companyId = { in: companies.map((c: { id: string }) => c.id) }
     }
 
     const products = await prisma.product.findMany({

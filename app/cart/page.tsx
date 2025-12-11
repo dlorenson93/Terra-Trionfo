@@ -59,7 +59,7 @@ export default function CartPage() {
         quantity: item.quantity,
       }))
 
-      const response = await fetch('/api/orders', {
+      const response = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ items }),
@@ -67,18 +67,17 @@ export default function CartPage() {
 
       if (!response.ok) {
         const error = await response.json()
-        alert(error.error || 'Failed to create order')
+        alert(error.error || 'Failed to create checkout session')
         return
       }
 
-      // Clear cart
-      localStorage.removeItem('cart')
-      setCart([])
-      alert('Order placed successfully!')
-      router.push('/account/orders')
+      const { url } = await response.json()
+      
+      // Redirect to Stripe Checkout
+      window.location.href = url
     } catch (error) {
       console.error('Checkout error:', error)
-      alert('Failed to place order')
+      alert('Failed to initiate checkout')
     } finally {
       setLoading(false)
     }
@@ -244,11 +243,11 @@ export default function CartPage() {
                     disabled={loading}
                     className="btn-primary w-full py-3 disabled:opacity-50"
                   >
-                    {loading ? 'Processing...' : 'Proceed to Checkout'}
+                    {loading ? 'Processing...' : 'Checkout with Stripe'}
                   </button>
 
                   <p className="text-xs text-olive-600 text-center mt-4">
-                    Mock checkout - No payment required
+                    Secure payment powered by Stripe
                   </p>
                 </div>
               </div>
