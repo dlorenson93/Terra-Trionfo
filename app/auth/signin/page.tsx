@@ -114,18 +114,6 @@ export default function SignInPage() {
               </Link>
             </p>
           </div>
-
-          {/* Test Credentials */}
-          <div className="mt-6 pt-6 border-t border-olive-200">
-            <p className="text-xs text-olive-600 mb-2 font-medium">
-              Test Credentials:
-            </p>
-            <div className="space-y-1 text-xs text-olive-700">
-              <p>Admin: admin@terratrionfo.com / password123</p>
-              <p>Vendor: vendor@example.com / password123</p>
-              <p>Consumer: consumer@example.com / password123</p>
-            </div>
-          </div>
         </div>
 
         <div className="text-center mt-6">
