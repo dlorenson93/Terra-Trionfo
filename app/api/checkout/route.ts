@@ -12,6 +12,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Check if Stripe is configured
+    if (!process.env.STRIPE_SECRET_KEY) {
+      return NextResponse.json(
+        { error: 'Payment processing is not configured' },
+        { status: 503 }
+      )
+    }
+
     const { items } = await request.json()
 
     if (!items || items.length === 0) {
