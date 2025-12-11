@@ -49,10 +49,26 @@ export async function POST(request: Request) {
     })
 
     return NextResponse.json(user, { status: 201 })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Registration error:', error)
+    
+    // Return more specific error messages
+    if (error.code === 'P2002') {
+      return NextResponse.json(
+        { error: 'An account with this email already exists' },
+        { status: 400 }
+      )
+    }
+    
+    if (error.code === 'P1001') {
+      return NextResponse.json(
+        { error: 'Cannot connect to database' },
+        { status: 503 }
+      )
+    }
+    
     return NextResponse.json(
-      { error: 'Failed to register user' },
+      { error: error.message || 'Failed to register user' },
       { status: 500 }
     )
   }
