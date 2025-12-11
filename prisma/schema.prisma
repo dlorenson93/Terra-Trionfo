@@ -1,0 +1,146 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  VENDOR
+  CONSUMER
+}
+
+enum CompanyStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ProductStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum ModelType {
+  MARKETPLACE
+  WHOLESALE
+}
+
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         UserRole  @default(CONSUMER)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // Relations
+  companies Company[]
+  orders    Order[]
+
+  @@map("users")
+}
+
+model Company {
+  id           String        @id @default(cuid())
+  name         String
+  contactEmail String
+  phone        String?
+  address      String?
+  description  String?
+  status       CompanyStatus @default(PENDING)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  // Relations
+  ownerId  String
+  owner    User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  products Product[]
+
+  @@map("companies")
+}
+
+model Product {
+  id          String        @id @default(cuid())
+  name        String
+  description String?
+  category    String
+  imageUrl    String?
+  
+  // Model flags
+  isMarketplace Boolean @default(false)
+  isWholesale   Boolean @default(false)
+  
+  // Pricing
+  basePrice      Float?  // For marketplace products
+  wholesaleCost  Float?  // What Terra pays for wholesale
+  consumerPrice  Float   // Final consumer price (derived or overridden)
+  
+  inventory Int     @default(0)
+  status    ProductStatus @default(PENDING)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  companyId  String
+  company    Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+
+  @@map("products")
+}
+
+model Order {
+  id        String      @id @default(cuid())
+  total     Float
+  status    OrderStatus @default(PENDING)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  // Relations
+  userId     String
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String    @id @default(cuid())
+  quantity  Int
+  unitPrice Float
+  modelType ModelType // Track which model was used at time of sale
+
+  // Relations
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
+
+model Settings {
+  id                           String   @id @default(cuid())
+  defaultMarketplaceMarkupPercent Float @default(20)
+  createdAt                    DateTime @default(now())
+  updatedAt                    DateTime @updatedAt
+
+  @@map("settings")
+}
