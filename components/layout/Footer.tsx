@@ -31,18 +31,34 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="/auth/signin"
+                  href="/about"
                   className="text-parchment-300 hover:text-parchment-100 transition-colors"
                 >
-                  Partner With Us
+                  Our Story
                 </Link>
               </li>
               <li>
                 <Link
-                  href="/about"
+                  href="/partner/onboarding"
                   className="text-parchment-300 hover:text-parchment-100 transition-colors"
                 >
-                  About Us
+                  Become a Vendor
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/pricing/models"
+                  className="text-parchment-300 hover:text-parchment-100 transition-colors"
+                >
+                  Pricing Models
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/investors"
+                  className="text-parchment-300 hover:text-parchment-100 transition-colors"
+                >
+                  For Investors
                 </Link>
               </li>
             </ul>

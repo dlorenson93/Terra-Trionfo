@@ -55,6 +55,28 @@ export default function Header() {
               Our Story
             </Link>
 
+            <Link
+              href="/partner/onboarding"
+              className={`text-sm font-medium transition-colors ${
+                isActive('/partner/onboarding')
+                  ? 'text-olive-800'
+                  : 'text-olive-600 hover:text-olive-800'
+              }`}
+            >
+              Become a Vendor
+            </Link>
+
+            <Link
+              href="/investors"
+              className={`text-sm font-medium transition-colors ${
+                isActive('/investors')
+                  ? 'text-olive-800'
+                  : 'text-olive-600 hover:text-olive-800'
+              }`}
+            >
+              For Investors
+            </Link>
+
             {!session && (
               <Link
                 href="/auth/signin"
@@ -191,6 +213,26 @@ export default function Header() {
                 }`}
               >
                 Our Story
+              </Link>
+
+              <Link
+                href="/partner/onboarding"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`px-4 py-2 text-sm font-medium ${
+                  isActive('/partner/onboarding') ? 'text-olive-800 bg-olive-50' : 'text-olive-600'
+                }`}
+              >
+                Become a Vendor
+              </Link>
+
+              <Link
+                href="/investors"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`px-4 py-2 text-sm font-medium ${
+                  isActive('/investors') ? 'text-olive-800 bg-olive-50' : 'text-olive-600'
+                }`}
+              >
+                For Investors
               </Link>
 
               {session && (

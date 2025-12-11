@@ -198,6 +198,85 @@ export default function HomePage() {
           </div>
         </section>
 
+        {/* How It Works Section */}
+        <section className="py-16 px-4 bg-white">
+          <div className="max-w-7xl mx-auto">
+            <h2 className="text-3xl md:text-4xl font-serif font-bold text-center text-olive-900 mb-4">
+              How It Works
+            </h2>
+            <p className="text-center text-olive-700 mb-12 max-w-2xl mx-auto">
+              From browsing to enjoying, we make farm-to-table shopping simple and delightful.
+            </p>
+
+            <div className="grid md:grid-cols-4 gap-8">
+              {/* Step 1 */}
+              <div className="text-center">
+                <div className="w-20 h-20 bg-olive-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-10 h-10 text-olive-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                <div className="w-8 h-8 bg-olive-700 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <span className="text-white font-bold">1</span>
+                </div>
+                <h3 className="text-xl font-serif font-bold text-olive-900 mb-2">Browse Artisan Products</h3>
+                <p className="text-olive-600">
+                  Explore our curated collection of authentic farm-to-table goods from vetted artisan producers.
+                </p>
+              </div>
+
+              {/* Step 2 */}
+              <div className="text-center">
+                <div className="w-20 h-20 bg-olive-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-10 h-10 text-olive-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <div className="w-8 h-8 bg-olive-700 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <span className="text-white font-bold">2</span>
+                </div>
+                <h3 className="text-xl font-serif font-bold text-olive-900 mb-2">Add Items to Cart</h3>
+                <p className="text-olive-600">
+                  Select your favorite products and add them to your cart. Mix and match from different vendors.
+                </p>
+              </div>
+
+              {/* Step 3 */}
+              <div className="text-center">
+                <div className="w-20 h-20 bg-olive-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-10 h-10 text-olive-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
+                  </svg>
+                </div>
+                <div className="w-8 h-8 bg-olive-700 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <span className="text-white font-bold">3</span>
+                </div>
+                <h3 className="text-xl font-serif font-bold text-olive-900 mb-2">Choose Delivery</h3>
+                <p className="text-olive-600">
+                  Select delivery or pickup options. We work with vendors to ensure products arrive fresh.
+                </p>
+              </div>
+
+              {/* Step 4 */}
+              <div className="text-center">
+                <div className="w-20 h-20 bg-olive-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-10 h-10 text-olive-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
+                  </svg>
+                </div>
+                <div className="w-8 h-8 bg-olive-700 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <span className="text-white font-bold">4</span>
+                </div>
+                <h3 className="text-xl font-serif font-bold text-olive-900 mb-2">Enjoy Farm-to-Table Quality</h3>
+                <p className="text-olive-600">
+                  Savor authentic, handcrafted products made with tradition, care, and the finest ingredients.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Categories Preview */}
         <section className="py-16 px-4 bg-parchment-100">
           <div className="max-w-7xl mx-auto">
