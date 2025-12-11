@@ -54,7 +54,7 @@ export default function HomePage() {
 
             <div className="grid md:grid-cols-2 gap-8">
               {/* Marketplace Model */}
-              <Link href="/products" className="card p-8 cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02]">
+              <Link href="/auth/signin" className="card p-8 cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02]">
                 <div className="w-12 h-12 rounded-full bg-olive-100 flex items-center justify-center mb-4">
                   <svg
                     className="w-6 h-6 text-olive-700"
@@ -122,7 +122,7 @@ export default function HomePage() {
               </Link>
 
               {/* Wholesale Model */}
-              <Link href="/products" className="card p-8 cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02]">
+              <Link href="/auth/signin" className="card p-8 cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02]">
                 <div className="w-12 h-12 rounded-full bg-olive-100 flex items-center justify-center mb-4">
                   <svg
                     className="w-6 h-6 text-olive-700"
