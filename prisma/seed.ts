@@ -1,4 +1,4 @@
-import { PrismaClient, UserRole } from '@prisma/client'
+import { PrismaClient, UserRole, CompanyStatus, ProductStatus, OrderStatus, ModelType } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
@@ -67,7 +67,7 @@ async function main() {
       phone: '+39 123 456 7890',
       address: 'Via delle Vigne 42, Tuscany, Italy',
       description: 'Family-owned farm producing organic olive oil and wines since 1890',
-      status: 'APPROVED',
+      status: CompanyStatus.APPROVED,
       ownerId: vendorUser.id,
     },
   })
@@ -75,7 +75,7 @@ async function main() {
   console.log('✅ Company created')
 
   // Create products
-  const products = [
+  const products: any[] = [
     {
       id: 'prod-1',
       name: 'Extra Virgin Olive Oil',
@@ -87,7 +87,7 @@ async function main() {
       basePrice: 24.99,
       consumerPrice: 29.99, // 20% markup
       inventory: 50,
-      status: 'APPROVED',
+      status: ProductStatus.APPROVED,
       companyId: company.id,
     },
     {
@@ -101,7 +101,7 @@ async function main() {
       wholesaleCost: 12.00,
       consumerPrice: 35.99,
       inventory: 30,
-      status: 'APPROVED',
+      status: ProductStatus.APPROVED,
       companyId: company.id,
     },
     {
@@ -116,7 +116,7 @@ async function main() {
       wholesaleCost: 8.00,
       consumerPrice: 21.60, // Using marketplace pricing
       inventory: 75,
-      status: 'APPROVED',
+      status: ProductStatus.APPROVED,
       companyId: company.id,
     },
     {
@@ -130,7 +130,7 @@ async function main() {
       basePrice: 45.00,
       consumerPrice: 54.00,
       inventory: 20,
-      status: 'APPROVED',
+      status: ProductStatus.APPROVED,
       companyId: company.id,
     },
     {
@@ -144,7 +144,7 @@ async function main() {
       wholesaleCost: 3.50,
       consumerPrice: 8.99,
       inventory: 100,
-      status: 'APPROVED',
+      status: ProductStatus.APPROVED,
       companyId: company.id,
     },
     {
@@ -158,7 +158,7 @@ async function main() {
       basePrice: 32.00,
       consumerPrice: 38.40,
       inventory: 15,
-      status: 'PENDING',
+      status: ProductStatus.PENDING,
       companyId: company.id,
     },
   ]
