@@ -57,7 +57,7 @@ export default function Footer() {
               <li className="pt-2">
                 Trionfo Holding Co., Inc.
                 <br />
-                California, USA
+                Boston, MA
               </li>
             </ul>
           </div>
