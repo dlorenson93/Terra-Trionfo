@@ -42,6 +42,17 @@ export default function Header() {
               Shop Products
             </Link>
 
+            <Link
+              href="/about"
+              className={`text-sm font-medium transition-colors ${
+                isActive('/about')
+                  ? 'text-olive-800'
+                  : 'text-olive-600 hover:text-olive-800'
+              }`}
+            >
+              Our Story
+            </Link>
+
             {!session && (
               <Link
                 href="/auth/signin"
