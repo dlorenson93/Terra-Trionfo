@@ -3,10 +3,12 @@
 import Link from 'next/link'
 import { useSession, signOut } from 'next-auth/react'
 import { usePathname } from 'next/navigation'
+import { useState } from 'react'
 
 export default function Header() {
   const { data: session } = useSession()
   const pathname = usePathname()
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const isActive = (path: string) => pathname === path
 
@@ -141,7 +143,137 @@ export default function Header() {
               </Link>
             )}
           </nav>
+
+          {/* Mobile Menu Button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-2 text-olive-700"
+            aria-label="Menu"
+          >
+            {mobileMenuOpen ? (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            ) : (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            )}
+          </button>
         </div>
+
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-olive-200 py-4">
+            <div className="flex flex-col space-y-4">
+              {session && (
+                <div className="px-4 py-2 bg-olive-50 rounded-lg">
+                  <p className="text-sm font-medium text-olive-900">{session.user.name}</p>
+                  <p className="text-xs text-olive-600">{session.user.email}</p>
+                </div>
+              )}
+
+              <Link
+                href="/products"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`px-4 py-2 text-sm font-medium ${
+                  isActive('/products') ? 'text-olive-800 bg-olive-50' : 'text-olive-600'
+                }`}
+              >
+                Shop Products
+              </Link>
+
+              <Link
+                href="/about"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`px-4 py-2 text-sm font-medium ${
+                  isActive('/about') ? 'text-olive-800 bg-olive-50' : 'text-olive-600'
+                }`}
+              >
+                Our Story
+              </Link>
+
+              {session && (
+                <>
+                  {session.user.role === 'ADMIN' && (
+                    <Link
+                      href="/dashboard/admin"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`px-4 py-2 text-sm font-medium ${
+                        isActive('/dashboard/admin') ? 'text-olive-800 bg-olive-50' : 'text-olive-600'
+                      }`}
+                    >
+                      Admin Dashboard
+                    </Link>
+                  )}
+
+                  {session.user.role === 'VENDOR' && (
+                    <Link
+                      href="/dashboard/vendor"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`px-4 py-2 text-sm font-medium ${
+                        isActive('/dashboard/vendor') ? 'text-olive-800 bg-olive-50' : 'text-olive-600'
+                      }`}
+                    >
+                      Vendor Dashboard
+                    </Link>
+                  )}
+
+                  {session.user.role === 'CONSUMER' && (
+                    <Link
+                      href="/account/orders"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`px-4 py-2 text-sm font-medium ${
+                        isActive('/account/orders') ? 'text-olive-800 bg-olive-50' : 'text-olive-600'
+                      }`}
+                    >
+                      My Orders
+                    </Link>
+                  )}
+
+                  <Link
+                    href="/cart"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`px-4 py-2 text-sm font-medium ${
+                      isActive('/cart') ? 'text-olive-800 bg-olive-50' : 'text-olive-600'
+                    }`}
+                  >
+                    Shopping Cart
+                  </Link>
+
+                  <button
+                    onClick={() => {
+                      signOut()
+                      setMobileMenuOpen(false)
+                    }}
+                    className="px-4 py-2 text-sm font-medium text-olive-600 text-left"
+                  >
+                    Sign Out
+                  </button>
+                </>
+              )}
+
+              {!session && (
+                <>
+                  <Link
+                    href="/auth/signin"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="mx-4 btn-primary text-sm text-center"
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    href="/auth/signin"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="px-4 py-2 text-sm font-medium text-olive-600"
+                  >
+                    Partner With Us
+                  </Link>
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </header>
   )
