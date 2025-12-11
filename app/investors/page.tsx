@@ -16,14 +16,12 @@ export default function InvestorsPage() {
           }}></div>
         </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-          <img
-            src="/images/ChatGPT Image Dec 10, 2025, 09_43_23 PM.png"
-            alt="Terra Trionfo Logo"
-            className="h-40 md:h-48 mx-auto mb-8 drop-shadow-lg"
-          />
-          <h1 className="text-4xl md:text-6xl font-serif font-bold text-white mb-6 drop-shadow-md">
+          <h1 className="text-5xl md:text-6xl font-serif font-bold text-white mb-4 drop-shadow-md">
             Why Terra Trionfo?
           </h1>
+          <p className="text-2xl md:text-3xl font-serif italic text-parchment-100 mb-6">
+            Born of the Land
+          </p>
           <p className="text-xl md:text-2xl text-olive-50 max-w-4xl mx-auto leading-relaxed">
             Building the premier online marketplace for authentic, artisan farm-to-table products — 
             where heritage meets modern commerce, and quality triumphs over convenience.
