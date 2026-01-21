@@ -52,7 +52,7 @@ export default function Header() {
                   : 'text-olive-600 hover:text-olive-800'
               }`}
             >
-              Heritage
+              Crafted Across Generations
             </Link>
 
             <Link

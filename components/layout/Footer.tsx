@@ -35,7 +35,7 @@ export default function Footer() {
                   href="/about"
                   className="text-parchment-300 hover:text-parchment-100 transition-colors"
                 >
-                  Heritage
+                  Crafted Across Generations
                 </Link>
               </li>
               <li>

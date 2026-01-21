@@ -149,7 +149,7 @@ export default function ContactPage() {
                 className="bg-olive-50 hover:bg-olive-100 rounded-lg p-6 transition-colors"
               >
                 <h3 className="text-xl font-serif font-bold text-olive-900 mb-2">
-                  Heritage
+                  Crafted Across Generations
                 </h3>
                 <p className="text-olive-700 text-sm">
                   Discover the artisans, winemakers, and traditions we support
