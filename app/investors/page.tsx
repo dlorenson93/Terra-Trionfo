@@ -447,7 +447,7 @@ export default function InvestorsPage() {
               href="/about"
               className="inline-block bg-olive-700 text-white border-2 border-white px-8 py-3 rounded-lg font-semibold hover:bg-olive-600 transition-colors"
             >
-              Learn Our Story
+              Discover the Heritage
             </Link>
           </div>
           <p className="text-sm text-olive-300 mt-6">

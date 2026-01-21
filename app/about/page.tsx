@@ -19,10 +19,10 @@ export default function AboutPage() {
               />
             </div>
             <h1 className="text-4xl md:text-5xl font-serif font-bold text-olive-900 mb-4">
-              Our Story
+              Crafted Across Generations
             </h1>
             <p className="text-xl md:text-2xl font-serif italic text-olive-700">
-              Born of the Land, Rooted in Tradition
+              Honoring the Artisans, Winemakers, and Families Who Preserve Tradition
             </p>
           </div>
         </section>
