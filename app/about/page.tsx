@@ -37,37 +37,40 @@ export default function AboutPage() {
               
               <div className="space-y-6 text-olive-800 leading-relaxed">
                 <p className="text-lg">
-                  Some memories live in your bones. The scent of fresh basil crushed 
-                  between weathered hands. The warmth of Sunday sauce simmering since 
-                  dawn. The sound of your nonna's laughter echoing through a kitchen 
-                  where food was never just food—it was love, made visible. These traditions 
-                  live on in the hands of farmers, winemakers, and artisans who carry them forward.
+                  Some traditions are timeless. In hillside vineyards where generations have 
+                  tended the same vines, winemakers know each harvest by touch and intuition. 
+                  In stone millhouses where olive oil flows golden and fragrant, artisans press 
+                  fruit with methods unchanged for centuries. In family kitchens where pasta 
+                  dough is still rolled by hand, the rhythm of work carries the weight of those 
+                  who came before. This is living heritage—practiced daily, passed down carefully, 
+                  and honored completely by the farmers, winemakers, and artisans who create it.
                 </p>
 
                 <p className="text-lg">
-                  I am a fourth-generation Italian, raised in the glow of those timeless 
-                  traditions. My nonno and nonna's home was a sanctuary of simple 
-                  pleasures: bread torn by hand, wine poured with stories, and vegetables 
-                  pulled fresh from soil they'd tended for decades. Every meal was a 
-                  meditation on patience, quality, and the unbreakable bond between family 
-                  and the land—whether vineyards, olive groves, or kitchen gardens—that feeds them.
+                  These are the keepers of authenticity. They tend soil that has fed their families 
+                  for generations. They age wine in cellars their grandparents built. They harvest 
+                  olives at the exact moment of ripeness, guided by knowledge earned over lifetimes. 
+                  Their work cannot be rushed, replicated, or reinvented—it can only be respected, 
+                  supported, and shared with those who understand its value.
                 </p>
 
                 <p className="text-lg">
-                  Their kitchen taught me that the best things in life cannot be rushed. 
-                  That authenticity has a taste. That when you honor the origins of what 
-                  you consume—the winemaker, the farmer, the season, the earth—you honor 
-                  something sacred. This knowledge lives on in the producers, artisans, and 
-                  winemakers who maintain these traditions today.
+                  I grew up surrounded by this dedication. My own family's kitchen table held the 
+                  fruits of such labor: wine poured with stories of the vineyard it came from, 
+                  olive oil pressed by hands that knew the groves intimately, vegetables grown in 
+                  soil tended with patience and care. Those experiences taught me to recognize 
+                  authenticity—not as a brand promise, but as a living practice maintained by 
+                  people who refuse to compromise.
                 </p>
 
                 <p className="text-lg">
-                  Terra Trionfo was born from a desire to support the artisans, winemakers, 
-                  and farmers who keep these traditions alive. To connect their craftsmanship 
-                  with those who understand its value. This is more than a marketplace—it's a 
-                  platform built to honor producers who refuse to compromise, who tend their 
-                  vineyards and fields with the same care passed down through generations, and 
-                  who deserve visibility for their uncompromising dedication to quality and heritage.
+                  Terra Trionfo exists to support those producers, winemakers, and artisans. 
+                  We are not here to curate their traditions or interpret their heritage—we are 
+                  here to connect their craftsmanship with audiences who value its authenticity. 
+                  This platform honors producers who control their methods, preserve their regional 
+                  identities, and maintain the standards passed down through their families. Their 
+                  traditions remain theirs. Our role is simply to ensure those traditions reach 
+                  the tables of people who will cherish them as deeply as they deserve.
                 </p>
               </div>
             </div>
