@@ -20,8 +20,8 @@ export default function ContactPage() {
               Contact Us
             </h1>
             <p className="text-xl text-olive-700 max-w-3xl mx-auto">
-              We'd love to hear from you. Whether you're a vendor, investor, or customer, 
-              we're here to help.
+              We'd love to hear from you. Whether you're a producer, winemaker, artisan, 
+              investor, or customer, we're here to connect and support.
             </p>
           </div>
         </section>

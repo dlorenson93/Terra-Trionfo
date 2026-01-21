@@ -40,7 +40,8 @@ export default function AboutPage() {
                   Some memories live in your bones. The scent of fresh basil crushed 
                   between weathered hands. The warmth of Sunday sauce simmering since 
                   dawn. The sound of your nonna's laughter echoing through a kitchen 
-                  where food was never just food—it was love, made visible.
+                  where food was never just food—it was love, made visible. These traditions 
+                  live on in the hands of farmers, winemakers, and artisans who carry them forward.
                 </p>
 
                 <p className="text-lg">
@@ -49,23 +50,24 @@ export default function AboutPage() {
                   pleasures: bread torn by hand, wine poured with stories, and vegetables 
                   pulled fresh from soil they'd tended for decades. Every meal was a 
                   meditation on patience, quality, and the unbreakable bond between family 
-                  and the land that feeds them.
+                  and the land—whether vineyards, olive groves, or kitchen gardens—that feeds them.
                 </p>
 
                 <p className="text-lg">
                   Their kitchen taught me that the best things in life cannot be rushed. 
                   That authenticity has a taste. That when you honor the origins of what 
-                  you consume—the farmer, the season, the earth—you honor something 
-                  sacred.
+                  you consume—the winemaker, the farmer, the season, the earth—you honor 
+                  something sacred. This knowledge lives on in the producers, artisans, and 
+                  winemakers who maintain these traditions today.
                 </p>
 
                 <p className="text-lg">
-                  Terra Trionfo was born from a longing to share those feelings with you. 
-                  To bring that same comfort, that same connection, that same reverence 
-                  for what is real and good. This is more than a marketplace—it's an 
-                  invitation back to the table where tradition still matters, where food 
-                  still tells a story, and where every bite carries the weight of 
-                  generations.
+                  Terra Trionfo was born from a desire to support the artisans, winemakers, 
+                  and farmers who keep these traditions alive. To connect their craftsmanship 
+                  with those who understand its value. This is more than a marketplace—it's a 
+                  platform built to honor producers who refuse to compromise, who tend their 
+                  vineyards and fields with the same care passed down through generations, and 
+                  who deserve visibility for their uncompromising dedication to quality and heritage.
                 </p>
               </div>
             </div>
@@ -102,10 +104,10 @@ export default function AboutPage() {
                   Born of the Land
                 </h3>
                 <p className="text-olive-700 leading-relaxed">
-                  Every product we offer comes directly from artisans who work in 
-                  harmony with the earth. We believe in soil-to-table integrity, 
-                  celebrating seasonal rhythms and the honest labor of farmers who 
-                  refuse to take shortcuts.
+                  Every product comes directly from artisans, winemakers, and farmers who work in 
+                  harmony with the earth. We celebrate those who honor seasonal rhythms, 
+                  soil-to-table integrity, and the patient, honest labor that cannot be rushed—
+                  from pressing olives to aging wines to hand-rolling pasta.
                 </p>
               </div>
 
@@ -129,8 +131,9 @@ export default function AboutPage() {
                 </h3>
                 <p className="text-olive-700 leading-relaxed">
                   Just as my nonna would never serve anything less than perfection, 
-                  we vet every vendor and product with care. Quality isn't just a 
-                  standard—it's the bedrock of trust we build with every order.
+                  we partner closely with producers who share our commitment to quality, 
+                  authenticity, and care. Quality isn't just our standard—it's the foundation 
+                  of trust and mutual respect we build with every partnership.
                 </p>
               </div>
 
@@ -189,10 +192,12 @@ export default function AboutPage() {
             {/* Closing Statement */}
             <div className="card p-8 bg-gradient-to-br from-olive-50 to-parchment-100">
               <p className="text-lg text-olive-800 leading-relaxed text-center italic">
-                "When you taste the olive oil we source, you're not just tasting fruit 
-                pressed to liquid—you're tasting Tuscan hillsides, autumn harvests, 
-                calloused hands that know their craft. That's what Terra Trionfo means. 
-                That's what we deliver. Food with memory. Flavor with soul."
+                "When you taste the olive oil from our partner producers, you're not just tasting fruit 
+                pressed to liquid—you're tasting Tuscan hillsides tended by generations, autumn harvests 
+                gathered by skilled hands, and the deep knowledge of artisans who know their craft. 
+                When you pour wine from family vineyards, you're pouring decades of patience, passion, 
+                and tradition. That's what Terra Trionfo supports. That's what our producers create. 
+                Food with memory. Flavor with soul. Heritage honored, never altered."
               </p>
               <p className="text-center text-olive-600 mt-4 font-medium">
                 — The Terra Trionfo Family
@@ -208,8 +213,8 @@ export default function AboutPage() {
               Join Us at the Table
             </h2>
             <p className="text-lg mb-8 text-parchment-200">
-              Explore products crafted with care, chosen with reverence, and 
-              delivered with the warmth of family.
+              Explore products crafted by skilled producers and winemakers who honor tradition, 
+              celebrate heritage, and bring generations of knowledge to every harvest and bottle.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/products" className="btn-primary bg-parchment-200 text-olive-900 hover:bg-parchment-300">

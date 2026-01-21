@@ -20,8 +20,9 @@ export default function PricingModelsPage() {
             Partnership Models
           </h1>
           <p className="text-xl text-olive-700 max-w-3xl mx-auto">
-            Choose the model that works best for your business. Whether you prefer consignment-based 
-            marketplace sales or predictable wholesale purchases, Terra Trionfo supports your growth.
+            Select the model that works best for your business. Whether you prefer marketplace-based 
+            sales with pricing control or predictable wholesale purchases, Terra Trionfo is here to 
+            support your growth and connect your products with appreciative customers.
           </p>
         </div>
       </section>
@@ -301,12 +302,13 @@ export default function PricingModelsPage() {
               Can I Use Both Models?
             </h3>
             <p className="text-lg text-olive-700 mb-4">
-              Absolutely! Many vendors partner with Terra Trionfo using both models simultaneously. 
-              You might sell specialty items through the marketplace while Terra Trionfo purchases your 
+              Absolutely! Many producers partner with Terra Trionfo using both models simultaneously. 
+              You might sell specialty items through the marketplace while we purchase your 
               staple products wholesale.
             </p>
             <p className="text-olive-600 italic">
-              We'll work with you to determine the best approach for each product line.
+              We'll work collaboratively with you to determine the best approach for each product line 
+              based on your production capacity, business goals, and preferences.
             </p>
           </div>
         </div>

@@ -20,8 +20,9 @@ export default function VendorOnboardingPage() {
             Partner With Terra Trionfo
           </h1>
           <p className="text-xl text-olive-700 max-w-3xl mx-auto mb-8">
-            Join a curated community of artisan producers bringing authentic farm-to-table excellence 
-            to discerning consumers. Rooted in tradition, powered by modern commerce.
+            Join a community of artisan producers, winemakers, and family farms bringing authentic 
+            farm-to-table excellence to appreciative audiences. We support your traditions and 
+            craftsmanship through collaborative partnership and modern commerce infrastructure.
           </p>
           <Link
             href="/auth/signin"
@@ -60,9 +61,10 @@ export default function VendorOnboardingPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                 </svg>
               </div>
-              <h3 className="text-xl font-serif font-bold text-olive-900 mb-2">2. Review & Approval</h3>
+              <h3 className="text-xl font-serif font-bold text-olive-900 mb-2">2. Partnership Review</h3>
               <p className="text-olive-600">
-                Our team reviews your application (typically 3-5 business days). We prioritize quality and authenticity.
+                Our team reviews your application to ensure mutual alignment on quality, authenticity, 
+                and values (typically 3-5 business days).
               </p>
             </div>
 
@@ -190,12 +192,12 @@ export default function VendorOnboardingPage() {
                 <h3 className="text-xl font-serif font-bold text-olive-900">Packaging Standards</h3>
               </div>
               <p className="text-olive-700 mb-3">
-                All products must be packaged according to food safety regulations. We provide guidelines for 
-                branded packaging that reflects the Terra Trionfo aesthetic.
+                All products must meet food safety regulations. We provide supportive guidelines and 
+                suggestions for packaging that can complement your brand while meeting quality standards.
               </p>
               <p className="text-olive-700">
-                Vendors are responsible for ensuring products arrive fresh and intact. We offer packaging 
-                recommendations and approved supplier lists.
+                Producers maintain responsibility for ensuring products arrive fresh and intact. We offer 
+                packaging recommendations and approved supplier resources as helpful resources.
               </p>
             </div>
 

@@ -24,7 +24,8 @@ export default function InvestorsPage() {
           </p>
           <p className="text-xl md:text-2xl text-olive-50 max-w-4xl mx-auto leading-relaxed">
             Building the premier online marketplace for authentic, artisan farm-to-table products — 
-            where heritage meets modern commerce, and quality triumphs over convenience.
+            where we support producers and winemakers in bringing their heritage and craftsmanship 
+            to appreciative audiences, with quality and partnership at our foundation.
           </p>
         </div>
       </section>
@@ -170,8 +171,9 @@ export default function InvestorsPage() {
               Why Terra Trionfo Is Different
             </h2>
             <p className="text-xl text-olive-600 max-w-3xl mx-auto">
-              We're not just another marketplace. We're building a curated platform rooted in heritage, 
-              quality, and dual revenue models that maximize value for producers and investors alike.
+              We're not just another marketplace. We're building a partnership platform rooted in 
+              respect for producers, shared commitment to quality, and dual revenue models that maximize 
+              value for artisans, winemakers, and investors alike.
             </p>
           </div>
 
@@ -213,39 +215,39 @@ export default function InvestorsPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                   </svg>
                 </div>
-                <h3 className="text-2xl font-serif font-bold text-olive-900">Curated Quality</h3>
+                <h3 className="text-2xl font-serif font-bold text-olive-900">Partnership-Based Quality</h3>
               </div>
               <p className="text-olive-700 mb-4">
-                We don't accept everyone. Every vendor undergoes rigorous review:
+                We partner closely with producers and winemakers who share our commitment to excellence:
               </p>
               <ul className="space-y-2 text-olive-700">
                 <li className="flex items-center">
                   <svg className="w-5 h-5 text-olive-600 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Production practices and food safety compliance
+                  Verified production practices and food safety compliance
                 </li>
                 <li className="flex items-center">
                   <svg className="w-5 h-5 text-olive-600 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Product authenticity and ingredient transparency
+                  Shared commitment to authenticity and ingredient transparency
                 </li>
                 <li className="flex items-center">
                   <svg className="w-5 h-5 text-olive-600 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Brand alignment with heritage and quality values
+                  Mutual alignment on values of quality, heritage, and craftsmanship
                 </li>
                 <li className="flex items-center">
                   <svg className="w-5 h-5 text-olive-600 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Production capacity and fulfillment capability
+                  Reliable production capacity and fulfillment capability
                 </li>
               </ul>
               <p className="mt-4 text-olive-600 italic">
-                Premium curation = premium pricing = higher margins.
+                Strong partnerships = premium positioning = higher margins.
               </p>
             </div>
 
@@ -256,16 +258,20 @@ export default function InvestorsPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                   </svg>
                 </div>
-                <h3 className="text-2xl font-serif font-bold text-olive-900">Heritage-First Branding</h3>
+                <h3 className="text-2xl font-serif font-bold text-olive-900">Authenticity-First Positioning</h3>
               </div>
               <p className="text-olive-700 mb-4">
-                Terra Trionfo ("Land of Triumph") isn't just a name — it's a story. Our vintage Italian 
-                farmhouse aesthetic creates emotional connection and commands premium positioning.
+                Terra Trionfo ("Land of Triumph") isn't just a name—it's a commitment. Our platform 
+                exists to honor and support producers whose work embodies generations of knowledge, 
+                from winemakers tending family vineyards to artisans pressing olive oil using 
+                time-honored methods.
               </p>
               <p className="text-olive-700">
-                Every touchpoint — from logo to packaging guidance to product descriptions — reinforces 
-                authenticity, heritage, and time-honored traditions. This isn't commodity food; it's 
-                <span className="font-semibold italic"> culinary heritage</span>.
+                Every element of our platform—from storytelling to product descriptions—highlights 
+                producer craftsmanship, regional heritage, and authentic methods. We don't reinterpret 
+                or rebrand their traditions; we provide the visibility and respect they deserve. 
+                This isn't commodity food; it's <span className="font-semibold italic">living heritage</span>, 
+                created and controlled by the artisans themselves.
               </p>
             </div>
 

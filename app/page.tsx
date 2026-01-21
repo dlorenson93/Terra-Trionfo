@@ -28,9 +28,9 @@ export default function HomePage() {
                 Born of the Land
               </p>
               <p className="text-lg text-olive-800 leading-relaxed mb-8 max-w-2xl mx-auto">
-                Discover authentic farm-to-table products from artisan producers.
-                We connect passionate vendors with discerning consumers through
-                our marketplace and wholesale distribution platform.
+                Authentic farm-to-table products from artisan producers, winemakers, and family farms.
+                We support passionate makers by connecting their craftsmanship with appreciative audiences
+                through our collaborative marketplace and wholesale platform.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -192,8 +192,8 @@ export default function HomePage() {
             </div>
 
             <p className="text-center text-olive-700 mt-8 text-lg">
-              Choose one model or use both for different products. You decide
-              what works best for your business.
+              Work with us using one model or both for different products. You decide
+              what works best for your business and production needs.
             </p>
           </div>
         </section>
@@ -221,7 +221,7 @@ export default function HomePage() {
                 </div>
                 <h3 className="text-xl font-serif font-bold text-olive-900 mb-2">Browse Artisan Products</h3>
                 <p className="text-olive-600">
-                  Explore our curated collection of authentic farm-to-table goods from vetted artisan producers.
+                  Explore authentic farm-to-table goods from artisan producers, winemakers, and family farms.
                 </p>
               </div>
 
@@ -284,8 +284,8 @@ export default function HomePage() {
               Artisan Products
             </h2>
             <p className="text-center text-olive-700 mb-12 max-w-2xl mx-auto">
-              From sun-drenched vineyards to family-run farms, discover authentic
-              products crafted with care and tradition.
+              From generations-old wineries to family farms tending olive groves and fields,
+              discover products crafted with care, skill, and enduring traditions.
             </p>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

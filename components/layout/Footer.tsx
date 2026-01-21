@@ -12,8 +12,9 @@ export default function Footer() {
             </h3>
             <p className="text-parchment-300 italic mb-4">Born of the Land</p>
             <p className="text-sm text-parchment-300 leading-relaxed">
-              Connecting artisan producers with discerning consumers through our
-              farm-to-table marketplace and wholesale distribution platform.
+              Supporting artisan producers, winemakers, and family farms by connecting 
+              their authentic craftsmanship with appreciative audiences through our 
+              collaborative marketplace and wholesale platform.
             </p>
           </div>
 

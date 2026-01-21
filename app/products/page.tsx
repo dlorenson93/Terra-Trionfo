@@ -78,8 +78,8 @@ export default function ProductsPage() {
               Shop Products
             </h1>
             <p className="text-lg text-olive-700">
-              Discover authentic artisan products from family farms and
-              producers
+              Authentic artisan products from family farms, winemakers, and
+              skilled producers who bring generations of tradition to every bottle and harvest
             </p>
           </div>
         </div>
