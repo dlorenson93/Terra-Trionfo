@@ -32,45 +32,46 @@ export default function AboutPage() {
           <div className="max-w-4xl mx-auto">
             <div className="prose prose-lg max-w-none">
               <h2 className="text-3xl md:text-4xl font-serif font-bold text-olive-900 mb-6">
-                A Heritage Written in Flavor
+                Traditions Handed Down Through Generations
               </h2>
               
               <div className="space-y-6 text-olive-800 leading-relaxed">
                 <p className="text-lg">
-                  Some traditions are timeless. In hillside vineyards where generations have 
-                  tended the same vines, winemakers know each harvest by touch and intuition. 
-                  In stone millhouses where olive oil flows golden and fragrant, artisans press 
-                  fruit with methods unchanged for centuries. In family kitchens where pasta 
-                  dough is still rolled by hand, the rhythm of work carries the weight of those 
-                  who came before. This is living heritage—practiced daily, passed down carefully, 
-                  and honored completely by the farmers, winemakers, and artisans who create it.
+                  In hillside vineyards across sun-drenched valleys, winemakers tend vines their 
+                  great-grandparents planted. They know each varietal by touch, each slope by its 
+                  character, each vintage by the weather that shaped it. In ancient stone millhouses, 
+                  artisans press olive oil using techniques passed down through centuries—timing the 
+                  harvest, managing the temperature, preserving the fruity notes that mark truly 
+                  exceptional oil. In family kitchens, hands shape pasta dough with a rhythm learned 
+                  in childhood, maintaining the exact textures and forms their ancestors perfected.
                 </p>
 
                 <p className="text-lg">
-                  These are the keepers of authenticity. They tend soil that has fed their families 
-                  for generations. They age wine in cellars their grandparents built. They harvest 
-                  olives at the exact moment of ripeness, guided by knowledge earned over lifetimes. 
-                  Their work cannot be rushed, replicated, or reinvented—it can only be respected, 
-                  supported, and shared with those who understand its value.
+                  These producers, winemakers, and artisans are the true keepers of heritage. They 
+                  carry knowledge that cannot be taught from books—the precise moment when olives 
+                  reach peak ripeness, the subtle shifts in fermentation that distinguish extraordinary 
+                  wine from ordinary, the feel of dough that will become perfect tagliatelle. Their 
+                  fields, vineyards, and workshops hold generations of care, embedded in soil composition, 
+                  vine training, and traditional tools still used because nothing modern works better.
                 </p>
 
                 <p className="text-lg">
-                  I grew up surrounded by this dedication. My own family's kitchen table held the 
-                  fruits of such labor: wine poured with stories of the vineyard it came from, 
-                  olive oil pressed by hands that knew the groves intimately, vegetables grown in 
-                  soil tended with patience and care. Those experiences taught me to recognize 
-                  authenticity—not as a brand promise, but as a living practice maintained by 
-                  people who refuse to compromise.
+                  This is living tradition: practiced daily, refined continually, and protected fiercely 
+                  by families who understand that quality cannot be rushed. Winemakers age their vintages 
+                  in cellars their grandparents built, following fermentation schedules set decades ago. 
+                  Olive oil producers refuse modern shortcuts that would increase yield but diminish flavor. 
+                  Pasta makers insist on bronze dies and slow drying because their reputation—and their 
+                  family's name—depends on it.
                 </p>
 
                 <p className="text-lg">
-                  Terra Trionfo exists to support those producers, winemakers, and artisans. 
-                  We are not here to curate their traditions or interpret their heritage—we are 
-                  here to connect their craftsmanship with audiences who value its authenticity. 
-                  This platform honors producers who control their methods, preserve their regional 
-                  identities, and maintain the standards passed down through their families. Their 
-                  traditions remain theirs. Our role is simply to ensure those traditions reach 
-                  the tables of people who will cherish them as deeply as they deserve.
+                  Terra Trionfo exists to connect these artisans, producers, and winemakers with audiences 
+                  who recognize their excellence. We do not curate their methods, interpret their heritage, 
+                  or alter their traditions. We provide a platform where their craftsmanship speaks for 
+                  itself, where their regional identities remain authentic, and where their generational 
+                  knowledge receives the respect it deserves. Their products, their stories, and their 
+                  legacy belong to them. We simply ensure they reach tables where they will be valued 
+                  as the remarkable achievements they are.
                 </p>
               </div>
             </div>
@@ -195,15 +196,16 @@ export default function AboutPage() {
             {/* Closing Statement */}
             <div className="card p-8 bg-gradient-to-br from-olive-50 to-parchment-100">
               <p className="text-lg text-olive-800 leading-relaxed text-center italic">
-                "When you taste the olive oil from our partner producers, you're not just tasting fruit 
-                pressed to liquid—you're tasting Tuscan hillsides tended by generations, autumn harvests 
-                gathered by skilled hands, and the deep knowledge of artisans who know their craft. 
-                When you pour wine from family vineyards, you're pouring decades of patience, passion, 
-                and tradition. That's what Terra Trionfo supports. That's what our producers create. 
-                Food with memory. Flavor with soul. Heritage honored, never altered."
+                "When you open a bottle from a family vineyard, you're experiencing decades of 
+                patient cultivation—vines tended by hands that know every slope and stone. When you 
+                drizzle olive oil pressed by artisans who learned their craft from their grandparents, 
+                you taste Tuscan hillsides, autumn harvests, and centuries of knowledge. When you 
+                cook with pasta shaped by methods unchanged across generations, you honor the dedication 
+                of makers who refuse to compromise. These are the producers, winemakers, and artisans 
+                whose work speaks for itself. Terra Trionfo simply ensures their voices are heard."
               </p>
               <p className="text-center text-olive-600 mt-4 font-medium">
-                — The Terra Trionfo Family
+                — Terra Trionfo
               </p>
             </div>
           </div>
