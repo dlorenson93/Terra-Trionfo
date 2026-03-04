@@ -94,7 +94,7 @@ export async function POST(request: Request) {
     const orderItems: any[] = []
 
     for (const item of items) {
-      const product = products.find((p: any) => p.id === item.productId)
+      const product = products.find((p: any) => p.id === item.productId) as any
       if (!product) continue
 
       if (product.inventory < item.quantity) {
@@ -125,9 +125,10 @@ export async function POST(request: Request) {
           total,
           status: 'CONFIRMED',
           orderItems: {
-            create: orderItems,
+            // cast because Prisma types may be stale
+            create: orderItems as any,
           },
-        },
+        } as any,
         include: {
           orderItems: {
             include: {

@@ -11,7 +11,7 @@ interface Product {
   imageUrl?: string
   category: string
   retailPriceCents: number
-  commerceModel: string
+  commerceModel: 'MARKETPLACE' | 'WHOLESALE' | 'HYBRID'
   company: {
     id: string
     name: string
@@ -51,9 +51,9 @@ export default function ProductsPage() {
       
       const data = await response.json()
       
-      // Ensure data is an array
+      // Ensure data is an array; cast items to our Product type
       if (Array.isArray(data)) {
-        setProducts(data)
+        setProducts(data as Product[])
       } else {
         console.error('API returned non-array data:', data)
         setProducts([])

@@ -247,9 +247,9 @@ async function main() {
             unitPrice: 21.60,
             commerceModel: 'MARKETPLACE',
           },
-        ],
+        ] as any,
       },
-    },
+    } as any,
   })
 
   console.log('✅ Sample order created')

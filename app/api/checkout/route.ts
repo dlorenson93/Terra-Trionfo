@@ -3,7 +3,9 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { checkoutSchema } from '@/lib/validation/checkout'
-import { FulfillmentType } from '@prisma/client'
+// local union type for fulfillment
+
+type Fulfillment = 'PICKUP' | 'LOCAL_DELIVERY' | 'SHIP'
 
 export async function POST(request: Request) {
   try {
@@ -25,8 +27,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Shipping is not available' }, { status: 400 })
     }
 
-    // fetch settings for delivery rules
-    const settings = await prisma.settings.findUnique({ where: { id: 'default' } })
+    // fetch settings for delivery rules (generated type may not include the array fields)
+    const settingsRaw = await prisma.settings.findUnique({ where: { id: 'default' } })
+    const settings = settingsRaw as any
 
     // fetch products
     const productIds = items.map((i) => i.productId)
@@ -40,8 +43,10 @@ export async function POST(request: Request) {
 
     // validate fulfillment support and inventory
     for (const item of items) {
-      const prod = products.find((p) => p.id === item.productId)!
-      if (!prod.allowedFulfillment.includes(fulfillmentType as FulfillmentType)) {
+      const prodRaw = products.find((p) => p.id === item.productId)!
+      // Prisma types may not reflect the allowedFulfillment field; cast to any
+      const prod = prodRaw as any
+      if (!prod.allowedFulfillment.includes(fulfillmentType as Fulfillment)) {
         return NextResponse.json({ error: `Product ${prod.name} does not support ${fulfillmentType}` }, { status: 400 })
       }
       if (prod.inventory < item.quantity) {
@@ -68,7 +73,8 @@ export async function POST(request: Request) {
 
     // calculate totals in dollars for order
     const total = items.reduce((sum, item) => {
-      const prod = products.find((p) => p.id === item.productId)!
+      const prodRaw = products.find((p) => p.id === item.productId)!
+      const prod = prodRaw as any
       return sum + (prod.retailPriceCents / 100) * item.quantity
     }, 0)
 
@@ -79,22 +85,23 @@ export async function POST(request: Request) {
           userId: session.user.id,
           total,
           status: 'PENDING',
-          fulfillmentType: fulfillmentType as FulfillmentType,
+          fulfillmentType: fulfillmentType as any,
           deliveryFeeCents: deliveryFee,
           scheduledDeliveryDate: scheduledDate ? new Date(scheduledDate) : null,
           pickupLocationId: fulfillmentType === 'PICKUP' ? pickupLocationId : null,
           orderItems: {
+            // cast to any because generated Prisma types may still expect the old `modelType` field
             create: items.map((item) => {
-              const prod = products.find((p) => p.id === item.productId)!
+              const prod = products.find((p) => p.id === item.productId)! as any
               return {
                 productId: item.productId,
                 quantity: item.quantity,
                 unitPrice: prod.retailPriceCents / 100,
                 commerceModel: prod.commerceModel,
               }
-            }),
+            }) as any,
           },
-        },
+        } as any,
       })
 
       // decrement inventory

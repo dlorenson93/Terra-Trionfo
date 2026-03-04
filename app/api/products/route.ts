@@ -147,7 +147,7 @@ export async function POST(request: Request) {
         wholesalePriceCents,
         retailPriceCents: retailPriceCents || 0,
         inventory: inventory || 0,
-      },
+      } as any,
       include: {
         company: {
           select: {

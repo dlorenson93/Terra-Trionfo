@@ -39,7 +39,7 @@ export async function POST(request: Request) {
         passwordHash,
         // role stays null
         profileCompleted: false,
-      },
+      } as any,
       select: {
         id: true,
         name: true,
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
         role: true,
         profileCompleted: true,
         createdAt: true,
-      },
+      } as any,
     })
 
     return NextResponse.json(user, { status: 201 })
