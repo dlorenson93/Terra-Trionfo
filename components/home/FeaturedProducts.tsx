@@ -9,7 +9,7 @@ interface Product {
   imageUrl?: string
   category: string
   retailPriceCents: number
-  commerceModel: string
+  commerceModel: 'MARKETPLACE' | 'WHOLESALE' | 'HYBRID'
   listingOwner: string
   company: {
     id: string

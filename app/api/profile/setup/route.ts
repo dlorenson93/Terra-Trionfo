@@ -20,13 +20,18 @@ export async function POST(request: Request) {
     const { role } = parsed.data
 
     // update user
+    // update role first (Prisma typings sometimes lag on new fields)
     const updatedUser = await prisma.user.update({
       where: { id: session.user.id },
       data: {
         role,
-        profileCompleted: true,
       },
     })
+
+    // mark profile completed using raw SQL to side-step Prisma typing issues
+    await prisma.$executeRaw`
+      UPDATE "users" SET "profileCompleted" = true WHERE id = ${session.user.id}
+    `
 
     // if vendor role, create blank company record
     if (role === 'VENDOR') {

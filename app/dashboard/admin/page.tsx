@@ -98,23 +98,32 @@ export default function AdminDashboard() {
     }
   }
 
-      const editProduct = async (prod: Product) => {
-        const commerceModel = prompt('Commerce model (MARKETPLACE/WHOLESALE/HYBRID)', prod.commerceModel)
-        const listingOwner = prompt('Listing owner (VENDOR/TERRA)', prod.listingOwner)
-        const priceStr = prompt('Retail price (dollars)', (prod.retailPriceCents / 100).toFixed(2))
-        if (!commerceModel || !listingOwner || !priceStr) return
-        const retailPriceCents = Math.round(parseFloat(priceStr) * 100)
-        try {
-          await fetch(`/api/products/${prod.id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ commerceModel, listingOwner, retailPriceCents }),
-          })
-          fetchData()
-        } catch (error) {
-          console.error('Error editing product:', error)
-        }
-      }
+  const editProduct = async (prod: Product) => {
+    const commerceModel = prompt('Commerce model (MARKETPLACE/WHOLESALE/HYBRID)', prod.commerceModel)
+    const listingOwner = prompt('Listing owner (VENDOR/TERRA)', prod.listingOwner)
+    const priceStr = prompt('Retail price (dollars)', (prod.retailPriceCents / 100).toFixed(2))
+    if (!commerceModel || !listingOwner || !priceStr) return
+    const retailPriceCents = Math.round(parseFloat(priceStr) * 100)
+    try {
+      await fetch(`/api/products/${prod.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ commerceModel, listingOwner, retailPriceCents }),
+      })
+      fetchData()
+    } catch (error) {
+      console.error('Error editing product:', error)
+    }
+  }
+
+  // render
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Header />
+
+      <main className="flex-grow bg-parchment-50">
+        <div className="bg-gradient-to-br from-parchment-100 to-parchment-200 py-12 px-4">
+          <div className="max-w-7xl mx-auto">
             <h1 className="text-4xl font-serif font-bold text-olive-900 mb-2">
               Admin Dashboard
             </h1>
