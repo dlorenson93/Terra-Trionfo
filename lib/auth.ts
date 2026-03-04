@@ -47,6 +47,8 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.role = user.role
         token.id = user.id
+        // pass profileCompleted if available
+        token.profileCompleted = (user as any).profileCompleted
       }
       return token
     },
@@ -54,6 +56,7 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.role = token.role as string
         session.user.id = token.id as string
+        session.user.profileCompleted = token.profileCompleted as boolean
       }
       return session
     },

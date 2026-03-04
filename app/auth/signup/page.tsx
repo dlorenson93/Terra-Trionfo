@@ -11,7 +11,6 @@ export default function SignUpPage() {
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'CONSUMER',
   })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -40,7 +39,6 @@ export default function SignUpPage() {
           name: formData.name,
           email: formData.email,
           password: formData.password,
-          role: formData.role,
         }),
       })
 
@@ -121,22 +119,6 @@ export default function SignUpPage() {
               />
             </div>
 
-            <div>
-              <label htmlFor="role" className="label">
-                Account Type
-              </label>
-              <select
-                id="role"
-                value={formData.role}
-                onChange={(e) =>
-                  setFormData({ ...formData, role: e.target.value })
-                }
-                className="input-field"
-              >
-                <option value="CONSUMER">Consumer - Shop Products</option>
-                <option value="VENDOR">Vendor - Sell via Marketplace or Wholesale</option>
-              </select>
-            </div>
 
             <div>
               <label htmlFor="password" className="label">

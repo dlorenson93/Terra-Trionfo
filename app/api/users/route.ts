@@ -7,7 +7,7 @@ import bcrypt from 'bcryptjs'
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { name, email, password, role } = body
+    const { name, email, password } = body
 
     if (!name || !email || !password) {
       return NextResponse.json(
@@ -31,19 +31,21 @@ export async function POST(request: Request) {
     // Hash password
     const passwordHash = await bcrypt.hash(password, 10)
 
-    // Create user
+    // Create user with no role until profile setup
     const user = await prisma.user.create({
       data: {
         name,
         email,
         passwordHash,
-        role: role || 'CONSUMER',
+        // role stays null
+        profileCompleted: false,
       },
       select: {
         id: true,
         name: true,
         email: true,
         role: true,
+        profileCompleted: true,
         createdAt: true,
       },
     })

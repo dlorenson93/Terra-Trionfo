@@ -14,6 +14,7 @@ enum UserRole {
   ADMIN
   VENDOR
   CONSUMER
+  // role is optional during setup; null means not yet chosen
 }
 
 enum CompanyStatus {
@@ -41,14 +42,34 @@ enum ModelType {
   WHOLESALE
 }
 
+// new enums
+
+enum CommerceModel {
+  MARKETPLACE
+  WHOLESALE
+  HYBRID
+}
+
+enum ListingOwner {
+  VENDOR
+  TERRA
+}
+
+enum FulfillmentType {
+  PICKUP
+  LOCAL_DELIVERY
+  SHIP
+}
+
 model User {
-  id           String    @id @default(cuid())
-  name         String
-  email        String    @unique
-  passwordHash String
-  role         UserRole  @default(CONSUMER)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id             String    @id @default(cuid())
+  name           String
+  email          String    @unique
+  passwordHash   String
+  role           UserRole? // nullable until setup completed
+  profileCompleted Boolean @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   // Relations
   companies Company[]
@@ -60,10 +81,16 @@ model User {
 model Company {
   id           String        @id @default(cuid())
   name         String
+  slug         String?       @unique
   contactEmail String
   phone        String?
   address      String?
   description  String?
+  bio          String?
+  region       String?
+  country      String?
+  website      String?
+  heroImageUrl String?
   status       CompanyStatus @default(PENDING)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
@@ -82,19 +109,19 @@ model Product {
   description String?
   category    String
   imageUrl    String?
-  
-  // Model flags
-  isMarketplace Boolean @default(false)
-  isWholesale   Boolean @default(false)
-  
-  // Pricing
-  basePrice      Float?  // For marketplace products
-  wholesaleCost  Float?  // What Terra pays for wholesale
-  consumerPrice  Float   // Final consumer price (derived or overridden)
-  
+
+  // Commerce model fields
+  commerceModel   CommerceModel @default(MARKETPLACE)
+  listingOwner    ListingOwner  @default(VENDOR)
+  vendorPriceCents Int?
+  wholesalePriceCents Int?
+  retailPriceCents  Int            // required for consumer checkout
+
+  allowedFulfillment FulfillmentType[] @default([PICKUP, LOCAL_DELIVERY])
+
   inventory Int     @default(0)
   status    ProductStatus @default(PENDING)
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -110,6 +137,10 @@ model Order {
   id        String      @id @default(cuid())
   total     Float
   status    OrderStatus @default(PENDING)
+  fulfillmentType FulfillmentType
+  deliveryFeeCents Int @default(0)
+  scheduledDeliveryDate DateTime?
+  pickupLocationId String?
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
 
@@ -125,7 +156,7 @@ model OrderItem {
   id        String    @id @default(cuid())
   quantity  Int
   unitPrice Float
-  modelType ModelType // Track which model was used at time of sale
+  commerceModel CommerceModel // Track which model was used at time of sale
 
   // Relations
   orderId   String
@@ -139,6 +170,12 @@ model OrderItem {
 model Settings {
   id                           String   @id @default(cuid())
   defaultMarketplaceMarkupPercent Float @default(20)
+
+  // Fulfillment configuration
+  deliveryAllowedStates String[] @default(["MA"])
+  deliveryDaysOfWeek    Int[]    @default([2,4,6]) // ISO Mon=1..Sun=7
+  deliveryFeeCents      Int      @default(0)
+
   createdAt                    DateTime @default(now())
   updatedAt                    DateTime @updatedAt
 

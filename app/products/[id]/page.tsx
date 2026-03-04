@@ -13,10 +13,10 @@ interface Product {
   description?: string
   imageUrl?: string
   category: string
-  consumerPrice: number
+  retailPriceCents: number
   inventory: number
-  isMarketplace: boolean
-  isWholesale: boolean
+  commerceModel: string
+  allowedFulfillment: string[]
   company: {
     id: string
     name: string
@@ -70,7 +70,7 @@ export default function ProductDetailPage({
         productId: product?.id,
         name: product?.name,
         imageUrl: product?.imageUrl,
-        price: product?.consumerPrice,
+        price: product?.retailPriceCents ? product.retailPriceCents / 100 : 0,
         quantity,
       })
     }
@@ -151,12 +151,12 @@ export default function ProductDetailPage({
                   {product.name}
                 </h1>
                 <div className="flex items-center gap-2 mb-4">
-                  {product.isMarketplace && (
+                  {(product.commerceModel === 'MARKETPLACE' || product.commerceModel === 'HYBRID') && (
                     <span className="badge bg-olive-100 text-olive-700">
                       Marketplace
                     </span>
                   )}
-                  {product.isWholesale && (
+                  {(product.commerceModel === 'WHOLESALE' || product.commerceModel === 'HYBRID') && (
                     <span className="badge bg-parchment-400 text-olive-800">
                       Wholesale
                     </span>
@@ -190,7 +190,7 @@ export default function ProductDetailPage({
               <div className="border-t border-olive-200 pt-6 mb-6">
                 <div className="flex items-baseline gap-2 mb-4">
                   <span className="text-4xl font-bold text-olive-900">
-                    ${product.consumerPrice.toFixed(2)}
+                    ${(product.retailPriceCents / 100).toFixed(2)}
                   </span>
                 </div>
 

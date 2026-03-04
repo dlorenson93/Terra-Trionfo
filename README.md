@@ -188,7 +188,7 @@ Terra-Trionfo/
 Key models:
 - **User**: Authentication and role management (ADMIN, VENDOR, CONSUMER)
 - **Company**: Vendor company profiles with approval status
-- **Product**: Products with dual model flags and pricing options
+- **Product**: Products with `commerceModel`, `listingOwner`, retail price (cents) and fulfillment options
 - **Order**: Customer orders
 - **OrderItem**: Line items with model type tracking
 - **Settings**: Global platform settings (markup percentages, etc.)
@@ -207,11 +207,12 @@ npm run prisma:seed     # Seed database with sample data
 
 ## 🎯 Business Logic
 
-### Marketplace Model
-- Vendor sets `basePrice`
-- System applies configurable markup (default 20%)
-- Final `consumerPrice` = basePrice × (1 + markup%)
-- Admin can override consumer price
+### Commerce Models
+- Products use a `CommerceModel` enum: MARKETPLACE, WHOLESALE, or HYBRID
+- Retail price stored in `retailPriceCents` and displayed as dollars
+- Marketplace listings: vendor supplies price; system may auto‑markup based on `vendorPriceCents` and settings
+- Wholesale listings: admin or Terra sets the retail price directly
+- Hybrid listings support both mechanisms on the same SKU
 
 ### Wholesale Model
 - Vendor sets `wholesaleCost` (what Terra Trionfo pays)

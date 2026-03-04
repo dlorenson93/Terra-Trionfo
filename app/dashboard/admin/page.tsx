@@ -29,10 +29,10 @@ interface Product {
   id: string
   name: string
   category: string
-  consumerPrice: number
+  retailPriceCents: number
   status: string
-  isMarketplace: boolean
-  isWholesale: boolean
+  commerceModel: 'MARKETPLACE' | 'WHOLESALE' | 'HYBRID'
+  listingOwner: 'VENDOR' | 'TERRA'
   company: { name: string }
 }
 
@@ -98,17 +98,23 @@ export default function AdminDashboard() {
     }
   }
 
-  if (!session || session.user.role !== 'ADMIN') {
-    return null
-  }
-
-  return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-
-      <main className="flex-grow bg-parchment-50">
-        <div className="bg-gradient-to-br from-parchment-100 to-parchment-200 py-12 px-4">
-          <div className="max-w-7xl mx-auto">
+      const editProduct = async (prod: Product) => {
+        const commerceModel = prompt('Commerce model (MARKETPLACE/WHOLESALE/HYBRID)', prod.commerceModel)
+        const listingOwner = prompt('Listing owner (VENDOR/TERRA)', prod.listingOwner)
+        const priceStr = prompt('Retail price (dollars)', (prod.retailPriceCents / 100).toFixed(2))
+        if (!commerceModel || !listingOwner || !priceStr) return
+        const retailPriceCents = Math.round(parseFloat(priceStr) * 100)
+        try {
+          await fetch(`/api/products/${prod.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ commerceModel, listingOwner, retailPriceCents }),
+          })
+          fetchData()
+        } catch (error) {
+          console.error('Error editing product:', error)
+        }
+      }
             <h1 className="text-4xl font-serif font-bold text-olive-900 mb-2">
               Admin Dashboard
             </h1>
@@ -341,10 +347,13 @@ export default function AdminDashboard() {
                         Category
                       </th>
                       <th className="pb-3 text-sm font-medium text-olive-700">
-                        Price
+                        Retail
                       </th>
                       <th className="pb-3 text-sm font-medium text-olive-700">
                         Model
+                      </th>
+                      <th className="pb-3 text-sm font-medium text-olive-700">
+                        Owner
                       </th>
                       <th className="pb-3 text-sm font-medium text-olive-700">
                         Actions
@@ -364,21 +373,17 @@ export default function AdminDashboard() {
                           {product.category}
                         </td>
                         <td className="py-3 text-sm text-olive-800">
-                          ${product.consumerPrice.toFixed(2)}
+                          ${(product.retailPriceCents / 100).toFixed(2)}
                         </td>
                         <td className="py-3 text-xs">
-                          <div className="flex gap-1">
-                            {product.isMarketplace && (
-                              <span className="badge bg-olive-100 text-olive-700">
-                                M
-                              </span>
-                            )}
-                            {product.isWholesale && (
-                              <span className="badge bg-parchment-400 text-olive-800">
-                                W
-                              </span>
-                            )}
-                          </div>
+                          <span className="badge bg-olive-100 text-olive-700">
+                            {product.commerceModel.charAt(0)}
+                          </span>
+                        </td>
+                        <td className="py-3 text-xs">
+                          <span className="badge bg-parchment-400 text-olive-800">
+                            {product.listingOwner}
+                          </span>
                         </td>
                         <td className="py-3">
                           <div className="flex gap-2">
@@ -389,6 +394,12 @@ export default function AdminDashboard() {
                               className="text-xs px-3 py-1 bg-green-100 text-green-800 rounded hover:bg-green-200"
                             >
                               Approve
+                            </button>
+                            <button
+                              onClick={() => editProduct(product)}
+                              className="text-xs px-3 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200"
+                            >
+                              Edit
                             </button>
                             <button
                               onClick={() =>

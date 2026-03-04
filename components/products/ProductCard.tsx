@@ -6,10 +6,9 @@ interface ProductCardProps {
   name: string
   imageUrl?: string
   category: string
-  consumerPrice: number
+  retailPrice: number
   companyName: string
-  isMarketplace: boolean
-  isWholesale: boolean
+  commerceModel: 'MARKETPLACE' | 'WHOLESALE' | 'HYBRID'
 }
 
 export default function ProductCard({
@@ -17,10 +16,9 @@ export default function ProductCard({
   name,
   imageUrl,
   category,
-  consumerPrice,
+  retailPrice,
   companyName,
-  isMarketplace,
-  isWholesale,
+  commerceModel,
 }: ProductCardProps) {
   return (
     <Link href={`/products/${id}`} className="card overflow-hidden group">
@@ -65,16 +63,16 @@ export default function ProductCard({
 
         <div className="flex items-center justify-between">
           <span className="text-2xl font-bold text-olive-900">
-            ${consumerPrice.toFixed(2)}
+            ${retailPrice.toFixed(2)}
           </span>
 
           <div className="flex gap-1">
-            {isMarketplace && (
+            {(commerceModel === 'MARKETPLACE' || commerceModel === 'HYBRID') && (
               <span className="badge bg-olive-100 text-olive-700 text-xs">
                 Marketplace
               </span>
             )}
-            {isWholesale && (
+            {(commerceModel === 'WHOLESALE' || commerceModel === 'HYBRID') && (
               <span className="badge bg-parchment-400 text-olive-800 text-xs">
                 Wholesale
               </span>

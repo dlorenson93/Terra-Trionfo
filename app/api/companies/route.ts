@@ -7,9 +7,7 @@ export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions)
 
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    // public visitors can list approved producers, so don't require auth
 
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
@@ -19,8 +17,13 @@ export async function GET(request: Request) {
       where.status = status
     }
 
-    // Vendors can only see their own companies
-    if (session.user.role === 'VENDOR') {
+    // if no session (public) or consumer, only approved
+    if (!session || session.user.role === 'CONSUMER') {
+      where.status = 'APPROVED'
+    }
+
+    // Vendors can only see their own companies even if approved/editable
+    if (session && session.user.role === 'VENDOR') {
       where.ownerId = session.user.id
     }
 

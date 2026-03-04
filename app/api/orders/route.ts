@@ -79,6 +79,7 @@ export async function POST(request: Request) {
     const productIds = items.map((item: any) => item.productId)
     const products = await prisma.product.findMany({
       where: { id: { in: productIds } },
+      // include ecommerce fields in case needed
     })
 
     if (products.length !== productIds.length) {
@@ -103,20 +104,15 @@ export async function POST(request: Request) {
         )
       }
 
-      const itemTotal = product.consumerPrice * item.quantity
+      const unitPrice = product.retailPriceCents / 100
+      const itemTotal = unitPrice * item.quantity
       total += itemTotal
-
-      // Determine model type
-      let modelType = 'MARKETPLACE'
-      if (product.isWholesale && !product.isMarketplace) {
-        modelType = 'WHOLESALE'
-      }
 
       orderItems.push({
         productId: product.id,
         quantity: item.quantity,
-        unitPrice: product.consumerPrice,
-        modelType,
+        unitPrice,
+        commerceModel: product.commerceModel,
       })
     }
 

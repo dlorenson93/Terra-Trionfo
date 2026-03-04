@@ -49,6 +49,47 @@ export default function CartPage() {
     localStorage.setItem('cart', JSON.stringify(updatedCart))
   }
 
+  // determine available fulfillment types based on product capabilities
+  const [availableFulfillment, setAvailableFulfillment] = useState<string[]>([])
+  const [fulfillmentType, setFulfillmentType] = useState<string>('PICKUP')
+
+  const [deliveryState, setDeliveryState] = useState('')
+  const [scheduledDate, setScheduledDate] = useState('')
+  const [pickupLocationId, setPickupLocationId] = useState('')
+
+  const [settings, setSettings] = useState<any>(null)
+
+  useEffect(() => {
+    async function loadSettings() {
+      const res = await fetch('/api/settings')
+      if (res.ok) {
+        setSettings(await res.json())
+      }
+    }
+    loadSettings()
+  }, [])
+
+  useEffect(() => {
+    // when cart updates, compute intersection of allowedFulfillment
+    const compute = async () => {
+      const productResponses = await Promise.all(
+        cart.map((item) => fetch(`/api/products/${item.productId}`))
+      )
+      const productsData = await Promise.all(productResponses.map((r) => r.json()))
+      let intersection: string[] = ['PICKUP', 'LOCAL_DELIVERY']
+      productsData.forEach((p: any) => {
+        if (p.allowedFulfillment) {
+          intersection = intersection.filter((t) => p.allowedFulfillment.includes(t))
+        }
+      })
+      setAvailableFulfillment(intersection)
+      if (!intersection.includes(fulfillmentType)) {
+        setFulfillmentType(intersection[0] || 'PICKUP')
+      }
+    }
+    if (cart.length > 0) compute()
+  }, [cart])
+
   const checkout = async () => {
     if (cart.length === 0) return
 
@@ -59,25 +100,33 @@ export default function CartPage() {
         quantity: item.quantity,
       }))
 
+      const payload: any = { items, fulfillmentType }
+      if (fulfillmentType === 'LOCAL_DELIVERY') {
+        payload.deliveryState = deliveryState
+        payload.scheduledDate = scheduledDate
+      }
+      if (fulfillmentType === 'PICKUP') {
+        payload.pickupLocationId = pickupLocationId
+      }
+
       const response = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items }),
+        body: JSON.stringify(payload),
       })
 
+      const data = await response.json()
       if (!response.ok) {
-        const error = await response.json()
-        alert(error.error || 'Failed to create checkout session')
+        alert(data.error || 'Failed to process order')
         return
       }
 
-      const { url } = await response.json()
-      
-      // Redirect to Stripe Checkout
-      window.location.href = url
+      // clear cart and redirect to success or account
+      localStorage.removeItem('cart')
+      router.push('/checkout/success')
     } catch (error) {
       console.error('Checkout error:', error)
-      alert('Failed to initiate checkout')
+      alert('Failed to process checkout')
     } finally {
       setLoading(false)
     }
@@ -221,19 +270,87 @@ export default function CartPage() {
                     Order Summary
                   </h2>
 
+                  {/* Fulfillment options */}
+                  {availableFulfillment.length > 0 && (
+                    <div className="mb-6">
+                      <h3 className="text-sm font-medium text-olive-800 mb-2">
+                        Fulfillment Method
+                      </h3>
+                      <div className="flex flex-col gap-2">
+                        {availableFulfillment.map((f) => (
+                          <label key={f} className="flex items-center gap-2">
+                            <input
+                              type="radio"
+                              name="fulfillment"
+                              value={f}
+                              checked={fulfillmentType === f}
+                              onChange={() => setFulfillmentType(f)}
+                              className="form-radio"
+                            />
+                            {f === 'PICKUP' ? 'Pickup' : 'Local delivery'}
+                          </label>
+                        ))}
+                      </div>
+
+                      {fulfillmentType === 'LOCAL_DELIVERY' && (
+                        <div className="mt-4 space-y-4">
+                          <div>
+                            <label className="label">Delivery State</label>
+                            <input
+                              type="text"
+                              value={deliveryState}
+                              onChange={(e) => setDeliveryState(e.target.value)}
+                              className="input-field w-full"
+                            />
+                          </div>
+                          <div>
+                            <label className="label">Scheduled Date</label>
+                            <input
+                              type="date"
+                              value={scheduledDate}
+                              onChange={(e) => setScheduledDate(e.target.value)}
+                              className="input-field w-full"
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {fulfillmentType === 'PICKUP' && (
+                        <div className="mt-4">
+                          <label className="label">Pickup Location</label>
+                          <input
+                            type="text"
+                            value={pickupLocationId}
+                            onChange={(e) => setPickupLocationId(e.target.value)}
+                            className="input-field w-full"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <div className="space-y-3 mb-6">
                     <div className="flex justify-between text-olive-700">
                       <span>Subtotal</span>
                       <span>${total.toFixed(2)}</span>
                     </div>
-                    <div className="flex justify-between text-olive-700">
-                      <span>Shipping</span>
-                      <span>Calculated at checkout</span>
-                    </div>
+                    {fulfillmentType === 'LOCAL_DELIVERY' && (
+                      <div className="flex justify-between text-olive-700">
+                        <span>Delivery Fee</span>
+                        <span>${(settings?.deliveryFeeCents || 0) / 100}</span>
+                      </div>
+                    )}
                     <div className="border-t border-olive-200 pt-3">
                       <div className="flex justify-between text-lg font-bold text-olive-900">
                         <span>Total</span>
-                        <span>${total.toFixed(2)}</span>
+                        <span>
+                          ${(
+                            total +
+                            (fulfillmentType === 'LOCAL_DELIVERY'
+                              ? (settings?.deliveryFeeCents || 0) / 100
+                              : 0)
+                          ).toFixed(2)}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -243,12 +360,9 @@ export default function CartPage() {
                     disabled={loading}
                     className="btn-primary w-full py-3 disabled:opacity-50"
                   >
-                    {loading ? 'Processing...' : 'Checkout with Stripe'}
+                    {loading ? 'Processing...' : 'Place Order'}
                   </button>
 
-                  <p className="text-xs text-olive-600 text-center mt-4">
-                    Secure payment powered by Stripe
-                  </p>
                 </div>
               </div>
             </div>

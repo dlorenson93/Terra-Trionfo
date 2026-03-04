@@ -20,11 +20,11 @@ interface Product {
   id: string
   name: string
   category: string
-  consumerPrice: number
+  retailPriceCents: number
   inventory: number
   status: string
-  isMarketplace: boolean
-  isWholesale: boolean
+  commerceModel: 'MARKETPLACE' | 'WHOLESALE' | 'HYBRID'
+  listingOwner: 'VENDOR' | 'TERRA'
 }
 
 export default function VendorDashboard() {
@@ -50,11 +50,8 @@ export default function VendorDashboard() {
     description: '',
     category: '',
     imageUrl: '',
-    isMarketplace: false,
-    isWholesale: false,
-    basePrice: '',
-    wholesaleCost: '',
-    consumerPrice: '',
+    commerceModel: 'MARKETPLACE',
+    retailPrice: '',
     inventory: '',
   })
 
@@ -139,12 +136,14 @@ export default function VendorDashboard() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...productForm,
-          companyId: company.id,
-          basePrice: productForm.basePrice ? parseFloat(productForm.basePrice) : null,
-          wholesaleCost: productForm.wholesaleCost ? parseFloat(productForm.wholesaleCost) : null,
-          consumerPrice: productForm.consumerPrice ? parseFloat(productForm.consumerPrice) : null,
+          name: productForm.name,
+          description: productForm.description,
+          category: productForm.category,
+          imageUrl: productForm.imageUrl,
+          commerceModel: productForm.commerceModel,
+          retailPriceCents: productForm.retailPrice ? Math.round(parseFloat(productForm.retailPrice) * 100) : null,
           inventory: parseInt(productForm.inventory) || 0,
+          companyId: company.id,
         }),
       })
 
@@ -159,11 +158,8 @@ export default function VendorDashboard() {
         description: '',
         category: '',
         imageUrl: '',
-        isMarketplace: false,
-        isWholesale: false,
-        basePrice: '',
-        wholesaleCost: '',
-        consumerPrice: '',
+        commerceModel: 'MARKETPLACE',
+        retailPrice: '',
         inventory: '',
       })
       setActiveTab('products')
@@ -348,13 +344,13 @@ export default function VendorDashboard() {
                           Category
                         </th>
                         <th className="pb-3 text-sm font-medium text-olive-700">
-                          Price
-                        </th>
-                        <th className="pb-3 text-sm font-medium text-olive-700">
-                          Inventory
+                          Retail
                         </th>
                         <th className="pb-3 text-sm font-medium text-olive-700">
                           Model
+                        </th>
+                        <th className="pb-3 text-sm font-medium text-olive-700">
+                          Inventory
                         </th>
                         <th className="pb-3 text-sm font-medium text-olive-700">
                           Status
@@ -371,24 +367,15 @@ export default function VendorDashboard() {
                             {product.category}
                           </td>
                           <td className="py-3 text-sm text-olive-800">
-                            ${product.consumerPrice.toFixed(2)}
+                            ${(product.retailPriceCents / 100).toFixed(2)}
+                          </td>
+                          <td className="py-3 text-xs">
+                            <span className="badge bg-olive-100 text-olive-700">
+                              {product.commerceModel}
+                            </span>
                           </td>
                           <td className="py-3 text-sm text-olive-800">
                             {product.inventory}
-                          </td>
-                          <td className="py-3 text-xs">
-                            <div className="flex gap-1">
-                              {product.isMarketplace && (
-                                <span className="badge bg-olive-100 text-olive-700">
-                                  Marketplace
-                                </span>
-                              )}
-                              {product.isWholesale && (
-                                <span className="badge bg-parchment-400 text-olive-800">
-                                  Wholesale
-                                </span>
-                              )}
-                            </div>
                           </td>
                           <td className="py-3">
                             <span
@@ -507,89 +494,39 @@ export default function VendorDashboard() {
                     <h3 className="font-semibold text-olive-900 mb-4">
                       Business Model *
                     </h3>
-                    <div className="space-y-3">
-                      <label className="flex items-start gap-3 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={productForm.isMarketplace}
-                          onChange={(e) =>
-                            setProductForm({
-                              ...productForm,
-                              isMarketplace: e.target.checked,
-                            })
-                          }
-                          className="mt-1"
-                        />
-                        <div>
-                          <span className="font-medium text-olive-900">
-                            Marketplace
-                          </span>
-                          <p className="text-sm text-olive-600">
-                            List your product, set your base price
-                          </p>
-                        </div>
-                      </label>
+                    <select
+                      value={productForm.commerceModel}
+                      onChange={(e) =>
+                        setProductForm({
+                          ...productForm,
+                          commerceModel: e.target.value as any,
+                        })
+                      }
+                      required
+                      className="input-field"
+                    >
+                      <option value="MARKETPLACE">Marketplace</option>
+                      <option value="WHOLESALE">Wholesale</option>
+                      <option value="HYBRID">Hybrid</option>
+                    </select>
+                  </div>
 
-                      {productForm.isMarketplace && (
-                        <div className="ml-7">
-                          <label className="label">Base Price ($)</label>
-                          <input
-                            type="number"
-                            step="0.01"
-                            value={productForm.basePrice}
-                            onChange={(e) =>
-                              setProductForm({
-                                ...productForm,
-                                basePrice: e.target.value,
-                              })
-                            }
-                            className="input-field"
-                            placeholder="0.00"
-                          />
-                        </div>
-                      )}
-
-                      <label className="flex items-start gap-3 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={productForm.isWholesale}
-                          onChange={(e) =>
-                            setProductForm({
-                              ...productForm,
-                              isWholesale: e.target.checked,
-                            })
-                          }
-                          className="mt-1"
-                        />
-                        <div>
-                          <span className="font-medium text-olive-900">
-                            Wholesale
-                          </span>
-                          <p className="text-sm text-olive-600">
-                            We purchase and manage retail
-                          </p>
-                        </div>
-                      </label>
-
-                      {productForm.isWholesale && (
-                        <div className="ml-7">
-                          <label className="label">Wholesale Cost ($)</label>
-                          <input
-                            type="number"
-                            step="0.01"
-                            value={productForm.wholesaleCost}
-                            onChange={(e) =>
-                              setProductForm({
-                                ...productForm,
-                                wholesaleCost: e.target.value,
-                              })
-                            }
-                            className="input-field"
-                            placeholder="0.00"
-                          />
-                        </div>
-                      )}
-                    </div>
+                  <div>
+                    <label className="label">Retail Price ($) *</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={productForm.retailPrice}
+                      onChange={(e) =>
+                        setProductForm({
+                          ...productForm,
+                          retailPrice: e.target.value,
+                        })
+                      }
+                      required
+                      className="input-field"
+                      placeholder="0.00"
+                    />
                   </div>
 
                   <button

@@ -36,130 +36,52 @@ export default function Header() {
             <Link
               href="/products"
               className={`text-sm font-medium transition-colors ${
-                isActive('/products')
-                  ? 'text-olive-800'
-                  : 'text-olive-600 hover:text-olive-800'
+                isActive('/products') ? 'text-olive-800' : 'text-olive-600 hover:text-olive-800'
               }`}
             >
-              Shop Products
+              Browse
             </Link>
-
             <Link
-              href="/about"
+              href="/producers"
               className={`text-sm font-medium transition-colors ${
-                isActive('/about')
-                  ? 'text-olive-800'
-                  : 'text-olive-600 hover:text-olive-800'
+                isActive('/producers') ? 'text-olive-800' : 'text-olive-600 hover:text-olive-800'
               }`}
             >
-              Crafted Across Generations
+              Producers
             </Link>
 
-            <Link
-              href="/partner/onboarding"
-              className={`text-sm font-medium transition-colors ${
-                isActive('/partner/onboarding')
-                  ? 'text-olive-800'
-                  : 'text-olive-600 hover:text-olive-800'
-              }`}
-            >
-              Become a Vendor
-            </Link>
-
-            <Link
-              href="/investors"
-              className={`text-sm font-medium transition-colors ${
-                isActive('/investors')
-                  ? 'text-olive-800'
-                  : 'text-olive-600 hover:text-olive-800'
-              }`}
-            >
-              For Investors
-            </Link>
-
-            {!session && (
-              <Link
-                href="/auth/signin"
-                className={`text-sm font-medium transition-colors ${
-                  isActive('/auth/signin')
-                    ? 'text-olive-800'
-                    : 'text-olive-600 hover:text-olive-800'
-                }`}
-              >
-                Partner With Us
-              </Link>
-            )}
-
-            {session && (
+            {session ? (
               <>
                 {session.user.role === 'ADMIN' && (
                   <Link
                     href="/dashboard/admin"
-                    className={`text-sm font-medium transition-colors ${
-                      isActive('/dashboard/admin')
-                        ? 'text-olive-800'
-                        : 'text-olive-600 hover:text-olive-800'
-                    }`}
+                    className="text-sm font-medium text-olive-600 hover:text-olive-800"
                   >
                     Admin
                   </Link>
                 )}
-
                 {session.user.role === 'VENDOR' && (
                   <Link
                     href="/dashboard/vendor"
-                    className={`text-sm font-medium transition-colors ${
-                      isActive('/dashboard/vendor')
-                        ? 'text-olive-800'
-                        : 'text-olive-600 hover:text-olive-800'
-                    }`}
+                    className="text-sm font-medium text-olive-600 hover:text-olive-800"
                   >
-                    Vendor Dashboard
+                    Vendor
                   </Link>
                 )}
-
-                {session.user.role === 'CONSUMER' && (
-                  <Link
-                    href="/account/orders"
-                    className={`text-sm font-medium transition-colors ${
-                      isActive('/account/orders')
-                        ? 'text-olive-800'
-                        : 'text-olive-600 hover:text-olive-800'
-                    }`}
-                  >
-                    My Orders
-                  </Link>
-                )}
-
-                <Link href="/cart" className="relative">
-                  <svg
-                    className="w-6 h-6 text-olive-700"
-                    fill="none"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                  </svg>
+                <Link
+                  href="/account"
+                  className="text-sm font-medium text-olive-600 hover:text-olive-800"
+                >
+                  Account
                 </Link>
-
-                <div className="flex items-center space-x-3">
-                  <span className="text-sm text-olive-700">
-                    {session.user.name}
-                  </span>
-                  <button
-                    onClick={() => signOut()}
-                    className="text-sm text-olive-600 hover:text-olive-800"
-                  >
-                    Sign Out
-                  </button>
-                </div>
+                <button
+                  onClick={() => signOut()}
+                  className="text-sm text-olive-600 hover:text-olive-800"
+                >
+                  Sign Out
+                </button>
               </>
-            )}
-
-            {!session && (
+            ) : (
               <Link href="/auth/signin" className="btn-primary text-sm">
                 Sign In
               </Link>
@@ -198,41 +120,17 @@ export default function Header() {
               <Link
                 href="/products"
                 onClick={() => setMobileMenuOpen(false)}
-                className={`px-4 py-2 text-sm font-medium ${
-                  isActive('/products') ? 'text-olive-800 bg-olive-50' : 'text-olive-600'
-                }`}
+                className="px-4 py-2 text-sm font-medium text-olive-600"
               >
-                Shop Products
+                Browse
               </Link>
 
               <Link
-                href="/about"
+                href="/producers"
                 onClick={() => setMobileMenuOpen(false)}
-                className={`px-4 py-2 text-sm font-medium ${
-                  isActive('/about') ? 'text-olive-800 bg-olive-50' : 'text-olive-600'
-                }`}
+                className="px-4 py-2 text-sm font-medium text-olive-600"
               >
-                Our Story
-              </Link>
-
-              <Link
-                href="/partner/onboarding"
-                onClick={() => setMobileMenuOpen(false)}
-                className={`px-4 py-2 text-sm font-medium ${
-                  isActive('/partner/onboarding') ? 'text-olive-800 bg-olive-50' : 'text-olive-600'
-                }`}
-              >
-                Become a Vendor
-              </Link>
-
-              <Link
-                href="/investors"
-                onClick={() => setMobileMenuOpen(false)}
-                className={`px-4 py-2 text-sm font-medium ${
-                  isActive('/investors') ? 'text-olive-800 bg-olive-50' : 'text-olive-600'
-                }`}
-              >
-                For Investors
+                Producers
               </Link>
 
               {session && (
@@ -241,46 +139,27 @@ export default function Header() {
                     <Link
                       href="/dashboard/admin"
                       onClick={() => setMobileMenuOpen(false)}
-                      className={`px-4 py-2 text-sm font-medium ${
-                        isActive('/dashboard/admin') ? 'text-olive-800 bg-olive-50' : 'text-olive-600'
-                      }`}
+                      className="px-4 py-2 text-sm font-medium text-olive-600"
                     >
-                      Admin Dashboard
+                      Admin
                     </Link>
                   )}
-
                   {session.user.role === 'VENDOR' && (
                     <Link
                       href="/dashboard/vendor"
                       onClick={() => setMobileMenuOpen(false)}
-                      className={`px-4 py-2 text-sm font-medium ${
-                        isActive('/dashboard/vendor') ? 'text-olive-800 bg-olive-50' : 'text-olive-600'
-                      }`}
+                      className="px-4 py-2 text-sm font-medium text-olive-600"
                     >
-                      Vendor Dashboard
-                    </Link>
-                  )}
-
-                  {session.user.role === 'CONSUMER' && (
-                    <Link
-                      href="/account/orders"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className={`px-4 py-2 text-sm font-medium ${
-                        isActive('/account/orders') ? 'text-olive-800 bg-olive-50' : 'text-olive-600'
-                      }`}
-                    >
-                      My Orders
+                      Vendor
                     </Link>
                   )}
 
                   <Link
-                    href="/cart"
+                    href="/account"
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`px-4 py-2 text-sm font-medium ${
-                      isActive('/cart') ? 'text-olive-800 bg-olive-50' : 'text-olive-600'
-                    }`}
+                    className="px-4 py-2 text-sm font-medium text-olive-600"
                   >
-                    Shopping Cart
+                    Account
                   </Link>
 
                   <button

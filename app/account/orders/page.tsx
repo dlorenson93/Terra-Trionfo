@@ -15,7 +15,7 @@ interface Order {
     id: string
     quantity: number
     unitPrice: number
-    modelType: string
+    commerceModel: string
     product: {
       id: string
       name: string
@@ -146,7 +146,7 @@ export default function OrdersPage() {
                               × {item.quantity}
                             </span>
                             <span className="badge bg-parchment-300 text-olive-700 text-xs ml-2">
-                              {item.modelType}
+                              {item.commerceModel}
                             </span>
                           </div>
                           <span className="text-olive-800 font-medium">

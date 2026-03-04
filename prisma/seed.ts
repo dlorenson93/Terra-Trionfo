@@ -56,23 +56,69 @@ async function main() {
 
   console.log('✅ Users created')
 
-  // Create company
-  const company = await prisma.company.upsert({
-    where: { id: 'sample-company' },
-    update: {},
-    create: {
+  // Create sample producer companies
+  const companiesData = [
+    {
       id: 'sample-company',
       name: 'Famiglia Rossi Farms',
+      slug: 'famiglia-rossi',
       contactEmail: 'vendor@example.com',
       phone: '+39 123 456 7890',
       address: 'Via delle Vigne 42, Tuscany, Italy',
       description: 'Family-owned farm producing organic olive oil and wines since 1890',
+      bio: 'We are a multi-generational Tuscany farm, passionate about sustainable agriculture and fine foods.',
+      region: 'Tuscany',
+      country: 'Italy',
+      website: 'https://famigliarossi.example.com',
+      heroImageUrl: 'https://images.unsplash.com/photo-1506801310323-534be5e7bbfd?w=1200',
       status: CompanyStatus.APPROVED,
       ownerId: vendorUser.id,
     },
-  })
+    {
+      id: 'sample-company-2',
+      name: 'Vini del Sud',
+      slug: 'vini-del-sud',
+      contactEmail: 'vendor2@example.com',
+      phone: '+39 098 765 4321',
+      address: 'Via del Vino 10, Puglia, Italy',
+      description: 'Specializing in organic red wines from the heel of Italy.',
+      bio: 'Crafted with care from our vineyards in Puglia, our wines celebrate southern Italian terroir.',
+      region: 'Puglia',
+      country: 'Italy',
+      website: 'https://vinidelsud.example.com',
+      heroImageUrl: 'https://images.unsplash.com/photo-1519677100203-a0e668c92439?w=1200',
+      status: CompanyStatus.APPROVED,
+      ownerId: vendorUser.id,
+    },
+    {
+      id: 'sample-company-3',
+      name: 'La Pasta Perfetta',
+      slug: 'la-pasta-perfetta',
+      contactEmail: 'vendor3@example.com',
+      phone: '+39 111 222 3333',
+      address: 'Via della Farina 5, Emilia-Romagna, Italy',
+      description: 'Handmade artisanal pasta made daily in the heart of Emilia-Romagna.',
+      bio: 'Our nonna taught us to make pasta by hand, and we continue the tradition with love.',
+      region: 'Emilia-Romagna',
+      country: 'Italy',
+      website: 'https://pastaperfetta.example.com',
+      heroImageUrl: 'https://images.unsplash.com/photo-1529692236671-f1f4a8d0a76c?w=1200',
+      status: CompanyStatus.APPROVED,
+      ownerId: vendorUser.id,
+    },
+  ]
 
-  console.log('✅ Company created')
+  const companies = []
+  for (const comp of companiesData) {
+    const created = await prisma.company.upsert({
+      where: { id: comp.id as string },
+      update: {},
+      create: comp as any,
+    })
+    companies.push(created)
+  }
+
+  console.log('✅ Companies created')
 
   // Create products
   const products: any[] = [
@@ -82,13 +128,13 @@ async function main() {
       description: 'Cold-pressed from Tuscan olives, perfect for salads and finishing dishes',
       category: 'Oils & Vinegars',
       imageUrl: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800',
-      isMarketplace: true,
-      isWholesale: false,
-      basePrice: 24.99,
-      consumerPrice: 29.99, // 20% markup
+      commerceModel: 'MARKETPLACE',
+      listingOwner: 'VENDOR',
+      vendorPriceCents: 2400,
+      retailPriceCents: 2999,
       inventory: 50,
       status: ProductStatus.APPROVED,
-      companyId: company.id,
+      companyId: companies[0].id,
     },
     {
       id: 'prod-2',
@@ -96,13 +142,13 @@ async function main() {
       description: 'Full-bodied red wine with notes of cherry and violet',
       category: 'Wines',
       imageUrl: 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=800',
-      isMarketplace: false,
-      isWholesale: true,
-      wholesaleCost: 12.00,
-      consumerPrice: 35.99,
+      commerceModel: 'WHOLESALE',
+      listingOwner: 'TERRA',
+      wholesalePriceCents: 1200,
+      retailPriceCents: 3599,
       inventory: 30,
       status: ProductStatus.APPROVED,
-      companyId: company.id,
+      companyId: companies[1].id,
     },
     {
       id: 'prod-3',
@@ -110,14 +156,14 @@ async function main() {
       description: 'Handmade pasta including pappardelle, tagliatelle, and fettuccine',
       category: 'Pasta & Grains',
       imageUrl: 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=800',
-      isMarketplace: true,
-      isWholesale: true,
-      basePrice: 18.00,
-      wholesaleCost: 8.00,
-      consumerPrice: 21.60, // Using marketplace pricing
+      commerceModel: 'HYBRID',
+      listingOwner: 'VENDOR',
+      vendorPriceCents: 1800,
+      wholesalePriceCents: 800,
+      retailPriceCents: 2160,
       inventory: 75,
       status: ProductStatus.APPROVED,
-      companyId: company.id,
+      companyId: companies[2].id,
     },
     {
       id: 'prod-4',
@@ -125,13 +171,13 @@ async function main() {
       description: '25-year aged balsamic from Modena, perfect for gourmet dishes',
       category: 'Oils & Vinegars',
       imageUrl: 'https://images.unsplash.com/photo-1452251889946-8ff5ea7b27ab?w=800',
-      isMarketplace: true,
-      isWholesale: false,
-      basePrice: 45.00,
-      consumerPrice: 54.00,
+      commerceModel: 'MARKETPLACE',
+      listingOwner: 'VENDOR',
+      vendorPriceCents: 4500,
+      retailPriceCents: 5400,
       inventory: 20,
       status: ProductStatus.APPROVED,
-      companyId: company.id,
+      companyId: companies[0].id,
     },
     {
       id: 'prod-5',
@@ -139,13 +185,13 @@ async function main() {
       description: 'DOP certified tomatoes from the volcanic soil of Mount Vesuvius',
       category: 'Canned Goods',
       imageUrl: 'https://images.unsplash.com/photo-1592838064575-70ed626d3a0e?w=800',
-      isMarketplace: false,
-      isWholesale: true,
-      wholesaleCost: 3.50,
-      consumerPrice: 8.99,
+      commerceModel: 'WHOLESALE',
+      listingOwner: 'TERRA',
+      wholesalePriceCents: 350,
+      retailPriceCents: 899,
       inventory: 100,
       status: ProductStatus.APPROVED,
-      companyId: company.id,
+      companyId: companies[1].id,
     },
     {
       id: 'prod-6',
@@ -153,13 +199,13 @@ async function main() {
       description: 'Rare black truffle honey, perfect for cheese and charcuterie',
       category: 'Specialty',
       imageUrl: 'https://images.unsplash.com/photo-1587049352846-4a222e784099?w=800',
-      isMarketplace: true,
-      isWholesale: false,
-      basePrice: 32.00,
-      consumerPrice: 38.40,
+      commerceModel: 'MARKETPLACE',
+      listingOwner: 'VENDOR',
+      vendorPriceCents: 3200,
+      retailPriceCents: 3840,
       inventory: 15,
       status: ProductStatus.PENDING,
-      companyId: company.id,
+      companyId: companies[2].id,
     },
   ]
 
@@ -178,26 +224,28 @@ async function main() {
     data: {
       userId: consumerUser.id,
       total: 68.98,
-      status: 'DELIVERED',
+      status: OrderStatus.DELIVERED,
+      fulfillmentType: 'PICKUP',
+      deliveryFeeCents: 0,
       orderItems: {
         create: [
           {
             productId: 'prod-1',
             quantity: 1,
             unitPrice: 29.99,
-            modelType: 'MARKETPLACE',
+            commerceModel: 'MARKETPLACE',
           },
           {
             productId: 'prod-5',
             quantity: 2,
             unitPrice: 8.99,
-            modelType: 'WHOLESALE',
+            commerceModel: 'WHOLESALE',
           },
           {
             productId: 'prod-3',
             quantity: 1,
             unitPrice: 21.60,
-            modelType: 'MARKETPLACE',
+            commerceModel: 'MARKETPLACE',
           },
         ],
       },

@@ -176,8 +176,10 @@ Terra-Trionfo/
 
 ### Product
 - id, name, description, category, imageUrl
-- isMarketplace, isWholesale (boolean flags)
-- basePrice, wholesaleCost, consumerPrice
+- retailPriceCents (stored in cents)
+- commerceModel: MARKETPLACE | WHOLESALE | HYBRID
+- listingOwner: VENDOR | TERRA
+- allowedFulfillment: ["PICKUP","LOCAL_DELIVERY","SHIP"]
 - inventory, status
 - companyId → Company
 
@@ -186,7 +188,7 @@ Terra-Trionfo/
 
 ### OrderItem
 - id, orderId, productId, quantity, unitPrice
-- modelType: MARKETPLACE or WHOLESALE
+- commerceModel: records which model was used at sale
 
 ### Settings
 - defaultMarketplaceMarkupPercent
@@ -195,15 +197,13 @@ Terra-Trionfo/
 
 ## 💰 Pricing Logic
 
-### Marketplace Product
-```typescript
-if (product.isMarketplace) {
-  basePrice = 20.00  // Set by vendor
-  markup = 20%       // From Settings
-  consumerPrice = basePrice * 1.20 = 24.00
-  // Admin can override consumerPrice
-}
-```
+### Pricing Logic
+For all products the `retailPriceCents` field holds the final price.
+- Marketplace listings: price set by vendor, markup applied behind-the-scenes
+- Wholesale listings: admin/terra sets the price directly
+- Hybrid: either mechanism may determine the price per requirement
+
+`unitPrice` computed as `retailPriceCents / 100` in orders.
 
 ### Wholesale Product
 ```typescript

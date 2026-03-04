@@ -10,9 +10,8 @@ interface Product {
   name: string
   imageUrl?: string
   category: string
-  consumerPrice: number
-  isMarketplace: boolean
-  isWholesale: boolean
+  retailPriceCents: number
+  commerceModel: string
   company: {
     id: string
     name: string
@@ -145,10 +144,9 @@ export default function ProductsPage() {
                   name={product.name}
                   imageUrl={product.imageUrl}
                   category={product.category}
-                  consumerPrice={product.consumerPrice}
+                  retailPrice={product.retailPriceCents / 100}
                   companyName={product.company.name}
-                  isMarketplace={product.isMarketplace}
-                  isWholesale={product.isWholesale}
+                  commerceModel={product.commerceModel}
                 />
               ))}
             </div>

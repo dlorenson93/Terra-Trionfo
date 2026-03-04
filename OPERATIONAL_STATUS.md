@@ -172,9 +172,10 @@ Consumer: consumer@example.com / password123
 | Dual Business Models | ✅ Ready | Marketplace + Wholesale pricing |
 
 ### Business Logic ✅
-- **Marketplace Model:** Vendors set basePrice, system applies markup
-- **Wholesale Model:** Terra sets wholesaleCost and consumerPrice
-- **Hybrid Products:** Both models supported simultaneously
+- **Commerce Models:** Each product uses `CommerceModel` enum (MARKETPLACE, WHOLESALE, HYBRID)
+  - *Marketplace* products: retail price set by vendor, markup applied automatically
+  - *Wholesale* products: Terra assigns retail price directly
+  - *Hybrid* products: combination of both on same listing
 - **Inventory Tracking:** Decrements on order creation
 - **Approval Workflows:** Admin approves companies and products
 - **Role-Based Access:** Proper authorization on all routes

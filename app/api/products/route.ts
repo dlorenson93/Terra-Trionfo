@@ -9,19 +9,17 @@ export async function GET(request: Request) {
     const category = searchParams.get('category')
     const companyId = searchParams.get('companyId')
     const status = searchParams.get('status')
+    const limit = parseInt(searchParams.get('limit') || '0', 10)
 
     const where: any = {}
 
-    // Public users only see approved products from approved companies
+    // Public consumers see only approved products from approved companies
     const session = await getServerSession(authOptions)
     if (!session || session.user.role === 'CONSUMER') {
       where.status = 'APPROVED'
-      where.company = {
-        status: 'APPROVED',
-      }
+      where.company = { status: 'APPROVED' }
     }
 
-    // Filter by status for admin/vendor views
     if (status && session && session.user.role !== 'CONSUMER') {
       where.status = status
     }
@@ -43,21 +41,23 @@ export async function GET(request: Request) {
       where.companyId = { in: companies.map((c: { id: string }) => c.id) }
     }
 
-    const products = await prisma.product.findMany({
+    const queryOptions: any = {
       where,
       include: {
         company: {
           select: {
             id: true,
             name: true,
+            slug: true,
             status: true,
           },
         },
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    })
+      orderBy: { createdAt: 'desc' },
+    }
+    if (limit > 0) queryOptions.take = limit
+
+    const products = await prisma.product.findMany(queryOptions)
 
     return NextResponse.json(products)
   } catch (error) {
@@ -84,15 +84,16 @@ export async function POST(request: Request) {
       description,
       category,
       imageUrl,
-      isMarketplace,
-      isWholesale,
-      basePrice,
-      wholesaleCost,
-      consumerPrice,
+      commerceModel,
+      listingOwner,
+      vendorPrice,
+      wholesalePrice,
+      retailPrice, // dollars
+      retailPriceCents: providedRetailPriceCents, // optional
       inventory,
     } = body
 
-    if (!companyId || !name || !category) {
+    if (!companyId || !name || !category || !commerceModel || !listingOwner) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -115,12 +116,22 @@ export async function POST(request: Request) {
       )
     }
 
-    // Calculate consumer price if not provided
-    let finalConsumerPrice = consumerPrice
-    if (!finalConsumerPrice && isMarketplace && basePrice) {
+    // convert prices to cents
+    const vendorPriceCents = vendorPrice ? Math.round(vendorPrice * 100) : null
+    const wholesalePriceCents = wholesalePrice ? Math.round(wholesalePrice * 100) : null
+    let retailPriceCents: number | null = null
+
+    if (providedRetailPriceCents != null) {
+      retailPriceCents = providedRetailPriceCents
+    } else if (retailPrice != null) {
+      retailPriceCents = Math.round(retailPrice * 100)
+    }
+
+    // if marketplace and no retail price given, apply default markup
+    if (!retailPriceCents && commerceModel === 'MARKETPLACE' && vendorPriceCents) {
       const settings = await prisma.settings.findFirst()
       const markup = settings?.defaultMarketplaceMarkupPercent || 20
-      finalConsumerPrice = basePrice * (1 + markup / 100)
+      retailPriceCents = Math.round(vendorPriceCents * (1 + markup / 100))
     }
 
     const product = await prisma.product.create({
@@ -130,11 +141,11 @@ export async function POST(request: Request) {
         description,
         category,
         imageUrl,
-        isMarketplace: isMarketplace || false,
-        isWholesale: isWholesale || false,
-        basePrice: isMarketplace ? basePrice : null,
-        wholesaleCost: isWholesale ? wholesaleCost : null,
-        consumerPrice: finalConsumerPrice || 0,
+        commerceModel,
+        listingOwner,
+        vendorPriceCents,
+        wholesalePriceCents,
+        retailPriceCents: retailPriceCents || 0,
         inventory: inventory || 0,
       },
       include: {
