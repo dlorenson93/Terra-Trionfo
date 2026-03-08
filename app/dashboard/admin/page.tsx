@@ -22,6 +22,7 @@ interface Company {
   contactEmail: string
   status: string
   contentStatus: string
+  isFoundingProducer: boolean
   owner: { name: string }
   createdAt: string
 }
@@ -143,6 +144,38 @@ export default function AdminDashboard() {
       fetchData()
     } catch (error) {
       console.error('Error editing product:', error)
+    }
+  }
+
+  const updateCompanyFoundingStatus = async (companyId: string, isFoundingProducer: boolean) => {
+    try {
+      await fetch(`/api/companies/${companyId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isFoundingProducer }),
+      })
+      fetchData()
+    } catch (error) {
+      console.error('Error updating founding status:', error)
+    }
+  }
+
+  // Editorial labels for content status
+  const contentStatusLabel = (status: string) => {
+    switch (status) {
+      case 'LIVE': return 'Publicly Introduced'
+      case 'READY': return 'Intro Pending'
+      case 'IN_REVIEW': return 'Under Review'
+      default: return 'Draft'
+    }
+  }
+
+  const contentStatusStyle = (status: string) => {
+    switch (status) {
+      case 'LIVE': return 'bg-green-50 text-green-800 border border-green-200'
+      case 'READY': return 'bg-blue-50 text-blue-800 border border-blue-200'
+      case 'IN_REVIEW': return 'bg-amber-50 text-amber-800 border border-amber-200'
+      default: return 'bg-gray-50 text-gray-600 border border-gray-200'
     }
   }
 
@@ -305,26 +338,30 @@ export default function AdminDashboard() {
                       <th className="pb-3 text-sm font-medium text-olive-700">Owner</th>
                       <th className="pb-3 text-sm font-medium text-olive-700">Email</th>
                       <th className="pb-3 text-sm font-medium text-olive-700">Status</th>
-                      <th className="pb-3 text-sm font-medium text-olive-700">Content</th>
+                      <th className="pb-3 text-sm font-medium text-olive-700">Editorial State</th>
                       <th className="pb-3 text-sm font-medium text-olive-700">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {Array.isArray(companies) ? companies.map((company) => (
                       <tr key={company.id} className="border-b border-olive-100">
-                        <td className="py-3 text-sm font-medium text-olive-900">{company.name}</td>
+                        <td className="py-3 text-sm font-medium text-olive-900">
+                          <div className="flex items-center gap-2">
+                            {company.name}
+                            {company.isFoundingProducer && (
+                              <span className="text-[9px] font-medium text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 uppercase tracking-wider">Founding</span>
+                            )}
+                          </div>
+                        </td>
                         <td className="py-3 text-sm text-olive-800">{company.owner.name}</td>
                         <td className="py-3 text-sm text-olive-600">{company.contactEmail}</td>
                         <td className="py-3">
                           <span className={`badge badge-${company.status.toLowerCase()}`}>{company.status}</span>
                         </td>
                         <td className="py-3">
-                          <span className={`badge text-xs ${
-                            company.contentStatus === 'LIVE' ? 'bg-green-100 text-green-800' :
-                            company.contentStatus === 'READY' ? 'bg-blue-100 text-blue-800' :
-                            company.contentStatus === 'IN_REVIEW' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-gray-100 text-gray-600'
-                          }`}>{company.contentStatus ?? 'DRAFT'}</span>
+                          <span className={`text-[10px] font-medium px-2 py-0.5 ${contentStatusStyle(company.contentStatus ?? 'DRAFT')}`}>
+                            {contentStatusLabel(company.contentStatus ?? 'DRAFT')}
+                          </span>
                         </td>
                         <td className="py-3">
                           <div className="flex gap-1 flex-wrap">
@@ -336,14 +373,24 @@ export default function AdminDashboard() {
                             )}
                             {company.contentStatus !== 'LIVE' && (
                               <>
-                                {company.contentStatus === 'DRAFT' && <button onClick={() => updateCompanyContentStatus(company.id, 'IN_REVIEW')} className="text-xs px-2 py-1 bg-yellow-100 text-yellow-800 rounded hover:bg-yellow-200">→ Review</button>}
-                                {company.contentStatus === 'IN_REVIEW' && <button onClick={() => updateCompanyContentStatus(company.id, 'READY')} className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200">→ Ready</button>}
-                                {(company.contentStatus === 'READY' || company.contentStatus === 'IN_REVIEW') && <button onClick={() => updateCompanyContentStatus(company.id, 'LIVE')} className="text-xs px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700">→ Go Live</button>}
+                                {company.contentStatus === 'DRAFT' && <button onClick={() => updateCompanyContentStatus(company.id, 'IN_REVIEW')} className="text-xs px-2 py-1 bg-amber-100 text-amber-800 rounded hover:bg-amber-200">Mark Under Review</button>}
+                                {company.contentStatus === 'IN_REVIEW' && <button onClick={() => updateCompanyContentStatus(company.id, 'READY')} className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200">Mark Intro Pending</button>}
+                                {(company.contentStatus === 'READY' || company.contentStatus === 'IN_REVIEW') && <button onClick={() => updateCompanyContentStatus(company.id, 'LIVE')} className="text-xs px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700">Introduce Publicly</button>}
                               </>
                             )}
                             {company.contentStatus === 'LIVE' && (
-                              <button onClick={() => updateCompanyContentStatus(company.id, 'READY')} className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200">Unpublish</button>
+                              <button onClick={() => updateCompanyContentStatus(company.id, 'READY')} className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200">Withdraw</button>
                             )}
+                            <button
+                              onClick={() => updateCompanyFoundingStatus(company.id, !company.isFoundingProducer)}
+                              className={`text-xs px-2 py-1 rounded hover:opacity-80 transition-opacity ${
+                                company.isFoundingProducer
+                                  ? 'bg-amber-100 text-amber-800'
+                                  : 'bg-gray-100 text-gray-600'
+                              }`}
+                            >
+                              {company.isFoundingProducer ? '★ Founding' : '☆ Set Founding'}
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -385,12 +432,9 @@ export default function AdminDashboard() {
                           <span className={`badge badge-${product.status.toLowerCase()}`}>{product.status}</span>
                         </td>
                         <td className="py-3">
-                          <span className={`badge text-xs ${
-                            product.contentStatus === 'LIVE' ? 'bg-green-100 text-green-800' :
-                            product.contentStatus === 'READY' ? 'bg-blue-100 text-blue-800' :
-                            product.contentStatus === 'IN_REVIEW' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-gray-100 text-gray-600'
-                          }`}>{product.contentStatus ?? 'DRAFT'}</span>
+                          <span className={`text-[10px] font-medium px-2 py-0.5 ${contentStatusStyle(product.contentStatus ?? 'DRAFT')}`}>
+                            {contentStatusLabel(product.contentStatus ?? 'DRAFT')}
+                          </span>
                         </td>
                         <td className="py-3">
                           <div className="flex gap-1 flex-wrap">
@@ -402,13 +446,13 @@ export default function AdminDashboard() {
                             )}
                             {product.contentStatus !== 'LIVE' && (
                               <>
-                                {product.contentStatus === 'DRAFT' && <button onClick={() => updateContentStatus(product.id, 'IN_REVIEW')} className="text-xs px-2 py-1 bg-yellow-100 text-yellow-800 rounded hover:bg-yellow-200">→ Review</button>}
-                                {product.contentStatus === 'IN_REVIEW' && <button onClick={() => updateContentStatus(product.id, 'READY')} className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200">→ Ready</button>}
-                                {(product.contentStatus === 'READY' || product.contentStatus === 'IN_REVIEW') && <button onClick={() => updateContentStatus(product.id, 'LIVE')} className="text-xs px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700">→ Go Live</button>}
+                                {product.contentStatus === 'DRAFT' && <button onClick={() => updateContentStatus(product.id, 'IN_REVIEW')} className="text-xs px-2 py-1 bg-amber-100 text-amber-800 rounded hover:bg-amber-200">Mark Under Review</button>}
+                                {product.contentStatus === 'IN_REVIEW' && <button onClick={() => updateContentStatus(product.id, 'READY')} className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200">Mark Intro Pending</button>}
+                                {(product.contentStatus === 'READY' || product.contentStatus === 'IN_REVIEW') && <button onClick={() => updateContentStatus(product.id, 'LIVE')} className="text-xs px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700">Introduce Publicly</button>}
                               </>
                             )}
                             {product.contentStatus === 'LIVE' && (
-                              <button onClick={() => updateContentStatus(product.id, 'READY')} className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200">Unpublish</button>
+                              <button onClick={() => updateContentStatus(product.id, 'READY')} className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200">Withdraw</button>
                             )}
                             <button onClick={() => editProduct(product)} className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200">Edit</button>
                           </div>

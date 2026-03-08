@@ -6,17 +6,17 @@ const regions = [
   },
   {
     name: 'Tuscany',
-    descriptor: 'Sangiovese country: Chianti, Brunello, Bolgheri, and rolling hillside estates.',
+    descriptor: 'Sangiovese country: Chianti, Brunello, Bolgheri, and hillside estates shaped by centuries of winemaking.',
     detail: 'Tuscany — La Toscana',
   },
   {
     name: 'Veneto',
-    descriptor: 'Amarone, Soave, and ancient terraces carved into volcanic lakeside hills.',
+    descriptor: 'A region of remarkable diversity, from Amarone and Valpolicella to the volcanic soils behind Soave.',
     detail: 'Veneto — Il Veneto',
   },
   {
-    name: 'Dolomites',
-    descriptor: 'Alto Adige\'s alpine vineyards, producing refined whites and cool-climate reds.',
+    name: 'Alto Adige',
+    descriptor: 'Alpine vineyards producing refined whites and elegant cool-climate reds at the crossroads of Italian and Tyrolean culture.',
     detail: 'Alto Adige — Südtirol',
   },
 ]
@@ -41,11 +41,12 @@ export default function RegionalDiscovery() {
             Italian Provenance
           </p>
           <h2 className="text-3xl md:text-4xl font-serif font-bold text-parchment-100 mb-5 leading-snug">
-            Discover Italy&apos;s Wine Regions
+            Exploring Italy&apos;s Wine Regions
           </h2>
           <p className="text-parchment-300/65 leading-relaxed text-sm">
-            Terra Trionfo sources from the most singular growing regions in Italy — each defined
-            by centuries of tradition, distinct terroir, and families who have never left.
+            Italy&apos;s wine heritage is defined by remarkable regional diversity. As Terra Trionfo develops
+            its portfolio, we focus on producers rooted in regions known for distinctive traditions,
+            terroir, and local varieties.
           </p>
         </div>
 
