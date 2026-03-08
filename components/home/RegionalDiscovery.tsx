@@ -37,7 +37,7 @@ export default function RegionalDiscovery() {
       <div className="relative max-w-5xl mx-auto">
         {/* Header */}
         <div className="max-w-2xl mb-16">
-          <p className="text-[10px] font-medium text-amber-400/60 uppercase tracking-[0.35em] mb-4">
+          <p className="text-[10px] font-medium text-amber-400/60 uppercase tracking-[0.14em] mb-4">
             Italian Provenance
           </p>
           <h2 className="text-3xl md:text-4xl font-serif font-bold text-parchment-100 mb-5 leading-snug">
@@ -55,16 +55,16 @@ export default function RegionalDiscovery() {
           {regions.map((region) => (
             <div
               key={region.name}
-              className="border border-parchment-300/10 bg-parchment-100/[0.03] p-7 flex flex-col hover:border-amber-400/20 hover:bg-parchment-100/[0.06] transition-colors duration-300"
+              className="border border-parchment-300/10 bg-parchment-100/[0.03] p-9 flex flex-col hover:border-amber-400/20 hover:bg-parchment-100/[0.06] transition-colors duration-300"
             >
-              <span className="text-[9px] font-medium text-amber-400/50 uppercase tracking-[0.3em] mb-4">
+              <span className="text-[9px] font-medium text-amber-400/50 uppercase tracking-[0.3em] mb-5">
                 {region.detail}
               </span>
-              <h3 className="text-lg font-serif font-bold text-parchment-100 mb-3 leading-snug">
+              <h3 className="text-lg font-serif font-bold text-parchment-100 mb-4 leading-snug">
                 {region.name}
               </h3>
-              <div className="h-px w-8 bg-amber-400/15 mb-4" />
-              <p className="text-xs text-parchment-400/55 leading-relaxed">
+              <div className="h-px w-8 bg-amber-400/15 mb-5" />
+              <p className="text-xs text-parchment-400/55 leading-loose">
                 {region.descriptor}
               </p>
             </div>

@@ -5,7 +5,7 @@ export default function FeaturedProducers() {
     <section className="py-24 px-4 bg-parchment-200 border-t border-olive-100">
       <div className="max-w-5xl mx-auto">
         <div className="max-w-2xl">
-          <p className="text-[10px] font-medium text-olive-400 uppercase tracking-[0.35em] mb-4">
+          <p className="text-[10px] font-medium text-olive-400 uppercase tracking-[0.14em] mb-4">
             Our Producers
           </p>
           <h2 className="text-3xl md:text-4xl font-serif font-bold text-olive-900 mb-5 leading-snug">
@@ -13,7 +13,7 @@ export default function FeaturedProducers() {
           </h2>
           <p className="text-olive-600 leading-relaxed mb-8">
             Terra Trionfo cultivates relationships with artisan producers across Italy&apos;s most distinctive growing regions.
-            Their stories and selections will be introduced here soon.
+            Their stories and selections will be introduced here in due course.
           </p>
           <Link
             href="/partner/onboarding"

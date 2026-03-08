@@ -2,7 +2,7 @@ export default function ProvenancePhilosophy() {
   const pillars = [
     {
       label: 'Trusted Producer Relationships',
-      body: 'Terra Trionfo works through trusted relationships with producers and experienced export partners to identify estates whose wines and oils are rooted in place, tradition, and craft.',
+      body: 'Terra Trionfo collaborates with experienced export partners and independent producers across Italy to identify estates whose wines and oils reflect regional character, tradition, and craft.',
       icon: (
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.25} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
       ),
@@ -35,7 +35,7 @@ export default function ProvenancePhilosophy() {
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="max-w-2xl mb-16">
-          <p className="text-[10px] font-medium text-olive-400 uppercase tracking-[0.35em] mb-4">
+          <p className="text-[10px] font-medium text-olive-400 uppercase tracking-[0.14em] mb-4">
             Our Approach
           </p>
           <h2 className="text-3xl md:text-4xl font-serif font-bold text-olive-900 mb-5 leading-snug">
@@ -45,10 +45,13 @@ export default function ProvenancePhilosophy() {
             Terra Trionfo is not simply a catalog — it is a curated relationship between artisan Italian
             producers and a discerning American audience.
           </p>
-          <p className="text-olive-500 leading-relaxed">
+          <p className="text-olive-500 leading-relaxed mb-5">
             We work closely with trusted partners and producers across Italy to identify wines and olive oils
             that express true regional character. Each estate represented through Terra Trionfo reflects
             provenance, craft, and a commitment to authenticity.
+          </p>
+          <p className="text-sm text-olive-400 leading-relaxed italic">
+            Every estate we represent reflects a place, a family, and a tradition worth preserving.
           </p>
         </div>
 

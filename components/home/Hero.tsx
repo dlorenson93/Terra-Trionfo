@@ -28,7 +28,7 @@ export default function Hero() {
         {/* Compliance badge */}
         <div className="inline-flex items-center gap-2 border border-amber-400/30 text-amber-300/70 text-xs font-medium tracking-[0.2em] uppercase px-5 py-2 mb-12">
           <span className="w-1 h-1 rounded-full bg-amber-400/50 inline-block" />
-          Available for Collection &amp; Local Delivery in Massachusetts
+          Available for Local Collection &amp; Delivery in Massachusetts
         </div>
 
         {/* Brand name — primary anchor */}
@@ -56,7 +56,7 @@ export default function Hero() {
         {/* Supporting copy */}
         <p className="text-sm text-parchment-300/70 leading-relaxed mb-12 max-w-xl mx-auto">
           A private selection of artisan producers from Italy&apos;s most distinctive regions.
-          Each estate, wine, and olive oil is personally reviewed before joining the Terra Trionfo marketplace.
+          Each estate, wine, and olive oil is evaluated before joining the Terra Trionfo marketplace.
         </p>
 
         {/* CTAs — restrained */}

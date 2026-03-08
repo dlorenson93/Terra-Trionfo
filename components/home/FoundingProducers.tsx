@@ -15,7 +15,7 @@ export default function FoundingProducers() {
 
       <div className="relative max-w-5xl mx-auto">
         {/* Label */}
-        <p className="text-[10px] font-medium text-amber-400/60 uppercase tracking-[0.35em] mb-6 text-center">
+        <p className="text-[10px] font-medium text-amber-400/60 uppercase tracking-[0.14em] mb-6 text-center">
           Founding Circle
         </p>
 
@@ -31,9 +31,9 @@ export default function FoundingProducers() {
         {/* Placeholder estate cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-14">
           {[
-            { status: 'Region Under Review', note: 'Introduction Forthcoming' },
-            { status: 'Estate Selection in Progress', note: 'Introduction Forthcoming' },
             { status: 'Portfolio Evaluation Underway', note: 'Introduction Forthcoming' },
+            { status: 'Estate Selection in Progress', note: 'Introduction Forthcoming' },
+            { status: 'Curation in Progress', note: 'Introduction Forthcoming' },
           ].map(({ status, note }) => (
             <div
               key={status}

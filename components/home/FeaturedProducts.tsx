@@ -5,7 +5,7 @@ export default function FeaturedProducts() {
     <section className="py-24 px-4 bg-white border-t border-olive-100">
       <div className="max-w-5xl mx-auto">
         <div className="max-w-2xl mb-10">
-          <p className="text-xs font-medium text-olive-400 uppercase tracking-[0.3em] mb-4">
+          <p className="text-[10px] font-medium text-olive-400 uppercase tracking-[0.14em] mb-4">
             The Marketplace
           </p>
           <h2 className="text-3xl md:text-4xl font-serif font-bold text-olive-900 mb-5 leading-snug">

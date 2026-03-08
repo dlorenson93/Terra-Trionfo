@@ -4,7 +4,7 @@ export default function Collections() {
   return (
     <section className="py-20 px-4 bg-parchment-100 border-t border-olive-100">
       <div className="max-w-5xl mx-auto">
-        <p className="text-[10px] font-medium text-olive-400 uppercase tracking-[0.35em] mb-4">
+        <p className="text-[10px] font-medium text-olive-400 uppercase tracking-[0.14em] mb-4">
           The Selection
         </p>
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
