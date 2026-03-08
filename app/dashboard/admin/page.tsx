@@ -254,7 +254,7 @@ export default function AdminDashboard() {
                             {new Date(order.createdAt).toLocaleDateString()}
                           </td>
                         </tr>
-                      ))}
+                      )) : null}
                     </tbody>
                   </table>
                 </div>
@@ -331,7 +331,7 @@ export default function AdminDashboard() {
                           )}
                         </td>
                       </tr>
-                    ))}
+                    )) : null}
                   </tbody>
                 </table>
               </div>
@@ -423,7 +423,7 @@ export default function AdminDashboard() {
                           </div>
                         </td>
                       </tr>
-                    ))}
+                    )) : null}
                   </tbody>
                 </table>
                 {products.length === 0 && (

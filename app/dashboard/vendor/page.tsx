@@ -322,77 +322,77 @@ export default function VendorDashboard() {
                 My Products
               </h2>
 
-              {products.length === 0 ? (
+              {!Array.isArray(products) || products.length === 0 ? (
                 <div className="text-center py-12">
                   <p className="text-olive-600 mb-4">No products yet</p>
-                  {products.length === 0 ? (
-                    <div className="text-center py-12">
-                      <p className="text-olive-600 mb-4">No products yet</p>
-                      <button
-                        onClick={() => setActiveTab('new-product')}
-                        className="btn-primary"
-                      >
-                        Add Your First Product
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="text-left border-b border-olive-200">
-                            <th className="pb-3 text-sm font-medium text-olive-700">
-                              Product Name
-                            </th>
-                            <th className="pb-3 text-sm font-medium text-olive-700">
-                              Category
-                            </th>
-                            <th className="pb-3 text-sm font-medium text-olive-700">
-                              Retail
-                            </th>
-                            <th className="pb-3 text-sm font-medium text-olive-700">
-                              Model
-                            </th>
-                            <th className="pb-3 text-sm font-medium text-olive-700">
-                              Inventory
-                            </th>
-                            <th className="pb-3 text-sm font-medium text-olive-700">
-                              Status
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {Array.isArray(products) && products.map((product) => (
-                            <tr key={product.id} className="border-b border-olive-100">
-                              <td className="py-3 text-sm font-medium text-olive-900">
-                                {product.name}
-                              </td>
-                              <td className="py-3 text-sm text-olive-600">
-                                {product.category}
-                              </td>
-                              <td className="py-3 text-sm text-olive-800">
-                                ${(product.retailPriceCents / 100).toFixed(2)}
-                              </td>
-                              <td className="py-3 text-xs">
-                                <span className="badge bg-olive-100 text-olive-700">
-                                  {product.commerceModel}
-                                </span>
-                              </td>
-                              <td className="py-3 text-sm text-olive-800">
-                                {product.inventory}
-                              </td>
-                              <td className="py-3">
-                                <span
-                                  className={`badge badge-${product.status.toLowerCase()}`}
-                                >
-                                  {product.status}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
+                  <button
+                    onClick={() => setActiveTab('new-product')}
+                    className="btn-primary"
+                  >
+                    Add Your First Product
+                  </button>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="text-left border-b border-olive-200">
+                        <th className="pb-3 text-sm font-medium text-olive-700">
+                          Product Name
+                        </th>
+                        <th className="pb-3 text-sm font-medium text-olive-700">
+                          Category
+                        </th>
+                        <th className="pb-3 text-sm font-medium text-olive-700">
+                          Retail
+                        </th>
+                        <th className="pb-3 text-sm font-medium text-olive-700">
+                          Model
+                        </th>
+                        <th className="pb-3 text-sm font-medium text-olive-700">
+                          Inventory
+                        </th>
+                        <th className="pb-3 text-sm font-medium text-olive-700">
+                          Status
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {products.map((product) => (
+                        <tr key={product.id} className="border-b border-olive-100">
+                          <td className="py-3 text-sm font-medium text-olive-900">
+                            {product.name}
+                          </td>
+                          <td className="py-3 text-sm text-olive-600">
+                            {product.category}
+                          </td>
+                          <td className="py-3 text-sm text-olive-800">
+                            ${(product.retailPriceCents / 100).toFixed(2)}
+                          </td>
+                          <td className="py-3 text-xs">
+                            <span className="badge bg-olive-100 text-olive-700">
+                              {product.commerceModel}
+                            </span>
+                          </td>
+                          <td className="py-3 text-sm text-olive-800">
+                            {product.inventory}
+                          </td>
+                          <td className="py-3">
+                            <span
+                              className={`badge badge-${product.status.toLowerCase()}`}
+                            >
+                              {product.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* New Product Tab */}
           {activeTab === 'new-product' && (
             <div className="max-w-2xl">

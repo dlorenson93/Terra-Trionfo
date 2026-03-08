@@ -148,7 +148,7 @@ export default function ProductsPage() {
                   companyName={product.company.name}
                   commerceModel={product.commerceModel}
                 />
-              ))}
+              )) : null}
             </div>
           )}
         </div>

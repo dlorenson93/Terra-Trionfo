@@ -45,7 +45,7 @@ export default async function ProducersPage() {
                   {p.region && <p className="text-sm text-olive-600">{p.region}</p>}
                 </div>
               </Link>
-            ))}
+            )) : null}
           </div>
         </div>
       </main>
