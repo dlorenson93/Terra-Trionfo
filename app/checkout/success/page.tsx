@@ -10,13 +10,14 @@ function SuccessContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const sessionId = searchParams.get('session_id')
+  const orderId = searchParams.get('orderId')
 
   useEffect(() => {
-    // Clear cart on successful payment
-    if (sessionId) {
+    // Clear cart on successful order (orderId from direct checkout or session_id from Stripe)
+    if (orderId || sessionId) {
       localStorage.removeItem('cart')
     }
-  }, [sessionId])
+  }, [orderId, sessionId])
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -42,12 +43,15 @@ function SuccessContent() {
               </div>
 
               <h1 className="text-3xl font-serif font-bold text-olive-900 mb-4">
-                Payment Successful!
+                Order Confirmed!
               </h1>
               <p className="text-lg text-olive-700 mb-8">
-                Thank you for your order. We've received your payment and will
-                begin processing your order shortly.
+                Thank you for your order. We've received your request and will
+                be in touch to confirm pickup or delivery details.
               </p>
+              {orderId && (
+                <p className="text-sm text-olive-500 mb-4 font-mono">Order #{orderId.slice(-8).toUpperCase()}</p>
+              )}
 
               <div className="space-y-4">
                 <Link

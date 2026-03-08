@@ -3,6 +3,7 @@ import Footer from '@/components/layout/Footer'
 import Hero from '@/components/home/Hero'
 import FeaturedProducts from '@/components/home/FeaturedProducts'
 import FeaturedProducers from '@/components/home/FeaturedProducers'
+import FoundingProducers from '@/components/home/FoundingProducers'
 import Collections from '@/components/home/Collections'
 
 export default function HomePage() {
@@ -11,9 +12,10 @@ export default function HomePage() {
       <Header />
       <main className="flex-grow">
         <Hero />
+        <FoundingProducers />
         <Collections />
-        <FeaturedProducts />
         <FeaturedProducers />
+        <FeaturedProducts />
       </main>
       <Footer />
     </div>

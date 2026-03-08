@@ -25,7 +25,7 @@ export default function VendorOnboardingPage() {
             craftsmanship through collaborative partnership and modern commerce infrastructure.
           </p>
           <Link
-            href="/auth/signin"
+            href="/auth/signup/vendor"
             className="inline-block bg-olive-700 text-white px-8 py-3 rounded-lg font-semibold hover:bg-olive-800 transition-colors"
           >
             Apply as a Vendor

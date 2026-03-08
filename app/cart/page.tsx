@@ -20,6 +20,7 @@ export default function CartPage() {
   const router = useRouter()
   const [cart, setCart] = useState<CartItem[]>([])
   const [loading, setLoading] = useState(false)
+  const [checkoutError, setCheckoutError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!session) {
@@ -56,17 +57,21 @@ export default function CartPage() {
   const [deliveryState, setDeliveryState] = useState('')
   const [scheduledDate, setScheduledDate] = useState('')
   const [pickupLocationId, setPickupLocationId] = useState('')
+  const [pickupLocations, setPickupLocations] = useState<{ id: string; name: string; address: string; city: string; state: string }[]>([])
 
   const [settings, setSettings] = useState<any>(null)
 
   useEffect(() => {
     async function loadSettings() {
       const res = await fetch('/api/settings')
-      if (res.ok) {
-        setSettings(await res.json())
-      }
+      if (res.ok) setSettings(await res.json())
+    }
+    async function loadPickupLocations() {
+      const res = await fetch('/api/pickup-locations')
+      if (res.ok) setPickupLocations(await res.json())
     }
     loadSettings()
+    loadPickupLocations()
   }, [])
 
   useEffect(() => {
@@ -117,16 +122,16 @@ export default function CartPage() {
 
       const data = await response.json()
       if (!response.ok) {
-        alert(data.error || 'Failed to process order')
+        setCheckoutError(data.error || 'Failed to process order')
         return
       }
 
-      // clear cart and redirect to success or account
+      // clear cart and redirect to success page with orderId
       localStorage.removeItem('cart')
-      router.push('/checkout/success')
+      router.push(`/checkout/success?orderId=${data.orderId || ''}`)
     } catch (error) {
       console.error('Checkout error:', error)
-      alert('Failed to process checkout')
+      setCheckoutError('Failed to process checkout')
     } finally {
       setLoading(false)
     }
@@ -318,12 +323,24 @@ export default function CartPage() {
                       {fulfillmentType === 'PICKUP' && (
                         <div className="mt-4">
                           <label className="label">Pickup Location</label>
-                          <input
-                            type="text"
-                            value={pickupLocationId}
-                            onChange={(e) => setPickupLocationId(e.target.value)}
-                            className="input-field w-full"
-                          />
+                          {pickupLocations.length > 0 ? (
+                            <select
+                              value={pickupLocationId}
+                              onChange={(e) => setPickupLocationId(e.target.value)}
+                              className="input-field w-full"
+                            >
+                              <option value="">Select a location…</option>
+                              {pickupLocations.map((loc) => (
+                                <option key={loc.id} value={loc.id}>
+                                  {loc.name} — {loc.address}, {loc.city}, {loc.state}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <p className="text-sm text-olive-600 mt-1">
+                              Pickup locations will be confirmed after order placement.
+                            </p>
+                          )}
                         </div>
                       )}
                     </div>
@@ -362,6 +379,10 @@ export default function CartPage() {
                   >
                     {loading ? 'Processing...' : 'Place Order'}
                   </button>
+
+                  {checkoutError && (
+                    <p className="mt-3 text-sm text-red-700 text-center">{checkoutError}</p>
+                  )}
 
                 </div>
               </div>

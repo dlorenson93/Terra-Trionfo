@@ -11,13 +11,15 @@ export async function GET(request: Request) {
     const companyId = searchParams.get('companyId')
     const status = searchParams.get('status')
     const limit = parseInt(searchParams.get('limit') || '0', 10)
+    const forcePublic = searchParams.get('public') === 'true'
 
     const where: any = {}
 
-    // Public consumers see only approved products from approved companies
+    // Public consumers see only approved + LIVE products from approved companies
     const session = await getServerSession(authOptions)
-    if (!session || session.user.role === 'CONSUMER') {
+    if (forcePublic || !session || session.user.role === 'CONSUMER') {
       where.status = 'APPROVED'
+      where.contentStatus = 'LIVE'
       where.company = { status: 'APPROVED' }
       // Only show currently visible categories to public
       where.category = { in: VISIBLE_CATEGORIES as unknown as string[] }

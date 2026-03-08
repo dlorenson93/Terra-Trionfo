@@ -8,8 +8,14 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const product = await prisma.product.findUnique({
-      where: { id: params.id },
+    const session = await getServerSession(authOptions)
+    const isPublic = !session || session.user.role === 'CONSUMER'
+
+    const product = await prisma.product.findFirst({
+      where: {
+        id: params.id,
+        ...(isPublic ? { status: 'APPROVED', contentStatus: 'LIVE' } : {}),
+      },
       include: {
         company: {
           select: {
@@ -50,7 +56,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body = await request.json()
+    const requestBody = await request.json()
 
     // Get product with company info
     const product = await prisma.product.findUnique({
@@ -73,9 +79,38 @@ export async function PATCH(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
+    // Whitelist updatable fields to prevent privilege escalation
+    // Vendors cannot change status, companyId, or listingOwner — only admins can
+    const {
+      name, description, category, imageUrl, commerceModel,
+      retailPriceCents, wholesalePriceCents, vendorPriceCents, inventory,
+      // Wine / editorial fields
+      slug, producerDisplayName, vintage, appellation, designation,
+      country, region, subregion, grapeVarietals, wineStyle, body: wineBody,
+      acidity, tannin, abv, bottleSizeMl, tastingNotesShort, tastingNotesFull,
+      aromaNotes, palateNotes, finishNotes, vinification, aging, vineyardNotes,
+      servingTemperature, decantingNotes, foodPairings, sustainabilityNotes,
+      producerStoryExcerpt, isLimitedAllocation, isFeatured, isFoundingWine, badgeText,
+    } = requestBody
+    const vendorData: any = {
+      name, description, category, imageUrl, commerceModel,
+      retailPriceCents, wholesalePriceCents, vendorPriceCents, inventory,
+      slug, producerDisplayName, vintage, appellation, designation,
+      country, region, subregion, grapeVarietals, wineStyle, body: wineBody,
+      acidity, tannin, abv, bottleSizeMl, tastingNotesShort, tastingNotesFull,
+      aromaNotes, palateNotes, finishNotes, vinification, aging, vineyardNotes,
+      servingTemperature, decantingNotes, foodPairings, sustainabilityNotes,
+      producerStoryExcerpt, isLimitedAllocation, isFeatured, isFoundingWine, badgeText,
+    }
+    Object.keys(vendorData).forEach((k) => vendorData[k] === undefined && delete vendorData[k])
+
+    const adminData = session.user.role === 'ADMIN'
+      ? { status: requestBody.status, listingOwner: requestBody.listingOwner, contentStatus: requestBody.contentStatus, ...vendorData }
+      : vendorData
+
     const updatedProduct = await prisma.product.update({
       where: { id: params.id },
-      data: body,
+      data: adminData,
       include: {
         company: {
           select: {

@@ -11,15 +11,22 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
+    const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!, 10) : undefined
+    const isFoundingProducer = searchParams.get('isFoundingProducer')
+    const forcePublic = searchParams.get('public') === 'true'
 
     const where: any = {}
     if (status) {
       where.status = status
     }
+    if (isFoundingProducer === 'true') {
+      where.isFoundingProducer = true
+    }
 
-    // if no session (public) or consumer, only approved
-    if (!session || session.user.role === 'CONSUMER') {
+    // if no session (public), consumer, or explicitly requesting public view → only approved + LIVE
+    if (forcePublic || !session || session.user.role === 'CONSUMER') {
       where.status = 'APPROVED'
+      where.contentStatus = 'LIVE'
     }
 
     // Vendors can only see their own companies even if approved/editable
@@ -46,6 +53,7 @@ export async function GET(request: Request) {
       orderBy: {
         createdAt: 'desc',
       },
+      ...(limit ? { take: limit } : {}),
     })
 
     return NextResponse.json(companies)

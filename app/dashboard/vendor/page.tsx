@@ -51,8 +51,22 @@ export default function VendorDashboard() {
     category: '',
     imageUrl: '',
     commerceModel: 'MARKETPLACE',
+    listingOwner: 'VENDOR',
     retailPrice: '',
     inventory: '',
+    // Wine-specific fields
+    vintage: '',
+    appellation: '',
+    grapeVarietals: '',
+    wineStyle: '',
+    body: '',
+    acidity: '',
+    tannin: '',
+    abv: '',
+    bottleSizeMl: '750',
+    tastingNotesShort: '',
+    servingTemperature: '',
+    foodPairings: '',
   })
 
   useEffect(() => {
@@ -141,9 +155,25 @@ export default function VendorDashboard() {
           category: productForm.category,
           imageUrl: productForm.imageUrl,
           commerceModel: productForm.commerceModel,
+          listingOwner: productForm.listingOwner,
           retailPriceCents: productForm.retailPrice ? Math.round(parseFloat(productForm.retailPrice) * 100) : null,
           inventory: parseInt(productForm.inventory) || 0,
           companyId: company.id,
+          // Wine fields (only sent if category is WINE)
+          ...(productForm.category === 'WINE' ? {
+            vintage: productForm.vintage ? parseInt(productForm.vintage) : undefined,
+            appellation: productForm.appellation || undefined,
+            grapeVarietals: productForm.grapeVarietals ? productForm.grapeVarietals.split(',').map((s) => s.trim()).filter(Boolean) : undefined,
+            wineStyle: productForm.wineStyle || undefined,
+            body: productForm.body || undefined,
+            acidity: productForm.acidity || undefined,
+            tannin: productForm.tannin || undefined,
+            abv: productForm.abv ? parseFloat(productForm.abv) : undefined,
+            bottleSizeMl: productForm.bottleSizeMl ? parseInt(productForm.bottleSizeMl) : undefined,
+            tastingNotesShort: productForm.tastingNotesShort || undefined,
+            servingTemperature: productForm.servingTemperature || undefined,
+            foodPairings: productForm.foodPairings ? productForm.foodPairings.split(',').map((s) => s.trim()).filter(Boolean) : undefined,
+          } : {}),
         }),
       })
 
@@ -159,8 +189,21 @@ export default function VendorDashboard() {
         category: '',
         imageUrl: '',
         commerceModel: 'MARKETPLACE',
+        listingOwner: 'VENDOR',
         retailPrice: '',
         inventory: '',
+        vintage: '',
+        appellation: '',
+        grapeVarietals: '',
+        wineStyle: '',
+        body: '',
+        acidity: '',
+        tannin: '',
+        abv: '',
+        bottleSizeMl: '750',
+        tastingNotesShort: '',
+        servingTemperature: '',
+        foodPairings: '',
       })
       setActiveTab('products')
       fetchData()
@@ -487,25 +530,215 @@ export default function VendorDashboard() {
                     />
                   </div>
 
+                  {/* Wine-specific fields */}
+                  {productForm.category === 'WINE' && (
+                    <div className="border border-olive-200 rounded-xl p-5 bg-parchment-50">
+                      <h3 className="font-semibold text-olive-900 mb-4 text-sm uppercase tracking-wider">
+                        Wine Details
+                      </h3>
+
+                      <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <label className="label">Vintage Year</label>
+                          <input
+                            type="number"
+                            value={productForm.vintage}
+                            onChange={(e) => setProductForm({ ...productForm, vintage: e.target.value })}
+                            className="input-field"
+                            placeholder="2021"
+                            min="1900"
+                            max={new Date().getFullYear()}
+                          />
+                        </div>
+                        <div>
+                          <label className="label">Bottle Size (ml)</label>
+                          <select
+                            value={productForm.bottleSizeMl}
+                            onChange={(e) => setProductForm({ ...productForm, bottleSizeMl: e.target.value })}
+                            className="input-field"
+                          >
+                            <option value="375">375ml (Half)</option>
+                            <option value="750">750ml (Standard)</option>
+                            <option value="1500">1500ml (Magnum)</option>
+                            <option value="3000">3000ml (Double Magnum)</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="mb-4">
+                        <label className="label">Appellation / DOC / DOCG</label>
+                        <input
+                          type="text"
+                          value={productForm.appellation}
+                          onChange={(e) => setProductForm({ ...productForm, appellation: e.target.value })}
+                          className="input-field"
+                          placeholder="e.g. Chianti Classico DOCG"
+                        />
+                      </div>
+
+                      <div className="mb-4">
+                        <label className="label">Grape Varietals (comma-separated)</label>
+                        <input
+                          type="text"
+                          value={productForm.grapeVarietals}
+                          onChange={(e) => setProductForm({ ...productForm, grapeVarietals: e.target.value })}
+                          className="input-field"
+                          placeholder="e.g. Sangiovese, Merlot"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <label className="label">Wine Style</label>
+                          <select
+                            value={productForm.wineStyle}
+                            onChange={(e) => setProductForm({ ...productForm, wineStyle: e.target.value })}
+                            className="input-field"
+                          >
+                            <option value="">Select style</option>
+                            <option value="Red">Red</option>
+                            <option value="White">White</option>
+                            <option value="Rosé">Rosé</option>
+                            <option value="Sparkling">Sparkling</option>
+                            <option value="Dessert">Dessert</option>
+                            <option value="Orange">Orange</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="label">ABV (%)</label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            value={productForm.abv}
+                            onChange={(e) => setProductForm({ ...productForm, abv: e.target.value })}
+                            className="input-field"
+                            placeholder="13.5"
+                            min="0"
+                            max="25"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-3 mb-4">
+                        <div>
+                          <label className="label">Body</label>
+                          <select
+                            value={productForm.body}
+                            onChange={(e) => setProductForm({ ...productForm, body: e.target.value })}
+                            className="input-field"
+                          >
+                            <option value="">—</option>
+                            <option value="Light">Light</option>
+                            <option value="Medium">Medium</option>
+                            <option value="Full">Full</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="label">Acidity</label>
+                          <select
+                            value={productForm.acidity}
+                            onChange={(e) => setProductForm({ ...productForm, acidity: e.target.value })}
+                            className="input-field"
+                          >
+                            <option value="">—</option>
+                            <option value="Low">Low</option>
+                            <option value="Medium">Medium</option>
+                            <option value="High">High</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="label">Tannin</label>
+                          <select
+                            value={productForm.tannin}
+                            onChange={(e) => setProductForm({ ...productForm, tannin: e.target.value })}
+                            className="input-field"
+                          >
+                            <option value="">—</option>
+                            <option value="Soft">Soft</option>
+                            <option value="Medium">Medium</option>
+                            <option value="Firm">Firm</option>
+                            <option value="Grippy">Grippy</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="mb-4">
+                        <label className="label">Tasting Notes (short)</label>
+                        <textarea
+                          value={productForm.tastingNotesShort}
+                          onChange={(e) => setProductForm({ ...productForm, tastingNotesShort: e.target.value })}
+                          rows={2}
+                          className="input-field"
+                          placeholder="One-sentence description of the wine's character…"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="label">Serving Temperature</label>
+                          <input
+                            type="text"
+                            value={productForm.servingTemperature}
+                            onChange={(e) => setProductForm({ ...productForm, servingTemperature: e.target.value })}
+                            className="input-field"
+                            placeholder="16–18°C"
+                          />
+                        </div>
+                        <div>
+                          <label className="label">Food Pairings (comma-separated)</label>
+                          <input
+                            type="text"
+                            value={productForm.foodPairings}
+                            onChange={(e) => setProductForm({ ...productForm, foodPairings: e.target.value })}
+                            className="input-field"
+                            placeholder="Pasta, Grilled meats"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="border-t border-olive-200 pt-6">
                     <h3 className="font-semibold text-olive-900 mb-4">
                       Business Model *
                     </h3>
-                    <select
-                      value={productForm.commerceModel}
-                      onChange={(e) =>
-                        setProductForm({
-                          ...productForm,
-                          commerceModel: e.target.value as any,
-                        })
-                      }
-                      required
-                      className="input-field"
-                    >
-                      <option value="MARKETPLACE">Marketplace</option>
-                      <option value="WHOLESALE">Wholesale</option>
-                      <option value="HYBRID">Hybrid</option>
-                    </select>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="label">Commerce Model</label>
+                        <select
+                          value={productForm.commerceModel}
+                          onChange={(e) =>
+                            setProductForm({
+                              ...productForm,
+                              commerceModel: e.target.value as any,
+                            })
+                          }
+                          required
+                          className="input-field"
+                        >
+                          <option value="MARKETPLACE">Marketplace</option>
+                          <option value="WHOLESALE">Wholesale</option>
+                          <option value="HYBRID">Hybrid</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="label">Listing Owner</label>
+                        <select
+                          value={productForm.listingOwner}
+                          onChange={(e) =>
+                            setProductForm({
+                              ...productForm,
+                              listingOwner: e.target.value,
+                            })
+                          }
+                          required
+                          className="input-field"
+                        >
+                          <option value="VENDOR">Vendor-managed</option>
+                          <option value="TERRA">Terra-managed</option>
+                        </select>
+                      </div>
+                    </div>
                   </div>
 
                   <div>

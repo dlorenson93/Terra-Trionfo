@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import ProductCard from '@/components/products/ProductCard'
@@ -17,14 +18,33 @@ interface Product {
     id: string
     name: string
   }
+  vintage?: number | null
+  appellation?: string | null
+  grapeVarietals?: string[]
+  tastingNotesShort?: string | null
+  isLimitedAllocation?: boolean
+  isFeatured?: boolean
+  isFoundingWine?: boolean
+  badgeText?: string | null
+  contentStatus?: string
 }
 
-export default function ProductsPage() {
+function ProductsContent() {
+  const searchParams = useSearchParams()
+
+  // Initialise from URL param ?category=WINE (enum key) on first render
+  const initialCategory = (() => {
+    const param = searchParams.get('category')
+    if (!param) return ''
+    // Accept either enum key (WINE) or display label (Wine)
+    if (VISIBLE_CATEGORIES.includes(param as any)) return CATEGORY_LABELS[param as keyof typeof CATEGORY_LABELS] ?? ''
+    const byLabel = VISIBLE_CATEGORIES.find((c) => CATEGORY_LABELS[c]?.toLowerCase() === param.toLowerCase())
+    return byLabel ? CATEGORY_LABELS[byLabel] : ''
+  })()
+
+  const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory)
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedCategory, setSelectedCategory] = useState<string>('')
-
-  // Derived from central config — add categories there, not here
   const categories = ['All', ...VISIBLE_CATEGORIES.map((c) => CATEGORY_LABELS[c] ?? c)]
 
   useEffect(() => {
@@ -39,8 +59,8 @@ export default function ProductsPage() {
         ? VISIBLE_CATEGORIES.find((c) => CATEGORY_LABELS[c] === selectedCategory) ?? selectedCategory
         : ''
       const url = categoryKey
-        ? `/api/products?category=${encodeURIComponent(categoryKey)}`
-        : '/api/products'
+        ? `/api/products?category=${encodeURIComponent(categoryKey)}&public=true`
+        : '/api/products?public=true'
       const response = await fetch(url)
       
       if (!response.ok) {
@@ -127,10 +147,10 @@ export default function ProductsPage() {
                 <path d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
               </svg>
               <h3 className="mt-4 text-lg font-medium text-olive-900">
-                No products found
+                Our Curated Selection Is Being Prepared
               </h3>
               <p className="text-olive-600 mt-2">
-                Try adjusting your filters or check back later.
+                We&apos;re carefully reviewing producers and their wines. Check back soon.
               </p>
             </div>
           ) : (
@@ -145,6 +165,15 @@ export default function ProductsPage() {
                   retailPrice={product.retailPriceCents / 100}
                   companyName={product.company.name}
                   commerceModel={product.commerceModel}
+                  vintage={product.vintage}
+                  appellation={product.appellation}
+                  grapeVarietals={product.grapeVarietals}
+                  tastingNotesShort={product.tastingNotesShort}
+                  isLimitedAllocation={product.isLimitedAllocation}
+                  isFeatured={product.isFeatured}
+                  isFoundingWine={product.isFoundingWine}
+                  badgeText={product.badgeText}
+                  contentStatus={product.contentStatus}
                 />
               )) : null}
             </div>
@@ -154,5 +183,13 @@ export default function ProductsPage() {
 
       <Footer />
     </div>
+  )
+}
+
+export default function ProductsPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-olive-700"></div></div>}>
+      <ProductsContent />
+    </Suspense>
   )
 }

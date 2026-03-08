@@ -8,7 +8,7 @@ import Footer from '@/components/layout/Footer'
 
 export default function ProfileSetupPage() {
   const router = useRouter()
-  const { data: session, status } = useSession()
+  const { data: session, status, update } = useSession()
   const [role, setRole] = useState<'CONSUMER' | 'VENDOR'>('CONSUMER')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -33,8 +33,9 @@ export default function ProfileSetupPage() {
       if (!res.ok) {
         setError(data.error || 'Failed to set up profile')
       } else {
-        // refresh session
-        router.replace('/')
+        // Refresh JWT claims so profileCompleted=true is reflected immediately
+        await update({ profileCompleted: true, role })
+        router.replace(role === 'VENDOR' ? '/dashboard/vendor' : '/')
       }
     } catch (err) {
       setError('An unexpected error occurred')

@@ -72,9 +72,29 @@ export async function PATCH(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
+    // Whitelist updatable fields to prevent privilege escalation
+    // Vendors cannot change status or ownerId — only admins can
+    const {
+      name, contactEmail, phone, address, description, bio, region, country, website, heroImageUrl,
+      // New storytelling fields
+      shortDescription, story, subregion, galleryImages, locationLat, locationLng,
+      sustainablePractices, winemakerName, winemakerBio, foodPairingNotes, foundedYear,
+    } = body
+    const vendorData: any = {
+      name, contactEmail, phone, address, description, bio, region, country, website, heroImageUrl,
+      shortDescription, story, subregion, galleryImages, locationLat, locationLng,
+      sustainablePractices, winemakerName, winemakerBio, foodPairingNotes, foundedYear,
+    }
+    // Remove undefined keys so Prisma ignores them
+    Object.keys(vendorData).forEach((k) => vendorData[k] === undefined && delete vendorData[k])
+
+    const adminData = session.user.role === 'ADMIN'
+      ? { status: body.status, isFoundingProducer: body.isFoundingProducer, contentStatus: body.contentStatus, ...vendorData }
+      : vendorData
+
     const updatedCompany = await prisma.company.update({
       where: { id: params.id },
-      data: body,
+      data: adminData,
       include: {
         owner: {
           select: {

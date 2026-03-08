@@ -21,6 +21,7 @@ interface Company {
   name: string
   contactEmail: string
   status: string
+  contentStatus: string
   owner: { name: string }
   createdAt: string
 }
@@ -31,6 +32,7 @@ interface Product {
   category: string
   retailPriceCents: number
   status: string
+  contentStatus: string
   commerceModel: 'MARKETPLACE' | 'WHOLESALE' | 'HYBRID'
   listingOwner: 'VENDOR' | 'TERRA'
   company: { name: string }
@@ -61,7 +63,7 @@ export default function AdminDashboard() {
       const [statsRes, companiesRes, productsRes] = await Promise.all([
         fetch('/api/admin/stats'),
         fetch('/api/companies'),
-        fetch('/api/products?status=PENDING'),
+        fetch('/api/products'),  // admin sees all products
       ])
 
       setStats(await statsRes.json())
@@ -97,6 +99,32 @@ export default function AdminDashboard() {
       fetchData()
     } catch (error) {
       console.error('Error updating product:', error)
+    }
+  }
+
+  const updateContentStatus = async (productId: string, contentStatus: string) => {
+    try {
+      await fetch(`/api/products/${productId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contentStatus }),
+      })
+      fetchData()
+    } catch (error) {
+      console.error('Error updating content status:', error)
+    }
+  }
+
+  const updateCompanyContentStatus = async (companyId: string, contentStatus: string) => {
+    try {
+      await fetch(`/api/companies/${companyId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contentStatus }),
+      })
+      fetchData()
+    } catch (error) {
+      console.error('Error updating company content status:', error)
     }
   }
 
@@ -265,70 +293,58 @@ export default function AdminDashboard() {
           {/* Companies Tab */}
           {activeTab === 'companies' && (
             <div className="card p-6">
-              <h2 className="text-xl font-serif font-bold text-olive-900 mb-4">
-                Manage Companies
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-serif font-bold text-olive-900">Manage Companies</h2>
+                <p className="text-sm text-olive-500">Content status controls public producer visibility</p>
+              </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="text-left border-b border-olive-200">
-                      <th className="pb-3 text-sm font-medium text-olive-700">
-                        Company Name
-                      </th>
-                      <th className="pb-3 text-sm font-medium text-olive-700">
-                        Owner
-                      </th>
-                      <th className="pb-3 text-sm font-medium text-olive-700">
-                        Email
-                      </th>
-                      <th className="pb-3 text-sm font-medium text-olive-700">
-                        Status
-                      </th>
-                      <th className="pb-3 text-sm font-medium text-olive-700">
-                        Actions
-                      </th>
+                      <th className="pb-3 text-sm font-medium text-olive-700">Company Name</th>
+                      <th className="pb-3 text-sm font-medium text-olive-700">Owner</th>
+                      <th className="pb-3 text-sm font-medium text-olive-700">Email</th>
+                      <th className="pb-3 text-sm font-medium text-olive-700">Status</th>
+                      <th className="pb-3 text-sm font-medium text-olive-700">Content</th>
+                      <th className="pb-3 text-sm font-medium text-olive-700">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {Array.isArray(companies) ? companies.map((company) => (
                       <tr key={company.id} className="border-b border-olive-100">
-                        <td className="py-3 text-sm font-medium text-olive-900">
-                          {company.name}
-                        </td>
-                        <td className="py-3 text-sm text-olive-800">
-                          {company.owner.name}
-                        </td>
-                        <td className="py-3 text-sm text-olive-600">
-                          {company.contactEmail}
+                        <td className="py-3 text-sm font-medium text-olive-900">{company.name}</td>
+                        <td className="py-3 text-sm text-olive-800">{company.owner.name}</td>
+                        <td className="py-3 text-sm text-olive-600">{company.contactEmail}</td>
+                        <td className="py-3">
+                          <span className={`badge badge-${company.status.toLowerCase()}`}>{company.status}</span>
                         </td>
                         <td className="py-3">
-                          <span
-                            className={`badge badge-${company.status.toLowerCase()}`}
-                          >
-                            {company.status}
-                          </span>
+                          <span className={`badge text-xs ${
+                            company.contentStatus === 'LIVE' ? 'bg-green-100 text-green-800' :
+                            company.contentStatus === 'READY' ? 'bg-blue-100 text-blue-800' :
+                            company.contentStatus === 'IN_REVIEW' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-gray-100 text-gray-600'
+                          }`}>{company.contentStatus ?? 'DRAFT'}</span>
                         </td>
                         <td className="py-3">
-                          {company.status === 'PENDING' && (
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() =>
-                                  updateCompanyStatus(company.id, 'APPROVED')
-                                }
-                                className="text-xs px-3 py-1 bg-green-100 text-green-800 rounded hover:bg-green-200"
-                              >
-                                Approve
-                              </button>
-                              <button
-                                onClick={() =>
-                                  updateCompanyStatus(company.id, 'REJECTED')
-                                }
-                                className="text-xs px-3 py-1 bg-red-100 text-red-800 rounded hover:bg-red-200"
-                              >
-                                Reject
-                              </button>
-                            </div>
-                          )}
+                          <div className="flex gap-1 flex-wrap">
+                            {company.status === 'PENDING' && (
+                              <>
+                                <button onClick={() => updateCompanyStatus(company.id, 'APPROVED')} className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded hover:bg-green-200">Approve</button>
+                                <button onClick={() => updateCompanyStatus(company.id, 'REJECTED')} className="text-xs px-2 py-1 bg-red-100 text-red-800 rounded hover:bg-red-200">Reject</button>
+                              </>
+                            )}
+                            {company.contentStatus !== 'LIVE' && (
+                              <>
+                                {company.contentStatus === 'DRAFT' && <button onClick={() => updateCompanyContentStatus(company.id, 'IN_REVIEW')} className="text-xs px-2 py-1 bg-yellow-100 text-yellow-800 rounded hover:bg-yellow-200">→ Review</button>}
+                                {company.contentStatus === 'IN_REVIEW' && <button onClick={() => updateCompanyContentStatus(company.id, 'READY')} className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200">→ Ready</button>}
+                                {(company.contentStatus === 'READY' || company.contentStatus === 'IN_REVIEW') && <button onClick={() => updateCompanyContentStatus(company.id, 'LIVE')} className="text-xs px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700">→ Go Live</button>}
+                              </>
+                            )}
+                            {company.contentStatus === 'LIVE' && (
+                              <button onClick={() => updateCompanyContentStatus(company.id, 'READY')} className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200">Unpublish</button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     )) : null}
@@ -341,85 +357,60 @@ export default function AdminDashboard() {
           {/* Products Tab */}
           {activeTab === 'products' && (
             <div className="card p-6">
-              <h2 className="text-xl font-serif font-bold text-olive-900 mb-4">
-                Manage Products (Pending Approval)
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-serif font-bold text-olive-900">Manage Products</h2>
+                <p className="text-sm text-olive-500">Content status controls public visibility</p>
+              </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="text-left border-b border-olive-200">
-                      <th className="pb-3 text-sm font-medium text-olive-700">
-                        Product Name
-                      </th>
-                      <th className="pb-3 text-sm font-medium text-olive-700">
-                        Company
-                      </th>
-                      <th className="pb-3 text-sm font-medium text-olive-700">
-                        Category
-                      </th>
-                      <th className="pb-3 text-sm font-medium text-olive-700">
-                        Retail
-                      </th>
-                      <th className="pb-3 text-sm font-medium text-olive-700">
-                        Model
-                      </th>
-                      <th className="pb-3 text-sm font-medium text-olive-700">
-                        Owner
-                      </th>
-                      <th className="pb-3 text-sm font-medium text-olive-700">
-                        Actions
-                      </th>
+                      <th className="pb-3 text-sm font-medium text-olive-700">Product Name</th>
+                      <th className="pb-3 text-sm font-medium text-olive-700">Company</th>
+                      <th className="pb-3 text-sm font-medium text-olive-700">Category</th>
+                      <th className="pb-3 text-sm font-medium text-olive-700">Retail</th>
+                      <th className="pb-3 text-sm font-medium text-olive-700">Status</th>
+                      <th className="pb-3 text-sm font-medium text-olive-700">Content</th>
+                      <th className="pb-3 text-sm font-medium text-olive-700">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {Array.isArray(products) ? products.map((product) => (
                       <tr key={product.id} className="border-b border-olive-100">
-                        <td className="py-3 text-sm font-medium text-olive-900">
-                          {product.name}
-                        </td>
-                        <td className="py-3 text-sm text-olive-800">
-                          {product.company.name}
-                        </td>
-                        <td className="py-3 text-sm text-olive-600">
-                          {product.category}
-                        </td>
-                        <td className="py-3 text-sm text-olive-800">
-                          ${(product.retailPriceCents / 100).toFixed(2)}
-                        </td>
-                        <td className="py-3 text-xs">
-                          <span className="badge bg-olive-100 text-olive-700">
-                            {product.commerceModel.charAt(0)}
-                          </span>
-                        </td>
-                        <td className="py-3 text-xs">
-                          <span className="badge bg-parchment-400 text-olive-800">
-                            {product.listingOwner}
-                          </span>
+                        <td className="py-3 text-sm font-medium text-olive-900">{product.name}</td>
+                        <td className="py-3 text-sm text-olive-800">{product.company.name}</td>
+                        <td className="py-3 text-sm text-olive-600">{product.category}</td>
+                        <td className="py-3 text-sm text-olive-800">${(product.retailPriceCents / 100).toFixed(2)}</td>
+                        <td className="py-3">
+                          <span className={`badge badge-${product.status.toLowerCase()}`}>{product.status}</span>
                         </td>
                         <td className="py-3">
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() =>
-                                updateProductStatus(product.id, 'APPROVED')
-                              }
-                              className="text-xs px-3 py-1 bg-green-100 text-green-800 rounded hover:bg-green-200"
-                            >
-                              Approve
-                            </button>
-                            <button
-                              onClick={() => editProduct(product)}
-                              className="text-xs px-3 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() =>
-                                updateProductStatus(product.id, 'REJECTED')
-                              }
-                              className="text-xs px-3 py-1 bg-red-100 text-red-800 rounded hover:bg-red-200"
-                            >
-                              Reject
-                            </button>
+                          <span className={`badge text-xs ${
+                            product.contentStatus === 'LIVE' ? 'bg-green-100 text-green-800' :
+                            product.contentStatus === 'READY' ? 'bg-blue-100 text-blue-800' :
+                            product.contentStatus === 'IN_REVIEW' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-gray-100 text-gray-600'
+                          }`}>{product.contentStatus ?? 'DRAFT'}</span>
+                        </td>
+                        <td className="py-3">
+                          <div className="flex gap-1 flex-wrap">
+                            {product.status === 'PENDING' && (
+                              <>
+                                <button onClick={() => updateProductStatus(product.id, 'APPROVED')} className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded hover:bg-green-200">Approve</button>
+                                <button onClick={() => updateProductStatus(product.id, 'REJECTED')} className="text-xs px-2 py-1 bg-red-100 text-red-800 rounded hover:bg-red-200">Reject</button>
+                              </>
+                            )}
+                            {product.contentStatus !== 'LIVE' && (
+                              <>
+                                {product.contentStatus === 'DRAFT' && <button onClick={() => updateContentStatus(product.id, 'IN_REVIEW')} className="text-xs px-2 py-1 bg-yellow-100 text-yellow-800 rounded hover:bg-yellow-200">→ Review</button>}
+                                {product.contentStatus === 'IN_REVIEW' && <button onClick={() => updateContentStatus(product.id, 'READY')} className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200">→ Ready</button>}
+                                {(product.contentStatus === 'READY' || product.contentStatus === 'IN_REVIEW') && <button onClick={() => updateContentStatus(product.id, 'LIVE')} className="text-xs px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700">→ Go Live</button>}
+                              </>
+                            )}
+                            {product.contentStatus === 'LIVE' && (
+                              <button onClick={() => updateContentStatus(product.id, 'READY')} className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200">Unpublish</button>
+                            )}
+                            <button onClick={() => editProduct(product)} className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200">Edit</button>
                           </div>
                         </td>
                       </tr>
@@ -427,9 +418,7 @@ export default function AdminDashboard() {
                   </tbody>
                 </table>
                 {products.length === 0 && (
-                  <p className="text-center text-olive-600 py-8">
-                    No products pending approval
-                  </p>
+                  <p className="text-center text-olive-600 py-8">No products</p>
                 )}
               </div>
             </div>

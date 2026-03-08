@@ -71,6 +71,15 @@ enum ProductCategory {
   MERCH
 }
 
+// Controls staged public visibility — content can be fully prepared
+// before being made public. LIVE is the only state visible to the public.
+enum ContentStatus {
+  DRAFT      // being entered by vendor/admin
+  IN_REVIEW  // sample received, Terra Trionfo reviewing
+  READY      // approved internally, not yet public
+  LIVE       // publicly visible on the storefront
+}
+
 model User {
   id             String    @id @default(cuid())
   name           String
@@ -96,11 +105,24 @@ model Company {
   phone        String?
   address      String?
   description  String?
+  shortDescription String?
   bio          String?
+  story        String?
   region       String?
+  subregion    String?
   country      String?
   website      String?
   heroImageUrl String?
+  galleryImages      String[]   @default([])
+  locationLat        Float?
+  locationLng        Float?
+  sustainablePractices String?
+  winemakerName      String?
+  winemakerBio       String?
+  foodPairingNotes   String?
+  foundedYear        Int?
+  isFoundingProducer Boolean    @default(false)
+  contentStatus ContentStatus @default(DRAFT)
   status       CompanyStatus @default(PENDING)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
@@ -116,9 +138,54 @@ model Company {
 model Product {
   id          String        @id @default(cuid())
   name        String
+  slug        String?       @unique
   description String?
   category    ProductCategory
   imageUrl    String?
+
+  // Producer attribution (may differ from company name for display)
+  producerDisplayName String?
+
+  // Wine / origin metadata (all optional — graceful on non-wine SKUs)
+  vintage            Int?
+  appellation        String?
+  designation        String?
+  country            String?
+  region             String?
+  subregion          String?
+  grapeVarietals     String[]  @default([])
+  wineStyle          String?
+  body               String?
+  acidity            String?
+  tannin             String?
+  abv                Float?
+  bottleSizeMl       Int?
+
+  // Tasting profile
+  tastingNotesShort  String?
+  tastingNotesFull   String?
+  aromaNotes         String?
+  palateNotes        String?
+  finishNotes        String?
+
+  // Production
+  vinification       String?
+  aging              String?
+  vineyardNotes      String?
+
+  // Serving
+  servingTemperature String?
+  decantingNotes     String?
+  foodPairings       String[]  @default([])
+  sustainabilityNotes String?
+
+  // Editorial
+  producerStoryExcerpt String?
+  isLimitedAllocation Boolean   @default(false)
+  isFeatured          Boolean   @default(false)
+  isFoundingWine      Boolean   @default(false)
+  badgeText           String?
+  contentStatus       ContentStatus @default(DRAFT)
 
   // Commerce model fields
   commerceModel   CommerceModel @default(MARKETPLACE)
@@ -190,4 +257,19 @@ model Settings {
   updatedAt                    DateTime @updatedAt
 
   @@map("settings")
+}
+
+model PickupLocation {
+  id       String  @id @default(cuid())
+  name     String
+  address  String
+  city     String
+  state    String
+  zipCode  String?
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("pickup_locations")
 }
