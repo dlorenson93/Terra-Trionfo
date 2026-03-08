@@ -65,8 +65,10 @@ export default function AdminDashboard() {
       ])
 
       setStats(await statsRes.json())
-      setCompanies(await companiesRes.json())
-      setProducts(await productsRes.json())
+      const companiesData = await companiesRes.json()
+      setCompanies(Array.isArray(companiesData) ? companiesData : [])
+      const productsData = await productsRes.json()
+      setProducts(Array.isArray(productsData) ? productsData : [])
     } catch (error) {
       console.error('Error fetching data:', error)
     }

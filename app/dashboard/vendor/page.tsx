@@ -76,7 +76,7 @@ export default function VendorDashboard() {
       const companies = await companiesRes.json()
       const products = await productsRes.json()
       
-      if (companies.length > 0) {
+      if (Array.isArray(companies) && companies.length > 0) {
         const myCompany = companies[0]
         setCompany(myCompany)
         setCompanyForm({
@@ -87,7 +87,7 @@ export default function VendorDashboard() {
           description: myCompany.description || '',
         })
       }
-      setProducts(products)
+      setProducts(Array.isArray(products) ? products : [])
     } catch (error) {
       console.error('Error fetching data:', error)
     }
