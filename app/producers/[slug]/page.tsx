@@ -35,7 +35,8 @@ export default async function ProducerDetailPage({ params }: { params: { slug: s
     `${process.env.NEXTAUTH_URL || ''}/api/companies?status=APPROVED`,
     { cache: 'no-store' }
   )
-  const companies: Producer[] = await compRes.json()
+  const companiesData = await compRes.json()
+  const companies: Producer[] = Array.isArray(companiesData) ? companiesData : []
   const producer = companies.find((c) => c.slug === slug)
   if (!producer) {
     notFound()
@@ -46,7 +47,8 @@ export default async function ProducerDetailPage({ params }: { params: { slug: s
     `${process.env.NEXTAUTH_URL || ''}/api/products?companyId=${producer?.id}`,
     { cache: 'no-store' }
   )
-  const products: Product[] = await prodRes.json()
+  const productsData = await prodRes.json()
+  const products: Product[] = Array.isArray(productsData) ? productsData : []
 
   return (
     <div className="min-h-screen flex flex-col">

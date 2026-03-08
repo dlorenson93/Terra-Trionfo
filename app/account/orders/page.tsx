@@ -42,7 +42,7 @@ export default function OrdersPage() {
     try {
       const response = await fetch('/api/orders')
       const data = await response.json()
-      setOrders(data)
+      setOrders(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error('Error fetching orders:', error)
     } finally {

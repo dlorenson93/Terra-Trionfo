@@ -31,7 +31,7 @@ export default function CartPage() {
 
   const loadCart = () => {
     const savedCart = JSON.parse(localStorage.getItem('cart') || '[]')
-    setCart(savedCart)
+    setCart(Array.isArray(savedCart) ? savedCart : [])
   }
 
   const updateQuantity = (productId: string, newQuantity: number) => {

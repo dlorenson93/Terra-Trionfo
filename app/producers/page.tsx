@@ -13,7 +13,8 @@ interface Producer {
 export default async function ProducersPage() {
   // fetch approved companies
   const res = await fetch(`${process.env.NEXTAUTH_URL || ''}/api/companies?status=APPROVED`, { cache: 'no-store' })
-  const producers: Producer[] = await res.json()
+  const data = await res.json()
+  const producers: Producer[] = Array.isArray(data) ? data : []
 
   return (
     <div className="min-h-screen flex flex-col">
