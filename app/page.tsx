@@ -3,6 +3,7 @@ import Footer from '@/components/layout/Footer'
 import Hero from '@/components/home/Hero'
 import FoundingProducers from '@/components/home/FoundingProducers'
 import ProvenancePhilosophy from '@/components/home/ProvenancePhilosophy'
+import RegionalDiscovery from '@/components/home/RegionalDiscovery'
 import Collections from '@/components/home/Collections'
 import FeaturedProducers from '@/components/home/FeaturedProducers'
 import FeaturedProducts from '@/components/home/FeaturedProducts'
@@ -18,11 +19,13 @@ export default function HomePage() {
         <FoundingProducers />
         {/* 3. Provenance Philosophy — editorial credibility */}
         <ProvenancePhilosophy />
-        {/* 4. Explore the Collection — category entry */}
+        {/* 4. Regional Discovery — Italian terroir storytelling */}
+        <RegionalDiscovery />
+        {/* 5. Explore the Collection — category entry */}
         <Collections />
-        {/* 5. Families Behind the Bottle — producer-first */}
+        {/* 6. Families Behind the Bottle — producer-first */}
         <FeaturedProducers />
-        {/* 6. Curated Selection in Preparation */}
+        {/* 7. Curated Selection in Preparation */}
         <FeaturedProducts />
       </main>
       <Footer />

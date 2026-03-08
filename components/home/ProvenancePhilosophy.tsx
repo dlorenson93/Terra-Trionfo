@@ -35,16 +35,18 @@ export default function ProvenancePhilosophy() {
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="max-w-2xl mb-16">
-          <p className="text-xs font-medium text-olive-400 uppercase tracking-[0.3em] mb-4">
+          <p className="text-[10px] font-medium text-olive-400 uppercase tracking-[0.35em] mb-4">
             Our Approach
           </p>
           <h2 className="text-3xl md:text-4xl font-serif font-bold text-olive-900 mb-5 leading-snug">
             Imported with Intention
           </h2>
-          <p className="text-olive-600 leading-relaxed">
+          <p className="text-olive-600 leading-relaxed mb-3">
             Terra Trionfo is not a catalog — it is a curated relationship between artisan Italian
-            producers and a discerning American audience. Every estate we represent has been
-            evaluated on provenance, craft, and integrity.
+            producers and a discerning American audience.
+          </p>
+          <p className="text-olive-500 leading-relaxed">
+            Every estate we represent reflects a place, a family, and a tradition worth preserving.
           </p>
         </div>
 

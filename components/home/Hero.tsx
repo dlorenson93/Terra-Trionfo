@@ -2,6 +2,7 @@ import Link from 'next/link'
 
 export default function Hero() {
   return (
+    <>
     <section className="relative bg-olive-900 py-32 px-4 overflow-hidden">
       {/* Fine linen texture overlay */}
       <div
@@ -14,13 +15,20 @@ export default function Hero() {
       />
       {/* Soft vignette */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/30" />
+      {/* Radial glow — soft focus behind brand name */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse 60% 40% at 50% 45%, rgba(245,235,210,0.07) 0%, transparent 70%)',
+        }}
+      />
 
       <div className="relative max-w-4xl mx-auto text-center">
 
-        {/* Provenance badge */}
-        <div className="inline-flex items-center gap-2 border border-amber-400/30 text-amber-300/80 text-xs font-medium tracking-[0.2em] uppercase px-5 py-2 mb-12">
-          <span className="w-1 h-1 rounded-full bg-amber-400/60 inline-block" />
-          Massachusetts pickup &amp; local delivery only
+        {/* Compliance badge */}
+        <div className="inline-flex items-center gap-2 border border-amber-400/30 text-amber-300/70 text-xs font-medium tracking-[0.2em] uppercase px-5 py-2 mb-12">
+          <span className="w-1 h-1 rounded-full bg-amber-400/50 inline-block" />
+          Available for Collection &amp; Local Delivery in Massachusetts
         </div>
 
         {/* Brand name — primary anchor */}
@@ -40,13 +48,13 @@ export default function Hero() {
           <div className="h-px w-16 bg-parchment-300/30" />
         </div>
 
-        {/* Positioning line */}
-        <p className="text-xl md:text-2xl font-serif text-parchment-200 mb-6 leading-snug">
+        {/* Positioning line — slightly subordinate to brand name */}
+        <p className="text-lg md:text-xl font-serif text-parchment-200 mb-6 leading-snug">
           Italian Wines &amp; Olive Oils,<br className="hidden sm:block" /> Curated at the Source
         </p>
 
         {/* Supporting copy */}
-        <p className="text-base text-parchment-300/75 leading-relaxed mb-12 max-w-xl mx-auto">
+        <p className="text-sm text-parchment-300/70 leading-relaxed mb-12 max-w-xl mx-auto">
           A private selection of artisan producers from Italy&apos;s most distinctive regions.
           Each estate, wine, and olive oil is personally reviewed before joining the Terra Trionfo marketplace.
         </p>
@@ -68,5 +76,8 @@ export default function Hero() {
         </div>
       </div>
     </section>
+    {/* Muted gold divider */}
+    <div className="h-px w-full bg-gradient-to-r from-transparent via-amber-600/30 to-transparent" />
+    </>
   )
 }

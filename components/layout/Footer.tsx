@@ -12,15 +12,15 @@ export default function Footer() {
             </h3>
             <p className="text-parchment-300 italic mb-4">Born of the Land</p>
             <p className="text-sm text-parchment-300 leading-relaxed">
-              Supporting artisan producers, winemakers, and family farms by connecting 
-              their authentic craftsmanship with appreciative audiences through our 
-              collaborative marketplace and wholesale platform.
+              A private selection of artisan Italian producers — curated for provenance,
+              craft, and integrity. Wines and olive oils reviewed at the source,
+              delivered to discerning audiences across Massachusetts.
             </p>
           </div>
 
-          {/* Quick Links */}
+          {/* Explore */}
           <div>
-            <h4 className="font-serif font-semibold mb-4">Quick Links</h4>
+            <h4 className="font-serif font-semibold mb-4">Explore</h4>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link
@@ -65,9 +65,9 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Contact */}
+          {/* Correspondence */}
           <div>
-            <h4 className="font-serif font-semibold mb-4">Contact</h4>
+            <h4 className="font-serif font-semibold mb-4">Correspondence</h4>
             <ul className="space-y-2 text-sm text-parchment-300">
               <li>info@terratrionfo.com</li>
               <li>+1 (555) 123-4567</li>
