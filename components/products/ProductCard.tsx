@@ -45,25 +45,24 @@ export default function ProductCard({
   // Restrained card for non-live products (admin preview / graceful fallback)
   if (!isLive) {
     return (
-      <div className="card overflow-hidden flex flex-col opacity-70 border border-dashed border-olive-300">
-        <div className="h-52 bg-gradient-to-br from-olive-50 to-parchment-200 flex items-center justify-center flex-shrink-0">
-          <div className="text-center px-4">
-            <div className="w-10 h-10 rounded-full bg-olive-200 flex items-center justify-center mx-auto mb-2">
-              <svg className="w-5 h-5 text-olive-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+      <div className="overflow-hidden flex flex-col border border-olive-200 bg-white">
+        <div className="h-52 bg-parchment-100 flex items-center justify-center flex-shrink-0 border-b border-olive-100">
+          <div className="text-center px-6">
+            <div className="w-8 h-8 border border-olive-200 flex items-center justify-center mx-auto mb-3">
+              <svg className="w-4 h-4 text-olive-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.25} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <p className="text-xs font-semibold text-olive-600 uppercase tracking-widest">Curated Selection</p>
-            <p className="text-xs text-olive-400 mt-0.5">Coming Soon</p>
+            <p className="text-[10px] font-medium text-olive-400 uppercase tracking-[0.2em]">Curated Selection</p>
           </div>
         </div>
-        <div className="p-4 flex flex-col flex-grow">
-          <p className="text-xs text-olive-400 uppercase tracking-wider mb-1">{category}</p>
-          <div className="h-4 w-3/4 bg-olive-200 rounded mt-1 mb-2" />
-          <div className="h-3 w-1/2 bg-olive-100 rounded" />
-          <div className="mt-auto pt-3">
-            <span className="text-xs px-2 py-1 rounded-full bg-olive-100 text-olive-600 uppercase tracking-wide">
-              {contentStatus === 'IN_REVIEW' ? 'Sample Review' : contentStatus === 'READY' ? 'Finalizing' : 'In Preparation'}
+        <div className="p-5 flex flex-col flex-grow">
+          <p className="text-[10px] font-medium text-olive-400 uppercase tracking-[0.2em] mb-3">{category}</p>
+          <div className="h-3 w-3/4 bg-olive-100 mb-2" />
+          <div className="h-2.5 w-1/2 bg-olive-50" />
+          <div className="mt-auto pt-4">
+            <span className="text-[10px] font-medium text-olive-400 uppercase tracking-[0.15em]">
+              {contentStatus === 'IN_REVIEW' ? 'Under Review' : contentStatus === 'READY' ? 'Finalizing' : 'In Preparation'}
             </span>
           </div>
         </div>

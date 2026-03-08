@@ -16,8 +16,8 @@ const playfair = Playfair_Display({
 })
 
 export const metadata: Metadata = {
-  title: 'Terra Trionfo - Farm to Table Marketplace',
-  description: 'Born of the Land - Premium farm-to-table products and wholesale distribution',
+  title: 'Terra Trionfo — Italian Wines & Olive Oils, Curated at the Source',
+  description: 'A private selection of artisan Italian producers. Each estate, wine, and olive oil personally reviewed before joining the Terra Trionfo marketplace.',
 }
 
 export default function RootLayout({

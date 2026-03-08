@@ -10,23 +10,23 @@
 
 @layer components {
   .btn-primary {
-    @apply px-6 py-2.5 bg-olive-700 text-parchment-50 rounded-lg font-medium hover:bg-olive-800 transition-colors shadow-sm;
+    @apply px-6 py-2.5 bg-olive-700 text-parchment-50 font-medium text-sm tracking-wide hover:bg-olive-800 transition-colors;
   }
 
   .btn-secondary {
-    @apply px-6 py-2.5 bg-parchment-300 text-olive-800 rounded-lg font-medium hover:bg-parchment-400 transition-colors shadow-sm;
+    @apply px-6 py-2.5 border border-olive-300 text-olive-700 font-medium text-sm tracking-wide hover:border-olive-500 hover:text-olive-900 transition-colors;
   }
 
   .btn-outline {
-    @apply px-6 py-2.5 border-2 border-olive-700 text-olive-700 rounded-lg font-medium hover:bg-olive-50 transition-colors;
+    @apply px-6 py-2.5 border border-olive-700 text-olive-700 font-medium text-sm tracking-wide hover:bg-olive-700 hover:text-parchment-50 transition-colors;
   }
 
   .input-field {
-    @apply w-full px-4 py-2.5 border border-olive-300 rounded-lg focus:ring-2 focus:ring-olive-500 focus:border-transparent bg-white text-olive-900 placeholder-olive-400;
+    @apply w-full px-4 py-2.5 border border-olive-300 focus:ring-1 focus:ring-olive-500 focus:border-olive-500 bg-white text-olive-900 placeholder-olive-400 outline-none;
   }
 
   .card {
-    @apply bg-white rounded-xl border border-olive-200 shadow-sm hover:shadow-md transition-shadow;
+    @apply bg-white border border-olive-200 shadow-sm hover:shadow-md transition-shadow;
   }
 
   .label {
