@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import ProductCard from '@/components/products/ProductCard'
+import { VISIBLE_CATEGORIES, CATEGORY_LABELS } from '@/config/marketplace'
 
 interface Product {
   id: string
@@ -23,14 +24,8 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState<string>('')
 
-  const categories = [
-    'All',
-    'Oils & Vinegars',
-    'Wines',
-    'Pasta & Grains',
-    'Canned Goods',
-    'Specialty',
-  ]
+  // Derived from central config — add categories there, not here
+  const categories = ['All', ...VISIBLE_CATEGORIES.map((c) => CATEGORY_LABELS[c] ?? c)]
 
   useEffect(() => {
     fetchProducts()
@@ -39,10 +34,13 @@ export default function ProductsPage() {
   const fetchProducts = async () => {
     setLoading(true)
     try {
-      const url =
-        selectedCategory && selectedCategory !== 'All'
-          ? `/api/products?category=${encodeURIComponent(selectedCategory)}`
-          : '/api/products'
+      // Map display label back to enum key
+      const categoryKey = selectedCategory && selectedCategory !== 'All'
+        ? VISIBLE_CATEGORIES.find((c) => CATEGORY_LABELS[c] === selectedCategory) ?? selectedCategory
+        : ''
+      const url = categoryKey
+        ? `/api/products?category=${encodeURIComponent(categoryKey)}`
+        : '/api/products'
       const response = await fetch(url)
       
       if (!response.ok) {

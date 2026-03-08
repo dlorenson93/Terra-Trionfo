@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { VISIBLE_CATEGORIES } from '@/config/marketplace'
 
 export async function GET(request: Request) {
   try {
@@ -18,6 +19,8 @@ export async function GET(request: Request) {
     if (!session || session.user.role === 'CONSUMER') {
       where.status = 'APPROVED'
       where.company = { status: 'APPROVED' }
+      // Only show currently visible categories to public
+      where.category = { in: VISIBLE_CATEGORIES as unknown as string[] }
     }
 
     if (status && session && session.user.role !== 'CONSUMER') {

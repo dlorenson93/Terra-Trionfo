@@ -453,11 +453,8 @@ export default function VendorDashboard() {
                         className="input-field"
                       >
                         <option value="">Select category</option>
-                        <option value="Oils & Vinegars">Oils & Vinegars</option>
-                        <option value="Wines">Wines</option>
-                        <option value="Pasta & Grains">Pasta & Grains</option>
-                        <option value="Canned Goods">Canned Goods</option>
-                        <option value="Specialty">Specialty</option>
+                        <option value="WINE">Wine</option>
+                        <option value="OLIVE_OIL">Olive Oil</option>
                       </select>
                     </div>
 
