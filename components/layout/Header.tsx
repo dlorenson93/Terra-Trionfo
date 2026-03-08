@@ -55,7 +55,9 @@ export default function Header() {
                 {session.user.role === 'ADMIN' && (
                   <Link
                     href="/dashboard/admin"
-                    className="text-sm font-medium text-olive-600 hover:text-olive-800"
+                    className={`text-sm font-medium transition-colors ${
+                      isActive('/dashboard/admin') ? 'text-olive-800' : 'text-olive-600 hover:text-olive-800'
+                    }`}
                   >
                     Admin
                   </Link>
@@ -63,28 +65,47 @@ export default function Header() {
                 {session.user.role === 'VENDOR' && (
                   <Link
                     href="/dashboard/vendor"
-                    className="text-sm font-medium text-olive-600 hover:text-olive-800"
+                    className={`text-sm font-medium transition-colors ${
+                      isActive('/dashboard/vendor') ? 'text-olive-800' : 'text-olive-600 hover:text-olive-800'
+                    }`}
                   >
-                    Vendor
+                    Dashboard
+                  </Link>
+                )}
+                {session.user.role === 'CONSUMER' && (
+                  <Link
+                    href="/cart"
+                    className={`text-sm font-medium transition-colors ${
+                      isActive('/cart') ? 'text-olive-800' : 'text-olive-600 hover:text-olive-800'
+                    }`}
+                  >
+                    Cart
                   </Link>
                 )}
                 <Link
-                  href="/account"
-                  className="text-sm font-medium text-olive-600 hover:text-olive-800"
+                  href="/account/orders"
+                  className={`text-sm font-medium transition-colors ${
+                    pathname.startsWith('/account') ? 'text-olive-800' : 'text-olive-600 hover:text-olive-800'
+                  }`}
                 >
                   Account
                 </Link>
                 <button
-                  onClick={() => signOut()}
+                  onClick={() => signOut({ callbackUrl: '/' })}
                   className="text-sm text-olive-600 hover:text-olive-800"
                 >
                   Sign Out
                 </button>
               </>
             ) : (
-              <Link href="/auth/signin" className="btn-primary text-sm">
-                Sign In
-              </Link>
+              <>
+                <Link href="/auth/signup/vendor" className="text-sm font-medium text-olive-600 hover:text-olive-800">
+                  Sell With Us
+                </Link>
+                <Link href="/auth/signin" className="btn-primary text-sm">
+                  Sign In
+                </Link>
+              </>
             )}
           </nav>
 
@@ -141,7 +162,7 @@ export default function Header() {
                       onClick={() => setMobileMenuOpen(false)}
                       className="px-4 py-2 text-sm font-medium text-olive-600"
                     >
-                      Admin
+                      Admin Dashboard
                     </Link>
                   )}
                   {session.user.role === 'VENDOR' && (
@@ -150,12 +171,21 @@ export default function Header() {
                       onClick={() => setMobileMenuOpen(false)}
                       className="px-4 py-2 text-sm font-medium text-olive-600"
                     >
-                      Vendor
+                      Vendor Dashboard
+                    </Link>
+                  )}
+                  {session.user.role === 'CONSUMER' && (
+                    <Link
+                      href="/cart"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="px-4 py-2 text-sm font-medium text-olive-600"
+                    >
+                      Cart
                     </Link>
                   )}
 
                   <Link
-                    href="/account"
+                    href="/account/orders"
                     onClick={() => setMobileMenuOpen(false)}
                     className="px-4 py-2 text-sm font-medium text-olive-600"
                   >
@@ -164,7 +194,7 @@ export default function Header() {
 
                   <button
                     onClick={() => {
-                      signOut()
+                      signOut({ callbackUrl: '/' })
                       setMobileMenuOpen(false)
                     }}
                     className="px-4 py-2 text-sm font-medium text-olive-600 text-left"
@@ -184,11 +214,18 @@ export default function Header() {
                     Sign In
                   </Link>
                   <Link
-                    href="/auth/signin"
+                    href="/auth/signup"
                     onClick={() => setMobileMenuOpen(false)}
                     className="px-4 py-2 text-sm font-medium text-olive-600"
                   >
-                    Partner With Us
+                    Create Account
+                  </Link>
+                  <Link
+                    href="/auth/signup/vendor"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="px-4 py-2 text-sm font-medium text-olive-600"
+                  >
+                    Sell With Us
                   </Link>
                 </>
               )}
