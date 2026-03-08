@@ -1,11 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
-export default function SignInPage() {
+function SignInForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const registered = searchParams.get('registered')
@@ -45,6 +45,70 @@ export default function SignInPage() {
   }
 
   return (
+    <div className="card p-8">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {registered && (
+          <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg text-sm">
+            {isVendor
+              ? '✅ Vendor account created! Sign in to set up your company profile.'
+              : '✅ Account created! Sign in below.'}
+          </div>
+        )}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg text-sm">
+            {error}
+          </div>
+        )}
+
+        <div>
+          <label htmlFor="email" className="label">Email</label>
+          <input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="input-field"
+            placeholder="your@email.com"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="password" className="label">Password</label>
+          <input
+            id="password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="input-field"
+            placeholder="••••••••"
+          />
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="btn-primary w-full disabled:opacity-50"
+        >
+          {loading ? 'Signing in...' : 'Sign In'}
+        </button>
+      </form>
+
+      <div className="mt-6 text-center">
+        <p className="text-sm text-olive-700">
+          Don't have an account?{' '}
+          <Link href="/auth/signup" className="text-olive-800 font-medium hover:underline">
+            Sign up
+          </Link>
+        </p>
+      </div>
+    </div>
+  )
+}
+
+export default function SignInPage() {
+  return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-parchment-100 to-parchment-200 px-4">
       <div className="max-w-md w-full">
         {/* Logo */}
@@ -62,79 +126,12 @@ export default function SignInPage() {
           <p className="text-olive-700">Welcome back to Terra Trionfo</p>
         </div>
 
-        {/* Sign In Form */}
-        <div className="card p-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {registered && (
-              <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg text-sm">
-                {isVendor
-                  ? '✅ Vendor account created! Sign in to set up your company profile.'
-                  : '✅ Account created! Sign in below.'}
-              </div>
-            )}
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg text-sm">
-                {error}
-              </div>
-            )}
-
-            <div>
-              <label htmlFor="email" className="label">
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="input-field"
-                placeholder="your@email.com"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="password" className="label">
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="input-field"
-                placeholder="••••••••"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-primary w-full disabled:opacity-50"
-            >
-              {loading ? 'Signing in...' : 'Sign In'}
-            </button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <p className="text-sm text-olive-700">
-              Don't have an account?{' '}
-              <Link
-                href="/auth/signup"
-                className="text-olive-800 font-medium hover:underline"
-              >
-                Sign up
-              </Link>
-            </p>
-          </div>
-        </div>
+        <Suspense fallback={<div className="card p-8 text-center text-olive-600">Loading...</div>}>
+          <SignInForm />
+        </Suspense>
 
         <div className="text-center mt-6">
-          <Link
-            href="/"
-            className="text-sm text-olive-700 hover:text-olive-900"
-          >
+          <Link href="/" className="text-sm text-olive-700 hover:text-olive-900">
             ← Back to home
           </Link>
         </div>
