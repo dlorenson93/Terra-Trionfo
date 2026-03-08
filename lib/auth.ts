@@ -5,13 +5,14 @@ import { prisma } from './prisma'
 
 export const authOptions: NextAuthOptions = {
   providers: [
+    // we cast the provider to any below to avoid strict typing issues with generics
     CredentialsProvider({
       name: 'credentials',
       credentials: {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
       },
-      async authorize(credentials) {
+      async authorize(credentials): Promise<any> {
         if (!credentials?.email || !credentials?.password) {
           throw new Error('Invalid credentials')
         }
@@ -33,14 +34,17 @@ export const authOptions: NextAuthOptions = {
           throw new Error('Invalid credentials')
         }
 
+        // NextAuth expects a `User` type with non-nullable `role`.
+        // Prisma's User.role is nullable during setup, so cast to any to avoid
+        // a mismatch in the promise generics and satisfy the compiler.
         return {
           id: user.id,
           email: user.email,
           name: user.name,
           role: user.role,
-        }
+        } as any
       },
-    }),
+    }) as any,
   ],
   callbacks: {
     async jwt({ token, user }) {
