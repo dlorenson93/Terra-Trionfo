@@ -7,7 +7,7 @@ import bcrypt from 'bcryptjs'
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { name, email, password } = body
+    const { name, email, password, role } = body
 
     if (!name || !email || !password) {
       return NextResponse.json(
@@ -15,6 +15,10 @@ export async function POST(request: Request) {
         { status: 400 }
       )
     }
+
+    // Only allow valid public-facing roles at signup
+    const allowedRoles = ['CONSUMER', 'VENDOR']
+    const assignedRole = allowedRoles.includes(role) ? role : 'CONSUMER'
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -31,14 +35,13 @@ export async function POST(request: Request) {
     // Hash password
     const passwordHash = await bcrypt.hash(password, 10)
 
-    // Create user with no role until profile setup
     const user = await prisma.user.create({
       data: {
         name,
         email,
         passwordHash,
-        // role stays null
-        profileCompleted: false,
+        role: assignedRole,
+        profileCompleted: true,
       } as any,
       select: {
         id: true,

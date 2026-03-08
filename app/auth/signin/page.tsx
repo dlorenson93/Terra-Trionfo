@@ -2,11 +2,14 @@
 
 import { useState } from 'react'
 import { signIn } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
 export default function SignInPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const registered = searchParams.get('registered')
+  const isVendor = searchParams.get('vendor')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -27,7 +30,11 @@ export default function SignInPage() {
       if (result?.error) {
         setError('Invalid email or password')
       } else {
-        router.push('/')
+        if (isVendor) {
+          router.push('/dashboard/vendor')
+        } else {
+          router.push('/')
+        }
         router.refresh()
       }
     } catch (error) {
@@ -58,6 +65,13 @@ export default function SignInPage() {
         {/* Sign In Form */}
         <div className="card p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
+            {registered && (
+              <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg text-sm">
+                {isVendor
+                  ? '✅ Vendor account created! Sign in to set up your company profile.'
+                  : '✅ Account created! Sign in below.'}
+              </div>
+            )}
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg text-sm">
                 {error}
