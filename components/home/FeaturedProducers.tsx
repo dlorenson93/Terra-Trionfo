@@ -20,7 +20,7 @@ export default function FeaturedProducers() {
       .catch(console.error)
   }, [])
 
-  if (producers.length === 0) return null
+  if (!Array.isArray(producers) || producers.length === 0) return null
 
   return (
     <section className="py-16 px-4 bg-parchment-100">

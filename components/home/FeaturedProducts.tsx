@@ -28,7 +28,7 @@ export default function FeaturedProducts() {
       .catch(console.error)
   }, [])
 
-  if (products.length === 0) return null
+  if (!Array.isArray(products) || products.length === 0) return null
 
   return (
     <section className="py-16 px-4 bg-white">

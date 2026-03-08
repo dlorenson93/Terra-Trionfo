@@ -234,7 +234,7 @@ export default function AdminDashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {stats.recentOrders.map((order) => (
+                      {Array.isArray(stats.recentOrders) ? stats.recentOrders.map((order) => (
                         <tr key={order.id} className="border-b border-olive-100">
                           <td className="py-3 text-sm text-olive-800">
                             {order.id.slice(0, 8)}
@@ -290,7 +290,7 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {companies.map((company) => (
+                    {Array.isArray(companies) ? companies.map((company) => (
                       <tr key={company.id} className="border-b border-olive-100">
                         <td className="py-3 text-sm font-medium text-olive-900">
                           {company.name}
@@ -372,7 +372,7 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {products.map((product) => (
+                    {Array.isArray(products) ? products.map((product) => (
                       <tr key={product.id} className="border-b border-olive-100">
                         <td className="py-3 text-sm font-medium text-olive-900">
                           {product.name}
