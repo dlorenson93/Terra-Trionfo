@@ -203,9 +203,10 @@ model Product {
   updatedAt DateTime @updatedAt
 
   // Relations
-  companyId  String
-  company    Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  orderItems OrderItem[]
+  companyId       String
+  company         Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  orderItems      OrderItem[]
+  restaurantWines RestaurantWine[]
 
   @@map("products")
 }
@@ -260,16 +261,73 @@ model Settings {
 }
 
 model PickupLocation {
-  id       String  @id @default(cuid())
-  name     String
-  address  String
-  city     String
-  state    String
-  zipCode  String?
-  isActive Boolean @default(true)
+  id          String  @id @default(cuid())
+  name        String
+  address     String
+  city        String
+  state       String
+  zipCode     String?
+  isActive    Boolean @default(true)
+
+  latitude    Float?
+  longitude   Float?
+  partnerType String  @default("WAREHOUSE") // RESTAURANT | WAREHOUSE | RETAIL_PARTNER
+
+  status        CompanyStatus @default(PENDING)
+  contentStatus ContentStatus @default(DRAFT)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("pickup_locations")
+}
+
+model Restaurant {
+  id          String  @id @default(cuid())
+  name        String
+  slug        String  @unique
+  description String?
+  website     String?
+
+  address String
+  city    String
+  state   String
+  zipCode String
+
+  latitude  Float?
+  longitude Float?
+
+  heroImageUrl  String?
+  galleryImages String[] @default([])
+
+  cuisineType String?
+  priceRange  String?
+
+  isFeatured Boolean @default(false)
+
+  status        CompanyStatus @default(PENDING)
+  contentStatus ContentStatus @default(DRAFT)
+
+  wines RestaurantWine[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("restaurants")
+}
+
+model RestaurantWine {
+  id String @id @default(cuid())
+
+  restaurantId String
+  productId    String
+
+  servingType String  @default("BOTTLE_LIST") // BY_GLASS | BOTTLE_LIST
+  notes       String?
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  product    Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([restaurantId, productId])
+  @@map("restaurant_wines")
 }

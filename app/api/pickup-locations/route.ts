@@ -3,12 +3,19 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const session = await getServerSession(authOptions)
+    const isPublic = !session || session.user.role === 'CONSUMER'
+
     const locations = await prisma.pickupLocation.findMany({
-      where: { isActive: true },
-      orderBy: { name: 'asc' },
+      where: {
+        isActive: true,
+        ...(isPublic ? { status: 'APPROVED', contentStatus: 'LIVE' } : {}),
+      },
+      orderBy: [{ city: 'asc' }, { name: 'asc' }],
     })
+
     return NextResponse.json(locations)
   } catch (error) {
     console.error('Pickup locations fetch error:', error)
@@ -24,14 +31,23 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { name, address, city, state, zipCode } = body
+    const { name, address, city, state, zipCode, latitude, longitude, partnerType } = body
 
     if (!name || !address || !city || !state) {
       return NextResponse.json({ error: 'name, address, city, and state are required' }, { status: 400 })
     }
 
     const location = await prisma.pickupLocation.create({
-      data: { name, address, city, state, zipCode },
+      data: {
+        name,
+        address,
+        city,
+        state,
+        zipCode: zipCode || '',
+        latitude: latitude ? parseFloat(latitude) : null,
+        longitude: longitude ? parseFloat(longitude) : null,
+        partnerType: partnerType || 'WAREHOUSE',
+      },
     })
 
     return NextResponse.json(location, { status: 201 })

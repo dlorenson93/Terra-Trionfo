@@ -32,6 +32,14 @@ export default function Footer() {
               </li>
               <li>
                 <Link
+                  href="/restaurants"
+                  className="text-parchment-300 hover:text-parchment-100 transition-colors"
+                >
+                  Restaurants
+                </Link>
+              </li>
+              <li>
+                <Link
                   href="/about"
                   className="text-parchment-300 hover:text-parchment-100 transition-colors"
                 >

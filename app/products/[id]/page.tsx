@@ -59,6 +59,22 @@ interface Product {
   isFoundingWine?: boolean
   badgeText?: string | null
   contentStatus?: string | null
+  restaurantWines?: Array<{
+    id: string
+    servingType: string
+    notes?: string | null
+    restaurant: {
+      id: string
+      name: string
+      slug: string
+      city: string
+      state: string
+      cuisineType?: string | null
+      priceRange?: string | null
+      website?: string | null
+      isFeatured: boolean
+    }
+  }>
 }
 
 function StatPill({ label, value }: { label: string; value?: string | null }) {
@@ -82,9 +98,16 @@ export default function ProductDetailPage({
   const [loading, setLoading] = useState(true)
   const [quantity, setQuantity] = useState(1)
   const [cartMsg, setCartMsg] = useState<string | null>(null)
+  const [pickupLocations, setPickupLocations] = useState<Array<{
+    id: string; name: string; address: string; city: string; state: string; partnerType: string
+  }>>([])
 
   useEffect(() => {
     fetchProduct()
+    fetch('/api/pickup-locations')
+      .then((r) => r.json())
+      .then((data) => setPickupLocations(Array.isArray(data) ? data : []))
+      .catch(console.error)
   }, [params.id])
 
   const fetchProduct = async () => {
@@ -467,6 +490,95 @@ export default function ProductDetailPage({
             </p>
           </div>
         </div>
+
+        {/* Where to Experience This Wine */}
+        {product.restaurantWines && product.restaurantWines.length > 0 && (
+          <div className="py-14 px-4 border-t border-parchment-300">
+            <div className="max-w-5xl mx-auto">
+              <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-olive-400 mb-2">
+                THE NETWORK
+              </p>
+              <h2 className="text-2xl font-serif font-bold text-olive-900 mb-8">
+                Where to Experience This Wine
+              </h2>
+
+              {/* Group by city */}
+              {(() => {
+                const byCityMap = new Map<string, typeof product.restaurantWines>()
+                product.restaurantWines!.forEach((rw) => {
+                  const key = `${rw.restaurant.city}, ${rw.restaurant.state}`
+                  if (!byCityMap.has(key)) byCityMap.set(key, [])
+                  byCityMap.get(key)!.push(rw)
+                })
+                return Array.from(byCityMap.entries()).map(([cityKey, wines]) => (
+                  <div key={cityKey} className="mb-8 last:mb-0">
+                    <p className="text-xs font-medium uppercase tracking-wider text-olive-500 mb-4">{cityKey}</p>
+                    <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
+                      {wines.map((rw) => (
+                        <Link
+                          key={rw.id}
+                          href={`/restaurants/${rw.restaurant.slug}`}
+                          className="group flex flex-col gap-1 border border-olive-200 hover:border-olive-400 bg-white p-4 transition-all hover:shadow-sm"
+                        >
+                          <span className="font-serif font-semibold text-olive-900 group-hover:text-olive-700 text-base leading-snug">
+                            {rw.restaurant.name}
+                          </span>
+                          {rw.restaurant.cuisineType && (
+                            <span className="text-xs text-olive-500">{rw.restaurant.cuisineType}</span>
+                          )}
+                          <span className={`text-xs font-medium mt-1 ${rw.servingType === 'BY_GLASS' ? 'text-amber-700' : 'text-olive-600'}`}>
+                            {rw.servingType === 'BY_GLASS' ? 'By the Glass' : 'Bottle List'}
+                          </span>
+                          {rw.notes && (
+                            <span className="text-xs text-olive-500 italic mt-1">"{rw.notes}"</span>
+                          )}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              })()}
+            </div>
+          </div>
+        )}
+
+        {/* Local Pickup Locations */}
+        {product.allowedFulfillment.includes('PICKUP') && pickupLocations.length > 0 && (
+          <div className="bg-parchment-50 border-t border-parchment-300 py-14 px-4">
+            <div className="max-w-5xl mx-auto">
+              <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-olive-400 mb-2">
+                COLLECTION POINTS
+              </p>
+              <h2 className="text-2xl font-serif font-bold text-olive-900 mb-8">
+                Local Pickup Locations
+              </h2>
+              <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {pickupLocations.map((loc) => (
+                  <div key={loc.id} className="bg-white border border-olive-200 p-5">
+                    <div className="flex items-start gap-3">
+                      <div className="mt-0.5 w-7 h-7 rounded-full bg-olive-100 flex items-center justify-center flex-shrink-0">
+                        <svg className="w-3.5 h-3.5 text-olive-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="font-semibold text-olive-900 text-sm">{loc.name}</p>
+                        <p className="text-xs text-olive-500 mt-0.5">{loc.city}, {loc.state}</p>
+                        <p className="text-xs text-olive-400 mt-0.5">{loc.address}</p>
+                        {loc.partnerType !== 'WAREHOUSE' && (
+                          <span className="inline-block mt-2 text-[9px] font-medium tracking-[0.12em] uppercase text-olive-500 bg-olive-50 border border-olive-200 px-1.5 py-0.5">
+                            {loc.partnerType === 'RESTAURANT' ? 'Restaurant Partner' : 'Retail Partner'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Producer connection */}
         {product.producerStoryExcerpt && (

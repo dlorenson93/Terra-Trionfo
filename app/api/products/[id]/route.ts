@@ -21,9 +21,35 @@ export async function GET(
           select: {
             id: true,
             name: true,
+            slug: true,
             description: true,
             status: true,
+            region: true,
+            country: true,
+            shortDescription: true,
           },
+        },
+        restaurantWines: {
+          include: {
+            restaurant: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                city: true,
+                state: true,
+                cuisineType: true,
+                priceRange: true,
+                isFeatured: true,
+                website: true,
+              },
+            },
+          },
+          ...(isPublic ? {
+            where: {
+              restaurant: { status: 'APPROVED', contentStatus: 'LIVE' },
+            },
+          } : {}),
         },
       },
     })
