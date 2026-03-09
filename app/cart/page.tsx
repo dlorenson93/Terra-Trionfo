@@ -58,6 +58,8 @@ export default function CartPage() {
   const [scheduledDate, setScheduledDate] = useState('')
   const [pickupLocationId, setPickupLocationId] = useState('')
   const [pickupLocations, setPickupLocations] = useState<{ id: string; name: string; address: string; city: string; state: string }[]>([])
+  const [deliveryZones, setDeliveryZones] = useState<{ id: string; name: string; routes: { deliveryDay: number }[] }[]>([])
+  const [selectedZoneId, setSelectedZoneId] = useState('')
 
   const [settings, setSettings] = useState<any>(null)
 
@@ -70,8 +72,13 @@ export default function CartPage() {
       const res = await fetch('/api/pickup-locations')
       if (res.ok) setPickupLocations(await res.json())
     }
+    async function loadDeliveryZones() {
+      const res = await fetch('/api/delivery-zones')
+      if (res.ok) setDeliveryZones(await res.json())
+    }
     loadSettings()
     loadPickupLocations()
+    loadDeliveryZones()
   }, [])
 
   useEffect(() => {
@@ -107,11 +114,12 @@ export default function CartPage() {
 
       const payload: any = { items, fulfillmentType }
       if (fulfillmentType === 'LOCAL_DELIVERY') {
-        payload.deliveryState = deliveryState
+        payload.zoneId = selectedZoneId
         payload.scheduledDate = scheduledDate
       }
       if (fulfillmentType === 'PICKUP') {
         payload.pickupLocationId = pickupLocationId
+        if (scheduledDate) payload.scheduledDate = scheduledDate
       }
 
       const response = await fetch('/api/checkout', {
@@ -300,46 +308,76 @@ export default function CartPage() {
                       {fulfillmentType === 'LOCAL_DELIVERY' && (
                         <div className="mt-4 space-y-4">
                           <div>
-                            <label className="label">Delivery State</label>
-                            <input
-                              type="text"
-                              value={deliveryState}
-                              onChange={(e) => setDeliveryState(e.target.value)}
+                            <label className="label">Delivery Region</label>
+                            <select
+                              value={selectedZoneId}
+                              onChange={(e) => { setSelectedZoneId(e.target.value); setScheduledDate('') }}
                               className="input-field w-full"
-                            />
+                            >
+                              <option value="">Select your region…</option>
+                              {deliveryZones.map((z) => (
+                                <option key={z.id} value={z.id}>{z.name}</option>
+                              ))}
+                            </select>
                           </div>
-                          <div>
-                            <label className="label">Scheduled Date</label>
-                            <input
-                              type="date"
-                              value={scheduledDate}
-                              onChange={(e) => setScheduledDate(e.target.value)}
-                              className="input-field w-full"
-                            />
-                          </div>
+                          {selectedZoneId && (() => {
+                            const zone = deliveryZones.find((z) => z.id === selectedZoneId)
+                            const validDays = zone?.routes.map((r) => r.deliveryDay) ?? []
+                            const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+                            return (
+                              <div>
+                                <label className="label">Scheduled Delivery Date</label>
+                                <p className="text-xs text-olive-500 mb-1">
+                                  This region delivers on: {validDays.map((d) => DAY_NAMES[d]).join(', ')}
+                                </p>
+                                <input
+                                  type="date"
+                                  value={scheduledDate}
+                                  min={new Date(Date.now() + 86400000).toISOString().split('T')[0]}
+                                  onChange={(e) => setScheduledDate(e.target.value)}
+                                  className="input-field w-full"
+                                />
+                              </div>
+                            )
+                          })()}
                         </div>
                       )}
 
                       {fulfillmentType === 'PICKUP' && (
-                        <div className="mt-4">
-                          <label className="label">Pickup Location</label>
-                          {pickupLocations.length > 0 ? (
-                            <select
-                              value={pickupLocationId}
-                              onChange={(e) => setPickupLocationId(e.target.value)}
-                              className="input-field w-full"
-                            >
-                              <option value="">Select a location…</option>
-                              {pickupLocations.map((loc) => (
-                                <option key={loc.id} value={loc.id}>
-                                  {loc.name} — {loc.address}, {loc.city}, {loc.state}
-                                </option>
-                              ))}
-                            </select>
-                          ) : (
-                            <p className="text-sm text-olive-600 mt-1">
-                              Pickup locations will be confirmed after order placement.
-                            </p>
+                        <div className="mt-4 space-y-4">
+                          <div>
+                            <label className="label">Pickup Location</label>
+                            {pickupLocations.length > 0 ? (
+                              <select
+                                value={pickupLocationId}
+                                onChange={(e) => { setPickupLocationId(e.target.value); setScheduledDate('') }}
+                                className="input-field w-full"
+                              >
+                                <option value="">Select a location…</option>
+                                {pickupLocations.map((loc) => (
+                                  <option key={loc.id} value={loc.id}>
+                                    {loc.name} — {loc.address}, {loc.city}, {loc.state}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              <p className="text-sm text-olive-600 mt-1">
+                                Pickup locations will be confirmed after order placement.
+                              </p>
+                            )}
+                          </div>
+                          {pickupLocationId && (
+                            <div>
+                              <label className="label">Pickup Date (optional)</label>
+                              <input
+                                type="date"
+                                value={scheduledDate}
+                                min={new Date(Date.now() + 86400000).toISOString().split('T')[0]}
+                                onChange={(e) => setScheduledDate(e.target.value)}
+                                className="input-field w-full"
+                              />
+                              <p className="text-xs text-olive-500 mt-1">Pickup is available on scheduled days. We'll confirm your date.</p>
+                            </div>
                           )}
                         </div>
                       )}

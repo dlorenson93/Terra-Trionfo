@@ -9,7 +9,8 @@ export const checkoutSchema = z.object({
   ),
   // schema allows SHIP as well so we can enforce consumer prohibition in code
   fulfillmentType: z.enum(['PICKUP', 'LOCAL_DELIVERY', 'SHIP']),
-  deliveryState: z.string().optional(),
+  zoneId: z.string().optional(),        // delivery zone id (LOCAL_DELIVERY)
+  deliveryState: z.string().optional(), // kept for backward compatibility
   scheduledDate: z.string().optional(),
   pickupLocationId: z.string().optional(),
   address: z.string().optional(),

@@ -393,6 +393,59 @@ async function main() {
 
   console.log('✅ Pickup location seeded')
 
+  // ── Delivery Zones ───────────────────────────────────────────────────────
+  const zonesData = [
+    { id: 'zone-greater-boston', code: 'GREATER_BOSTON', name: 'Greater Boston', description: 'Boston metro area, Cambridge, Somerville, Brookline, and surrounding communities' },
+    { id: 'zone-north-shore', code: 'NORTH_SHORE', name: 'North Shore', description: 'Salem, Beverly, Gloucester, Newburyport, and coastal communities north of Boston' },
+    { id: 'zone-cape-and-islands', code: 'CAPE_AND_ISLANDS', name: 'Cape & Islands', description: 'Cape Cod, Martha\'s Vineyard, and Nantucket' },
+    { id: 'zone-western-massachusetts', code: 'WESTERN_MASSACHUSETTS', name: 'Western Massachusetts', description: 'Springfield, Northampton, Amherst, and the Pioneer Valley' },
+  ]
+
+  for (const zone of zonesData) {
+    await (prisma as any).deliveryZone.upsert({
+      where: { id: zone.id },
+      update: { name: zone.name, description: zone.description },
+      create: { id: zone.id, code: zone.code, name: zone.name, description: zone.description, isActive: true },
+    })
+  }
+
+  console.log('✅ Delivery zones seeded')
+
+  // ── Delivery Routes (day 0=Sun, 1=Mon, ..., 6=Sat) ──────────────────────
+  // Wed=3 Greater Boston, Fri=5 North Shore, Sat=6 Cape & Islands, Sun=0 Western MA
+  const routesData = [
+    { id: 'route-gb-wed', zoneId: 'zone-greater-boston', deliveryDay: 3 },
+    { id: 'route-ns-fri', zoneId: 'zone-north-shore', deliveryDay: 5 },
+    { id: 'route-ci-sat', zoneId: 'zone-cape-and-islands', deliveryDay: 6 },
+    { id: 'route-wm-sun', zoneId: 'zone-western-massachusetts', deliveryDay: 0 },
+  ]
+
+  for (const route of routesData) {
+    await (prisma as any).deliveryRoute.upsert({
+      where: { id: route.id },
+      update: { deliveryDay: route.deliveryDay, isActive: true },
+      create: { id: route.id, zoneId: route.zoneId, deliveryDay: route.deliveryDay, isActive: true },
+    })
+  }
+
+  console.log('✅ Delivery routes seeded')
+
+  // ── Pickup Schedules (Thursday=4, Saturday=6) ────────────────────────────
+  const schedulesData = [
+    { id: 'sched-boston-thu', locationId: 'pickup-boston', pickupDay: 4 },
+    { id: 'sched-boston-sat', locationId: 'pickup-boston', pickupDay: 6 },
+  ]
+
+  for (const sched of schedulesData) {
+    await (prisma as any).pickupSchedule.upsert({
+      where: { id: sched.id },
+      update: { pickupDay: sched.pickupDay, isActive: true },
+      create: { id: sched.id, locationId: sched.locationId, pickupDay: sched.pickupDay, isActive: true },
+    })
+  }
+
+  console.log('✅ Pickup schedules seeded')
+
   console.log('🎉 Seed completed successfully!')
 }
 

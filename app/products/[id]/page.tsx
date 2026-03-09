@@ -101,12 +101,31 @@ export default function ProductDetailPage({
   const [pickupLocations, setPickupLocations] = useState<Array<{
     id: string; name: string; address: string; city: string; state: string; partnerType: string
   }>>([])
+  const [deliveryZoneNames, setDeliveryZoneNames] = useState<string[]>([])
+  const [pickupDayNames, setPickupDayNames] = useState<string[]>([])
+
+  const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
   useEffect(() => {
     fetchProduct()
     fetch('/api/pickup-locations')
       .then((r) => r.json())
       .then((data) => setPickupLocations(Array.isArray(data) ? data : []))
+      .catch(console.error)
+    fetch('/api/delivery-zones')
+      .then((r) => r.json())
+      .then((zones: any[]) => {
+        if (Array.isArray(zones)) setDeliveryZoneNames(zones.filter((z) => z.isActive).map((z) => z.name))
+      })
+      .catch(console.error)
+    fetch('/api/pickup-schedules')
+      .then((r) => r.json())
+      .then((scheds: any[]) => {
+        if (Array.isArray(scheds)) {
+          const days = [...new Set(scheds.filter((s) => s.isActive).map((s: any) => s.pickupDayName as string))]
+          setPickupDayNames(days)
+        }
+      })
       .catch(console.error)
   }, [params.id])
 
@@ -469,7 +488,10 @@ export default function ProductDetailPage({
                   <div>
                     <p className="font-semibold text-olive-900 text-sm">Pickup</p>
                     <p className="text-xs text-olive-600 mt-1">
-                      Available for pickup through Terra Trionfo at our warehouse location. Pickup is available on select scheduled days.
+                      Available for pickup through Terra Trionfo at our warehouse location.
+                      {pickupDayNames.length > 0
+                        ? ` Pickup days: ${pickupDayNames.join(', ')}.`
+                        : ' Pickup is available on select scheduled days.'}
                     </p>
                   </div>
                 </div>
@@ -480,7 +502,10 @@ export default function ProductDetailPage({
                   <div>
                     <p className="font-semibold text-olive-900 text-sm">Local Delivery</p>
                     <p className="text-xs text-olive-600 mt-1">
-                      Local delivery available in select Massachusetts regions on scheduled delivery days. Regions served include Greater Boston, North Shore, Cape &amp; Islands, and Western Massachusetts.
+                      Local delivery available in select Massachusetts regions on scheduled delivery routes.
+                      {deliveryZoneNames.length > 0
+                        ? ` Regions served: ${deliveryZoneNames.join(', ')}.`
+                        : ' Regions include Greater Boston, North Shore, Cape & Islands, and Western Massachusetts.'}
                     </p>
                   </div>
                 </div>

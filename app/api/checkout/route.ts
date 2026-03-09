@@ -7,6 +7,8 @@ import { checkoutSchema } from '@/lib/validation/checkout'
 
 type Fulfillment = 'PICKUP' | 'LOCAL_DELIVERY' | 'SHIP'
 
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions)
@@ -20,14 +22,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid request', details: parsed.error.errors }, { status: 400 })
     }
 
-    const { items, fulfillmentType, deliveryState, scheduledDate, pickupLocationId } = parsed.data
+    const { items, fulfillmentType, zoneId, scheduledDate, pickupLocationId } = parsed.data
 
     // shipping is forbidden for consumers
     if (fulfillmentType === 'SHIP') {
       return NextResponse.json({ error: 'Shipping is not available at this time.' }, { status: 400 })
     }
 
-    // fetch settings for delivery rules (generated type may not include the array fields)
+    // fetch settings for delivery fee
     const settingsRaw = await prisma.settings.findUnique({ where: { id: 'default' } })
     const settings = settingsRaw as any
 
@@ -44,7 +46,6 @@ export async function POST(request: Request) {
     // validate fulfillment support and inventory
     for (const item of items) {
       const prodRaw = products.find((p) => p.id === item.productId)!
-      // Prisma types may not reflect the allowedFulfillment field; cast to any
       const prod = prodRaw as any
       if (!prod.allowedFulfillment.includes(fulfillmentType as Fulfillment)) {
         return NextResponse.json({ error: `Product ${prod.name} does not support ${fulfillmentType}` }, { status: 400 })
@@ -54,21 +55,51 @@ export async function POST(request: Request) {
       }
     }
 
-    // local delivery checks
+    // local delivery validation — route-based
     let deliveryFee = 0
     if (fulfillmentType === 'LOCAL_DELIVERY') {
-      if (!deliveryState || !scheduledDate) {
-        return NextResponse.json({ error: 'Delivery state and scheduled date required' }, { status: 400 })
+      if (!zoneId || !scheduledDate) {
+        return NextResponse.json({ error: 'Delivery zone and scheduled date are required' }, { status: 400 })
       }
-      if (settings && !settings.deliveryAllowedStates.includes(deliveryState)) {
-        return NextResponse.json({ error: 'Delivery not available in your state' }, { status: 400 })
-      }
+
       const date = new Date(scheduledDate)
-      const weekday = date.getUTCDay() === 0 ? 7 : date.getUTCDay() // Sunday=0
-      if (settings && !settings.deliveryDaysOfWeek.includes(weekday)) {
-        return NextResponse.json({ error: 'Selected delivery day is not available' }, { status: 400 })
+      const weekday = date.getDay() // 0=Sun, 1=Mon, ..., 6=Sat
+
+      const route = await (prisma as any).deliveryRoute.findFirst({
+        where: { zoneId, deliveryDay: weekday, isActive: true },
+      })
+
+      if (!route) {
+        const zoneInfo = await (prisma as any).deliveryZone.findUnique({ where: { id: zoneId }, select: { name: true } })
+        const zoneName = zoneInfo?.name || 'your region'
+        return NextResponse.json({
+          error: `Delivery is not available in ${zoneName} on ${DAY_NAMES[weekday]}. Please select a valid delivery date for your region.`,
+        }, { status: 400 })
       }
+
       deliveryFee = settings?.deliveryFeeCents || 0
+    }
+
+    // pickup validation — schedule-based
+    if (fulfillmentType === 'PICKUP') {
+      if (!pickupLocationId) {
+        return NextResponse.json({ error: 'A pickup location is required' }, { status: 400 })
+      }
+
+      if (scheduledDate) {
+        const date = new Date(scheduledDate)
+        const weekday = date.getDay()
+
+        const schedule = await (prisma as any).pickupSchedule.findFirst({
+          where: { locationId: pickupLocationId, pickupDay: weekday, isActive: true },
+        })
+
+        if (!schedule) {
+          return NextResponse.json({
+            error: `Pickup is not available on ${DAY_NAMES[weekday]}. Please select a scheduled pickup day.`,
+          }, { status: 400 })
+        }
+      }
     }
 
     // calculate totals in dollars for order
@@ -90,7 +121,6 @@ export async function POST(request: Request) {
           scheduledDeliveryDate: scheduledDate ? new Date(scheduledDate) : null,
           pickupLocationId: fulfillmentType === 'PICKUP' ? pickupLocationId : null,
           orderItems: {
-            // cast to any because generated Prisma types may still expect the old `modelType` field
             create: items.map((item) => {
               const prod = products.find((p) => p.id === item.productId)! as any
               return {

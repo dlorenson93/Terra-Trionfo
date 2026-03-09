@@ -59,6 +59,39 @@ interface Restaurant {
   wines: RestaurantWineAdmin[]
 }
 
+interface DeliveryZone {
+  id: string
+  name: string
+  code: string
+  description?: string | null
+  isActive: boolean
+}
+
+interface DeliveryRoute {
+  id: string
+  zoneId: string
+  zone: { id: string; name: string; code: string }
+  deliveryDay: number
+  deliveryDayName: string
+  isActive: boolean
+}
+
+interface PickupScheduleAdmin {
+  id: string
+  locationId: string
+  location: { id: string; name: string; city: string; state: string }
+  pickupDay: number
+  pickupDayName: string
+  isActive: boolean
+}
+
+interface PickupLocationAdmin {
+  id: string
+  name: string
+  city: string
+  state: string
+}
+
 export default function AdminDashboard() {
   const { data: session } = useSession()
   const router = useRouter()
@@ -66,7 +99,16 @@ export default function AdminDashboard() {
   const [companies, setCompanies] = useState<Company[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
-  const [activeTab, setActiveTab] = useState<'overview' | 'companies' | 'products' | 'restaurants'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'companies' | 'products' | 'restaurants' | 'fulfillment'>('overview')
+  const [fulfillmentSubTab, setFulfillmentSubTab] = useState<'zones' | 'routes' | 'schedules'>('zones')
+
+  // Fulfillment ops state
+  const [deliveryZones, setDeliveryZones] = useState<DeliveryZone[]>([])
+  const [deliveryRoutes, setDeliveryRoutes] = useState<DeliveryRoute[]>([])
+  const [pickupSchedules, setPickupSchedules] = useState<PickupScheduleAdmin[]>([])
+  const [pickupLocationsList, setPickupLocationsList] = useState<PickupLocationAdmin[]>([])
+  const [newRouteForm, setNewRouteForm] = useState({ zoneId: '', deliveryDay: '' })
+  const [newScheduleForm, setNewScheduleForm] = useState({ locationId: '', pickupDay: '' })
   const [showNewRestaurantForm, setShowNewRestaurantForm] = useState(false)
   const [newRestaurantForm, setNewRestaurantForm] = useState({
     name: '', slug: '', address: '', city: '', state: 'MA', zipCode: '',
@@ -89,11 +131,15 @@ export default function AdminDashboard() {
 
   const fetchData = async () => {
     try {
-      const [statsRes, companiesRes, productsRes, restaurantsRes] = await Promise.all([
+      const [statsRes, companiesRes, productsRes, restaurantsRes, zonesRes, routesRes, schedulesRes, pickupLocsRes] = await Promise.all([
         fetch('/api/admin/stats'),
         fetch('/api/companies'),
         fetch('/api/products'),
         fetch('/api/restaurants'),
+        fetch('/api/delivery-zones'),
+        fetch('/api/delivery-routes'),
+        fetch('/api/pickup-schedules'),
+        fetch('/api/pickup-locations'),
       ])
 
       setStats(await statsRes.json())
@@ -103,6 +149,14 @@ export default function AdminDashboard() {
       setProducts(Array.isArray(productsData) ? productsData : [])
       const restaurantsData = await restaurantsRes.json()
       setRestaurants(Array.isArray(restaurantsData) ? restaurantsData : [])
+      const zonesData = await zonesRes.json()
+      setDeliveryZones(Array.isArray(zonesData) ? zonesData : [])
+      const routesData = await routesRes.json()
+      setDeliveryRoutes(Array.isArray(routesData) ? routesData : [])
+      const schedulesData = await schedulesRes.json()
+      setPickupSchedules(Array.isArray(schedulesData) ? schedulesData : [])
+      const pickupLocsData = await pickupLocsRes.json()
+      setPickupLocationsList(Array.isArray(pickupLocsData) ? pickupLocsData : [])
     } catch (error) {
       console.error('Error fetching data:', error)
     }
@@ -284,6 +338,106 @@ export default function AdminDashboard() {
     }
   }
 
+  // ── Fulfillment operations helpers ─────────────────────────────────────
+  const toggleZoneActive = async (zoneId: string, isActive: boolean) => {
+    try {
+      await fetch(`/api/delivery-zones/${zoneId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive }),
+      })
+      fetchData()
+    } catch (error) {
+      console.error('Error updating zone:', error)
+    }
+  }
+
+  const toggleRouteActive = async (routeId: string, isActive: boolean) => {
+    try {
+      await fetch(`/api/delivery-routes/${routeId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive }),
+      })
+      fetchData()
+    } catch (error) {
+      console.error('Error updating route:', error)
+    }
+  }
+
+  const deleteRoute = async (routeId: string) => {
+    if (!confirm('Delete this delivery route?')) return
+    try {
+      await fetch(`/api/delivery-routes/${routeId}`, { method: 'DELETE' })
+      fetchData()
+    } catch (error) {
+      console.error('Error deleting route:', error)
+    }
+  }
+
+  const createRoute = async () => {
+    if (!newRouteForm.zoneId || newRouteForm.deliveryDay === '') return
+    try {
+      const res = await fetch('/api/delivery-routes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ zoneId: newRouteForm.zoneId, deliveryDay: parseInt(newRouteForm.deliveryDay) }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        alert(err.error || 'Failed to create route')
+        return
+      }
+      setNewRouteForm({ zoneId: '', deliveryDay: '' })
+      fetchData()
+    } catch (error) {
+      console.error('Error creating route:', error)
+    }
+  }
+
+  const toggleScheduleActive = async (scheduleId: string, isActive: boolean) => {
+    try {
+      await fetch(`/api/pickup-schedules/${scheduleId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive }),
+      })
+      fetchData()
+    } catch (error) {
+      console.error('Error updating schedule:', error)
+    }
+  }
+
+  const deleteSchedule = async (scheduleId: string) => {
+    if (!confirm('Delete this pickup schedule?')) return
+    try {
+      await fetch(`/api/pickup-schedules/${scheduleId}`, { method: 'DELETE' })
+      fetchData()
+    } catch (error) {
+      console.error('Error deleting schedule:', error)
+    }
+  }
+
+  const createSchedule = async () => {
+    if (!newScheduleForm.locationId || newScheduleForm.pickupDay === '') return
+    try {
+      const res = await fetch('/api/pickup-schedules', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ locationId: newScheduleForm.locationId, pickupDay: parseInt(newScheduleForm.pickupDay) }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        alert(err.error || 'Failed to create schedule')
+        return
+      }
+      setNewScheduleForm({ locationId: '', pickupDay: '' })
+      fetchData()
+    } catch (error) {
+      console.error('Error creating schedule:', error)
+    }
+  }
+
   // Editorial labels for content status
   const contentStatusLabel = (status: string) => {
     switch (status) {
@@ -362,6 +516,21 @@ export default function AdminDashboard() {
                     {tab.label}
                   </button>
                 ))}
+              </div>
+              {/* Divider */}
+              <div className="w-px h-6 bg-olive-300 mx-2 self-center" />
+              <span className="text-[9px] font-medium tracking-[0.14em] uppercase text-olive-400 px-1 pb-1">Fulfillment Ops</span>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setActiveTab('fulfillment')}
+                  className={`px-6 py-3 font-medium transition-colors ${
+                    activeTab === 'fulfillment'
+                      ? 'text-olive-900 border-b-2 border-olive-700'
+                      : 'text-olive-600 hover:text-olive-800'
+                  }`}
+                >
+                  Fulfillment
+                </button>
               </div>
             </div>
           </div>
@@ -844,6 +1013,238 @@ export default function AdminDashboard() {
                   </table>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Fulfillment Operations Tab */}
+          {activeTab === 'fulfillment' && (
+            <div className="space-y-6">
+              {/* Sub-tab bar */}
+              <div className="flex gap-2 border-b border-olive-200">
+                {([
+                  { key: 'zones', label: 'Delivery Zones' },
+                  { key: 'routes', label: 'Delivery Routes' },
+                  { key: 'schedules', label: 'Pickup Schedules' },
+                ] as const).map((st) => (
+                  <button
+                    key={st.key}
+                    onClick={() => setFulfillmentSubTab(st.key)}
+                    className={`px-5 py-2.5 text-sm font-medium transition-colors ${
+                      fulfillmentSubTab === st.key
+                        ? 'text-olive-900 border-b-2 border-olive-700'
+                        : 'text-olive-600 hover:text-olive-800'
+                    }`}
+                  >
+                    {st.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Delivery Zones sub-tab */}
+              {fulfillmentSubTab === 'zones' && (
+                <div className="card p-6">
+                  <h2 className="text-xl font-serif font-bold text-olive-900 mb-1">Delivery Zones</h2>
+                  <p className="text-sm text-olive-500 mb-6">Enable or disable delivery zones and update their descriptions.</p>
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="text-left border-b border-olive-200">
+                          <th className="pb-3 text-sm font-medium text-olive-700">Zone Name</th>
+                          <th className="pb-3 text-sm font-medium text-olive-700">Code</th>
+                          <th className="pb-3 text-sm font-medium text-olive-700">Description</th>
+                          <th className="pb-3 text-sm font-medium text-olive-700">Status</th>
+                          <th className="pb-3 text-sm font-medium text-olive-700">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {deliveryZones.length === 0 && (
+                          <tr><td colSpan={5} className="py-8 text-center text-sm text-olive-500">No zones found.</td></tr>
+                        )}
+                        {deliveryZones.map((zone) => (
+                          <tr key={zone.id} className="border-b border-olive-100">
+                            <td className="py-3 text-sm font-medium text-olive-900">{zone.name}</td>
+                            <td className="py-3 text-xs font-mono text-olive-600">{zone.code}</td>
+                            <td className="py-3 text-sm text-olive-600 max-w-xs">{zone.description || <span className="italic text-olive-400">—</span>}</td>
+                            <td className="py-3">
+                              <span className={`text-xs font-medium px-2 py-0.5 ${zone.isActive ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-gray-50 text-gray-500 border border-gray-200'}`}>
+                                {zone.isActive ? 'Active' : 'Inactive'}
+                              </span>
+                            </td>
+                            <td className="py-3">
+                              <button
+                                onClick={() => toggleZoneActive(zone.id, !zone.isActive)}
+                                className={`text-xs px-3 py-1 rounded hover:opacity-80 transition-opacity ${zone.isActive ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'}`}
+                              >
+                                {zone.isActive ? 'Disable' : 'Enable'}
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Delivery Routes sub-tab */}
+              {fulfillmentSubTab === 'routes' && (
+                <div className="card p-6 space-y-6">
+                  <div>
+                    <h2 className="text-xl font-serif font-bold text-olive-900 mb-1">Delivery Routes</h2>
+                    <p className="text-sm text-olive-500 mb-6">Assign delivery days to zones. The checkout will enforce these routes.</p>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="text-left border-b border-olive-200">
+                            <th className="pb-3 text-sm font-medium text-olive-700">Zone</th>
+                            <th className="pb-3 text-sm font-medium text-olive-700">Delivery Day</th>
+                            <th className="pb-3 text-sm font-medium text-olive-700">Status</th>
+                            <th className="pb-3 text-sm font-medium text-olive-700">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {deliveryRoutes.length === 0 && (
+                            <tr><td colSpan={4} className="py-8 text-center text-sm text-olive-500">No routes found.</td></tr>
+                          )}
+                          {deliveryRoutes.map((route) => (
+                            <tr key={route.id} className="border-b border-olive-100">
+                              <td className="py-3 text-sm font-medium text-olive-900">{route.zone.name}</td>
+                              <td className="py-3 text-sm text-olive-800">{route.deliveryDayName}</td>
+                              <td className="py-3">
+                                <span className={`text-xs font-medium px-2 py-0.5 ${route.isActive ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-gray-50 text-gray-500 border border-gray-200'}`}>
+                                  {route.isActive ? 'Active' : 'Inactive'}
+                                </span>
+                              </td>
+                              <td className="py-3">
+                                <div className="flex gap-1">
+                                  <button
+                                    onClick={() => toggleRouteActive(route.id, !route.isActive)}
+                                    className={`text-xs px-2 py-1 rounded hover:opacity-80 ${route.isActive ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-green-50 text-green-700 border border-green-200'}`}
+                                  >
+                                    {route.isActive ? 'Pause' : 'Activate'}
+                                  </button>
+                                  <button
+                                    onClick={() => deleteRoute(route.id)}
+                                    className="text-xs px-2 py-1 rounded bg-red-50 text-red-700 border border-red-200 hover:opacity-80"
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Add new route */}
+                  <div className="border border-olive-200 bg-parchment-50 p-4">
+                    <h3 className="text-sm font-semibold text-olive-900 mb-3">Add Delivery Route</h3>
+                    <div className="flex gap-3 flex-wrap items-end">
+                      <div>
+                        <label className="label">Zone</label>
+                        <select className="input-field" value={newRouteForm.zoneId} onChange={(e) => setNewRouteForm((f) => ({ ...f, zoneId: e.target.value }))}>
+                          <option value="">Select zone…</option>
+                          {deliveryZones.map((z) => <option key={z.id} value={z.id}>{z.name}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="label">Delivery Day</label>
+                        <select className="input-field" value={newRouteForm.deliveryDay} onChange={(e) => setNewRouteForm((f) => ({ ...f, deliveryDay: e.target.value }))}>
+                          <option value="">Select day…</option>
+                          {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((d, i) => (
+                            <option key={i} value={i}>{d}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <button onClick={createRoute} className="text-sm px-4 py-2 bg-olive-700 text-parchment-100 hover:bg-olive-800 transition-colors">
+                        Add Route
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Pickup Schedules sub-tab */}
+              {fulfillmentSubTab === 'schedules' && (
+                <div className="card p-6 space-y-6">
+                  <div>
+                    <h2 className="text-xl font-serif font-bold text-olive-900 mb-1">Pickup Schedules</h2>
+                    <p className="text-sm text-olive-500 mb-6">Configure which days each pickup location is available for order collection.</p>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="text-left border-b border-olive-200">
+                            <th className="pb-3 text-sm font-medium text-olive-700">Location</th>
+                            <th className="pb-3 text-sm font-medium text-olive-700">Pickup Day</th>
+                            <th className="pb-3 text-sm font-medium text-olive-700">Status</th>
+                            <th className="pb-3 text-sm font-medium text-olive-700">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {pickupSchedules.length === 0 && (
+                            <tr><td colSpan={4} className="py-8 text-center text-sm text-olive-500">No schedules found.</td></tr>
+                          )}
+                          {pickupSchedules.map((sched) => (
+                            <tr key={sched.id} className="border-b border-olive-100">
+                              <td className="py-3 text-sm font-medium text-olive-900">{sched.location.name}</td>
+                              <td className="py-3 text-sm text-olive-800">{sched.pickupDayName}</td>
+                              <td className="py-3">
+                                <span className={`text-xs font-medium px-2 py-0.5 ${sched.isActive ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-gray-50 text-gray-500 border border-gray-200'}`}>
+                                  {sched.isActive ? 'Active' : 'Inactive'}
+                                </span>
+                              </td>
+                              <td className="py-3">
+                                <div className="flex gap-1">
+                                  <button
+                                    onClick={() => toggleScheduleActive(sched.id, !sched.isActive)}
+                                    className={`text-xs px-2 py-1 rounded hover:opacity-80 ${sched.isActive ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-green-50 text-green-700 border border-green-200'}`}
+                                  >
+                                    {sched.isActive ? 'Pause' : 'Activate'}
+                                  </button>
+                                  <button
+                                    onClick={() => deleteSchedule(sched.id)}
+                                    className="text-xs px-2 py-1 rounded bg-red-50 text-red-700 border border-red-200 hover:opacity-80"
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Add new schedule */}
+                  <div className="border border-olive-200 bg-parchment-50 p-4">
+                    <h3 className="text-sm font-semibold text-olive-900 mb-3">Add Pickup Schedule</h3>
+                    <div className="flex gap-3 flex-wrap items-end">
+                      <div>
+                        <label className="label">Location</label>
+                        <select className="input-field" value={newScheduleForm.locationId} onChange={(e) => setNewScheduleForm((f) => ({ ...f, locationId: e.target.value }))}>
+                          <option value="">Select location…</option>
+                          {pickupLocationsList.map((loc) => <option key={loc.id} value={loc.id}>{loc.name}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="label">Pickup Day</label>
+                        <select className="input-field" value={newScheduleForm.pickupDay} onChange={(e) => setNewScheduleForm((f) => ({ ...f, pickupDay: e.target.value }))}>
+                          <option value="">Select day…</option>
+                          {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((d, i) => (
+                            <option key={i} value={i}>{d}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <button onClick={createSchedule} className="text-sm px-4 py-2 bg-olive-700 text-parchment-100 hover:bg-olive-800 transition-colors">
+                        Add Schedule
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
