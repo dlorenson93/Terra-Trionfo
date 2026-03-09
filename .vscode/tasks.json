@@ -2,9 +2,9 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Fix push",
+      "label": "Portfolio visibility fix",
       "type": "shell",
-      "command": "git add -A && git commit -m 'fix: correct JSX structure in producers/page.tsx' && git push origin main",
+      "command": "git add -A && git commit -m 'fix: portfolio now visible on homepage, /products, and /producers -- replace empty states with live data' && git push origin main",
       "options": {
         "cwd": "/workspaces/Terra-Trionfo"
       },

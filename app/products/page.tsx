@@ -138,24 +138,84 @@ function ProductsContent() {
               <p className="text-olive-700 mt-4">Loading products...</p>
             </div>
           ) : products.length === 0 ? (
-            <div className="text-center py-12">
-              <svg
-                className="mx-auto h-12 w-12 text-olive-400"
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
-              </svg>
-              <h3 className="mt-4 text-lg font-medium text-olive-900">
-                Our Curated Selection Is Being Prepared
-              </h3>
-              <p className="text-olive-600 mt-2">
-                We&apos;re carefully reviewing producers and their wines. Check back soon.
-              </p>
+            // No live products yet — show the incoming portfolio wines inline
+            <div>
+              <div className="mb-8">
+                <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-olive-400 mb-2">
+                  Incoming Portfolio
+                </p>
+                <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+                  <div>
+                    <h2 className="text-2xl font-serif font-bold text-olive-900 mb-1">
+                      Wines Under Evaluation
+                    </h2>
+                    <p className="text-sm text-olive-500 leading-relaxed">
+                      Estates and wines currently being tasted for U.S. import. Pricing available to on-trade partners upon request.
+                    </p>
+                  </div>
+                  <div className="flex gap-2 flex-shrink-0">
+                    {[
+                      { value: 'all', label: 'All' },
+                      { value: 'classical', label: 'Classical' },
+                      { value: 'alternative-next-generation', label: 'Alternative' },
+                    ].map((f) => (
+                      <button
+                        key={f.value}
+                        onClick={() => setPortfolioFilter(f.value)}
+                        className={`text-[10px] uppercase tracking-[0.12em] px-3 py-1.5 border transition-colors ${
+                          portfolioFilter === f.value
+                            ? 'border-olive-700 text-olive-900 bg-olive-50'
+                            : 'border-olive-200 text-olive-500 hover:border-olive-400 hover:text-olive-700'
+                        }`}
+                      >
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                {WINES.filter((w) => {
+                  if (portfolioFilter === 'all') return true
+                  const p = PRODUCERS.find((prod) => prod.id === w.producerId)
+                  return p?.collection === portfolioFilter
+                }).map((wine) => {
+                  const producer = PRODUCERS.find((p) => p.id === wine.producerId)
+                  return (
+                    <Link
+                      key={wine.id}
+                      href={`/wines/${wine.slug}`}
+                      className="group border border-parchment-300 hover:border-olive-400 bg-parchment-50 hover:bg-white transition-all p-5 flex flex-col"
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <span className="text-[9px] font-medium text-olive-400 uppercase tracking-wider">
+                          {wine.type}
+                        </span>
+                        {wine.criticScore && (
+                          <span className="text-[9px] text-amber-500/70">★</span>
+                        )}
+                      </div>
+                      <h3 className="font-serif font-bold text-olive-900 group-hover:text-olive-700 transition-colors text-sm leading-snug mb-1">
+                        {wine.displayName}
+                      </h3>
+                      {wine.appellation && (
+                        <p className="text-[10px] text-olive-500 mb-1">{wine.appellation}</p>
+                      )}
+                      {producer && (
+                        <p className="text-[10px] text-olive-400 mb-2 uppercase tracking-wider">
+                          {producer.region}
+                        </p>
+                      )}
+                      <p className="text-xs text-olive-600 leading-relaxed line-clamp-3 flex-grow">
+                        {wine.description}
+                      </p>
+                      {wine.criticScore && (
+                        <p className="text-[10px] text-amber-600/70 mt-2 font-medium">{wine.criticScore}</p>
+                      )}
+                    </Link>
+                  )
+                })}
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -183,112 +243,6 @@ function ProductsContent() {
             </div>
           )}
         </div>
-
-        {/* ── Portfolio Preview ────────────────────────────────────── */}
-        <section className="bg-olive-900 border-t border-olive-800 py-20 px-4 relative overflow-hidden">
-          <div
-            className="absolute inset-0 opacity-[0.03]"
-            style={{
-              backgroundImage:
-                "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='1' height='4' fill='%23fff'/%3E%3Crect width='4' height='1' fill='%23fff'/%3E%3C/svg%3E\")",
-              backgroundSize: '4px 4px',
-            }}
-          />
-          <div className="relative max-w-7xl mx-auto">
-            <p className="text-[10px] font-medium text-amber-400/60 uppercase tracking-[0.14em] mb-3">
-              Incoming Portfolio
-            </p>
-            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10">
-              <div>
-                <h2 className="text-3xl font-serif font-bold text-parchment-100 mb-2">
-                  Wines Under Evaluation
-                </h2>
-                <p className="text-parchment-300/60 text-sm leading-relaxed max-w-lg">
-                  Estates and wines currently being tasted and evaluated for U.S. import. Pricing
-                  is available to on-trade partners upon request.
-                </p>
-              </div>
-              {/* Collection filter */}
-              <div className="flex gap-2 flex-shrink-0">
-                {[
-                  { value: 'all', label: 'All' },
-                  { value: 'classical', label: 'Classical' },
-                  { value: 'alternative-next-generation', label: 'Alternative' },
-                ].map((f) => (
-                  <button
-                    key={f.value}
-                    onClick={() => setPortfolioFilter(f.value)}
-                    className={`text-[10px] uppercase tracking-[0.12em] px-3 py-1.5 border transition-colors ${
-                      portfolioFilter === f.value
-                        ? 'border-amber-400/60 text-amber-300'
-                        : 'border-parchment-400/20 text-parchment-400/50 hover:border-parchment-400/40 hover:text-parchment-300/70'
-                    }`}
-                  >
-                    {f.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {WINES.filter((w) => {
-                if (portfolioFilter === 'all') return true
-                const p = PRODUCERS.find((prod) => prod.id === w.producerId)
-                return p?.collection === portfolioFilter
-              }).map((wine) => {
-                const producer = PRODUCERS.find((p) => p.id === wine.producerId)
-                return (
-                  <Link
-                    key={wine.id}
-                    href={`/wines/${wine.slug}`}
-                    className="group border border-parchment-300/10 bg-parchment-100/[0.03] hover:border-amber-400/20 hover:bg-parchment-100/[0.06] transition-colors p-6 flex flex-col"
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <span className="text-[9px] font-medium text-parchment-400/55 uppercase tracking-[0.3em]">
-                        {wine.type}
-                      </span>
-                      {wine.criticScore && (
-                        <span className="text-[9px] text-amber-400/60 font-medium">★</span>
-                      )}
-                    </div>
-                    <h3 className="font-serif font-bold text-parchment-100 text-base leading-snug mb-1 group-hover:text-amber-100/90 transition-colors">
-                      {wine.displayName}
-                    </h3>
-                    {wine.appellation && (
-                      <p className="text-[10px] text-parchment-400/50 mb-2">{wine.appellation}</p>
-                    )}
-                    {producer && (
-                      <p className="text-[10px] text-parchment-400/40 mb-3 uppercase tracking-wider">
-                        {producer.region}
-                      </p>
-                    )}
-                    <p className="text-xs text-parchment-400/55 leading-relaxed line-clamp-3 flex-grow">
-                      {wine.description}
-                    </p>
-                    {wine.criticScore && (
-                      <p className="text-[10px] text-amber-400/60 mt-3">{wine.criticScore}</p>
-                    )}
-                  </Link>
-                )
-              })}
-            </div>
-
-            <div className="mt-10 flex gap-6">
-              <Link
-                href="/producers"
-                className="border border-parchment-400/30 text-parchment-300/80 text-xs font-medium tracking-[0.15em] uppercase px-6 py-3 hover:border-parchment-400/60 hover:text-parchment-100 transition-colors"
-              >
-                View All Producers
-              </Link>
-              <Link
-                href="/regions"
-                className="border border-amber-400/30 text-amber-300/70 text-xs font-medium tracking-[0.15em] uppercase px-6 py-3 hover:border-amber-400/60 hover:text-amber-200 transition-colors"
-              >
-                Explore by Region
-              </Link>
-            </div>
-          </div>
-        </section>
       </main>
 
       <Footer />
