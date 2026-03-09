@@ -1,21 +1,27 @@
+import Link from 'next/link'
+
 const regions = [
   {
     name: 'Piedmont',
+    slug: 'piedmont',
     descriptor: 'Home of Barolo, Barbaresco, and alpine Nebbiolo vineyards.',
     detail: 'Piedmont — Il Piemonte',
   },
   {
     name: 'Tuscany',
+    slug: 'tuscany',
     descriptor: 'Sangiovese country: Chianti, Brunello, Bolgheri, and hillside estates shaped by centuries of winemaking.',
     detail: 'Tuscany — La Toscana',
   },
   {
     name: 'Veneto',
+    slug: 'veneto',
     descriptor: 'A region of remarkable diversity, from Amarone and Valpolicella to the volcanic soils behind Soave.',
     detail: 'Veneto — Il Veneto',
   },
   {
     name: 'Alto Adige',
+    slug: 'alto-adige',
     descriptor: 'Alpine vineyards producing refined whites and elegant cool-climate reds at the crossroads of Italian and Tyrolean culture.',
     detail: 'Alto Adige — Südtirol',
   },
@@ -53,21 +59,25 @@ export default function RegionalDiscovery() {
         {/* Region cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {regions.map((region) => (
-            <div
+            <Link
               key={region.name}
-              className="border border-parchment-300/10 bg-parchment-100/[0.03] p-9 flex flex-col hover:border-amber-400/20 hover:bg-parchment-100/[0.06] transition-colors duration-300"
+              href={`/regions/${region.slug}`}
+              className="block border border-parchment-300/10 bg-parchment-100/[0.03] p-9 flex flex-col hover:border-amber-400/20 hover:bg-parchment-100/[0.06] transition-colors duration-300 group"
             >
               <span className="text-[9px] font-medium text-amber-400/50 uppercase tracking-[0.3em] mb-5">
                 {region.detail}
               </span>
-              <h3 className="text-lg font-serif font-bold text-parchment-100 mb-4 leading-snug">
+              <h3 className="text-lg font-serif font-bold text-parchment-100 mb-4 leading-snug group-hover:text-amber-100/90 transition-colors">
                 {region.name}
               </h3>
               <div className="h-px w-8 bg-amber-400/15 mb-5" />
               <p className="text-xs text-parchment-400/55 leading-loose">
                 {region.descriptor}
               </p>
-            </div>
+              <p className="mt-4 text-[10px] text-amber-400/30 group-hover:text-amber-400/60 transition-colors uppercase tracking-wider">
+                Explore region →
+              </p>
+            </Link>
           ))}
         </div>
       </div>

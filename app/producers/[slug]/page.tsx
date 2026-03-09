@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import ProductCard from '@/components/products/ProductCard'
@@ -22,6 +23,33 @@ interface ProducerFull {
   winemakerBio?: string | null
   sustainablePractices?: string | null
   isFoundingProducer?: boolean
+}
+
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  const slug = params.slug
+  const rawCompany = await prisma.company.findFirst({
+    where: {
+      status: 'APPROVED',
+      contentStatus: 'LIVE',
+      OR: [{ slug }, { id: slug }],
+    },
+  })
+  if (!rawCompany) return { title: 'Producer Not Found | Terra Trionfo' }
+  const company = rawCompany as any
+  const regionLine = [company.region, company.country].filter(Boolean).join(', ')
+  const description: string =
+    company.shortDescription ||
+    company.description ||
+    `Discover ${company.name}${regionLine ? `, ${regionLine}` : ''} — imported by Terra Trionfo.`
+  return {
+    title: `${company.name}${regionLine ? ` — ${regionLine}` : ''} | Terra Trionfo`,
+    description,
+    openGraph: {
+      title: company.name,
+      description,
+      ...(company.heroImageUrl ? { images: [company.heroImageUrl] } : {}),
+    },
+  }
 }
 
 export default async function ProducerDetailPage({ params }: { params: { slug: string } }) {

@@ -65,6 +65,12 @@ export default function VendorDashboard() {
     abv: '',
     bottleSizeMl: '750',
     tastingNotesShort: '',
+    aromaNotes: '',
+    palateNotes: '',
+    finishNotes: '',
+    vinification: '',
+    aging: '',
+    decantingNotes: '',
     servingTemperature: '',
     foodPairings: '',
   })
@@ -171,6 +177,12 @@ export default function VendorDashboard() {
             abv: productForm.abv ? parseFloat(productForm.abv) : undefined,
             bottleSizeMl: productForm.bottleSizeMl ? parseInt(productForm.bottleSizeMl) : undefined,
             tastingNotesShort: productForm.tastingNotesShort || undefined,
+            aromaNotes: productForm.aromaNotes || undefined,
+            palateNotes: productForm.palateNotes || undefined,
+            finishNotes: productForm.finishNotes || undefined,
+            vinification: productForm.vinification || undefined,
+            aging: productForm.aging || undefined,
+            decantingNotes: productForm.decantingNotes || undefined,
             servingTemperature: productForm.servingTemperature || undefined,
             foodPairings: productForm.foodPairings ? productForm.foodPairings.split(',').map((s) => s.trim()).filter(Boolean) : undefined,
           } : {}),
@@ -202,6 +214,12 @@ export default function VendorDashboard() {
         abv: '',
         bottleSizeMl: '750',
         tastingNotesShort: '',
+        aromaNotes: '',
+        palateNotes: '',
+        finishNotes: '',
+        vinification: '',
+        aging: '',
+        decantingNotes: '',
         servingTemperature: '',
         foodPairings: '',
       })
@@ -670,6 +688,73 @@ export default function VendorDashboard() {
                           rows={2}
                           className="input-field"
                           placeholder="One-sentence description of the wine's character…"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-4 mb-4">
+                        <div>
+                          <label className="label">Aroma Notes</label>
+                          <textarea
+                            value={productForm.aromaNotes}
+                            onChange={(e) => setProductForm({ ...productForm, aromaNotes: e.target.value })}
+                            rows={2}
+                            className="input-field"
+                            placeholder="On the nose…"
+                          />
+                        </div>
+                        <div>
+                          <label className="label">Palate Notes</label>
+                          <textarea
+                            value={productForm.palateNotes}
+                            onChange={(e) => setProductForm({ ...productForm, palateNotes: e.target.value })}
+                            rows={2}
+                            className="input-field"
+                            placeholder="On the palate…"
+                          />
+                        </div>
+                        <div>
+                          <label className="label">Finish Notes</label>
+                          <textarea
+                            value={productForm.finishNotes}
+                            onChange={(e) => setProductForm({ ...productForm, finishNotes: e.target.value })}
+                            rows={2}
+                            className="input-field"
+                            placeholder="The finish…"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <label className="label">Vinification</label>
+                          <textarea
+                            value={productForm.vinification}
+                            onChange={(e) => setProductForm({ ...productForm, vinification: e.target.value })}
+                            rows={2}
+                            className="input-field"
+                            placeholder="Fermentation method, yeast, vessels…"
+                          />
+                        </div>
+                        <div>
+                          <label className="label">Aging</label>
+                          <textarea
+                            value={productForm.aging}
+                            onChange={(e) => setProductForm({ ...productForm, aging: e.target.value })}
+                            rows={2}
+                            className="input-field"
+                            placeholder="Oak type, duration…"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="mb-4">
+                        <label className="label">Decanting Notes</label>
+                        <input
+                          type="text"
+                          value={productForm.decantingNotes}
+                          onChange={(e) => setProductForm({ ...productForm, decantingNotes: e.target.value })}
+                          className="input-field"
+                          placeholder="Decant 1 hour before serving…"
                         />
                       </div>
 
