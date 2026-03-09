@@ -61,7 +61,66 @@ export async function GET(
       )
     }
 
-    return NextResponse.json(product)
+    // Related wines — same estate (exclude this product)
+    const relatedByEstate = await prisma.product.findMany({
+      where: {
+        companyId: product.companyId,
+        id: { not: product.id },
+        status: 'APPROVED',
+        contentStatus: 'LIVE',
+      },
+      select: {
+        id: true,
+        name: true,
+        imageUrl: true,
+        category: true,
+        retailPriceCents: true,
+        vintage: true,
+        appellation: true,
+        grapeVarietals: true,
+        tastingNotesShort: true,
+        isFoundingWine: true,
+        isLimitedAllocation: true,
+        company: { select: { id: true, name: true, slug: true } },
+      },
+      take: 6,
+      orderBy: { createdAt: 'desc' },
+    })
+
+    // Related wines — same region (exclude this estate)
+    const companyRegion = (product.company as any).region as string | null
+    const relatedByRegion = companyRegion
+      ? await prisma.product.findMany({
+          where: {
+            id: { not: product.id },
+            companyId: { not: product.companyId },
+            status: 'APPROVED',
+            contentStatus: 'LIVE',
+            company: {
+              status: 'APPROVED',
+              region: { contains: companyRegion, mode: 'insensitive' },
+            },
+          },
+          select: {
+            id: true,
+            name: true,
+            imageUrl: true,
+            category: true,
+            retailPriceCents: true,
+            vintage: true,
+            appellation: true,
+            grapeVarietals: true,
+            tastingNotesShort: true,
+            isFoundingWine: true,
+            isLimitedAllocation: true,
+            company: { select: { id: true, name: true, slug: true } },
+          },
+          take: 6,
+          orderBy: { createdAt: 'desc' },
+        })
+      : []
+
+    return NextResponse.json({ ...product, relatedByEstate, relatedByRegion })
   } catch (error) {
     console.error('Get product error:', error)
     return NextResponse.json(

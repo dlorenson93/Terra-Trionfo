@@ -75,6 +75,23 @@ interface Product {
       isFeatured: boolean
     }
   }>
+  relatedByEstate?: RelatedWine[]
+  relatedByRegion?: RelatedWine[]
+}
+
+interface RelatedWine {
+  id: string
+  name: string
+  imageUrl?: string | null
+  category: string
+  retailPriceCents: number
+  vintage?: number | null
+  appellation?: string | null
+  grapeVarietals?: string[]
+  tastingNotesShort?: string | null
+  isFoundingWine?: boolean
+  isLimitedAllocation?: boolean
+  company: { id: string; name: string; slug?: string | null }
 }
 
 function StatPill({ label, value }: { label: string; value?: string | null }) {
@@ -632,6 +649,117 @@ export default function ProductDetailPage({
               >
                 Meet {product.company.name} →
               </Link>
+            </div>
+          </div>
+        )}
+
+        {/* More from this estate */}
+        {product.relatedByEstate && product.relatedByEstate.length > 0 && (
+          <div className="bg-parchment-50 border-t border-parchment-300 py-14 px-4">
+            <div className="max-w-5xl mx-auto">
+              <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-olive-400 mb-2">
+                The Estate
+              </p>
+              <h2 className="text-2xl font-serif font-bold text-olive-900 mb-8">
+                More from {product.company.name}
+              </h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                {product.relatedByEstate.slice(0, 6).map((w) => (
+                  <Link
+                    key={w.id}
+                    href={`/products/${w.id}`}
+                    className="group flex flex-col border border-parchment-300 hover:border-olive-400 bg-white transition-all"
+                  >
+                    <div className="relative aspect-square bg-parchment-200 overflow-hidden">
+                      {w.imageUrl ? (
+                        <img
+                          src={w.imageUrl}
+                          alt={w.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-olive-100 to-olive-200">
+                          <svg className="w-8 h-8 text-olive-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-3 flex flex-col flex-grow">
+                      <p className="text-[9px] text-olive-400 uppercase tracking-wide mb-1">
+                        {w.category}{w.vintage ? ` · ${w.vintage}` : ''}
+                      </p>
+                      <p className="text-xs font-serif font-semibold text-olive-900 leading-snug group-hover:text-olive-700 transition-colors line-clamp-2">
+                        {w.name}
+                      </p>
+                      <p className="text-xs font-bold text-olive-800 mt-auto pt-2">
+                        ${(w.retailPriceCents / 100).toFixed(2)}
+                      </p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+              <div className="mt-6">
+                <Link
+                  href={`/producers/${product.company.slug || product.company.id}`}
+                  className="text-xs text-olive-600 hover:text-olive-900 underline underline-offset-4 transition-colors uppercase tracking-wider"
+                >
+                  View all wines from {product.company.name} →
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* More from this region */}
+        {product.relatedByRegion && product.relatedByRegion.length > 0 && (
+          <div className="bg-white border-t border-parchment-300 py-14 px-4">
+            <div className="max-w-5xl mx-auto">
+              <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-olive-400 mb-2">
+                Regional Discovery
+              </p>
+              <h2 className="text-2xl font-serif font-bold text-olive-900 mb-8">
+                More from {product.company.region || 'this Region'}
+              </h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                {product.relatedByRegion.slice(0, 6).map((w) => (
+                  <Link
+                    key={w.id}
+                    href={`/products/${w.id}`}
+                    className="group flex flex-col border border-parchment-300 hover:border-olive-400 bg-parchment-50 hover:bg-white transition-all"
+                  >
+                    <div className="relative aspect-square bg-parchment-200 overflow-hidden">
+                      {w.imageUrl ? (
+                        <img
+                          src={w.imageUrl}
+                          alt={w.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-olive-100 to-olive-200">
+                          <svg className="w-8 h-8 text-olive-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-3 flex flex-col flex-grow">
+                      <p className="text-[9px] text-olive-400 uppercase tracking-wide mb-1">
+                        {w.company.name}
+                      </p>
+                      <p className="text-xs font-serif font-semibold text-olive-900 leading-snug group-hover:text-olive-700 transition-colors line-clamp-2">
+                        {w.name}
+                      </p>
+                      {w.vintage && (
+                        <p className="text-[9px] text-olive-400 mt-0.5">{w.vintage}</p>
+                      )}
+                      <p className="text-xs font-bold text-olive-800 mt-auto pt-2">
+                        ${(w.retailPriceCents / 100).toFixed(2)}
+                      </p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
             </div>
           </div>
         )}

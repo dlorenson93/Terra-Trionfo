@@ -2,66 +2,9 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
+import { REGIONS } from '@/lib/regions'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
-
-interface RegionData {
-  name: string
-  subtitle: string
-  heroLine: string
-  description: string
-  appellations: string[]
-  grapes: string[]
-  climateNote: string
-  dbKeywords: string[]   // matched against company.region field (case-insensitive)
-}
-
-const REGIONS: Record<string, RegionData> = {
-  piedmont: {
-    name: 'Piedmont',
-    subtitle: 'Il Piemonte',
-    heroLine: 'The kingdom of Nebbiolo — Barolo, Barbaresco, and alpine terroir.',
-    description:
-      'Nestled at the foot of the Alps, Piedmont is home to some of Italy\'s most celebrated appellations. The Langhe hills cultivate Nebbiolo into Barolo and Barbaresco, wines of uncommon structure and longevity. Barbera d\'Asti brings generosity; Moscato d\'Asti, delicacy. Truffle country, slow fermentation, and a deep tradition of cellaring define the Piemontese ethos.',
-    appellations: ['Barolo DOCG', 'Barbaresco DOCG', 'Barbera d\'Asti DOC', 'Moscato d\'Asti DOCG', 'Gavi DOCG', 'Dolcetto d\'Alba DOC'],
-    grapes: ['Nebbiolo', 'Barbera', 'Dolcetto', 'Moscato Bianco', 'Cortese'],
-    climateNote: 'Continental climate with Alpine influence — significant diurnal shifts preserve acidity and aromatic precision.',
-    dbKeywords: ['piedmont', 'piemonte', 'langhe', 'monferrato'],
-  },
-  tuscany: {
-    name: 'Tuscany',
-    subtitle: 'La Toscana',
-    heroLine: 'Sangiovese country — Chianti, Brunello, and the Bolgheri coast.',
-    description:
-      'Tuscany defines Italian wine for much of the world. The Sangiovese grape, expressed through an extraordinary range of soils and elevations, yields wines from the structured grandeur of Brunello di Montalcino to the vivid acidity of Chianti Classico. The Bolgheri coast introduced the Supertuscans — Cabernet and Merlot-driven blends that rewrote the international handbook. Ancient hilltop estates, olive groves, and Renaissance landscapes complete the story.',
-    appellations: ['Chianti Classico DOCG', 'Brunello di Montalcino DOCG', 'Vino Nobile di Montepulciano DOCG', 'Bolgheri DOC', 'Morellino di Scansano DOC', 'Vernaccia di San Gimignano DOCG'],
-    grapes: ['Sangiovese', 'Cabernet Sauvignon', 'Merlot', 'Vernaccia', 'Trebbiano Toscano'],
-    climateNote: 'Warm Mediterranean tendencies moderated by maritime breezes along the coast and altitude inland.',
-    dbKeywords: ['tuscany', 'toscana', 'chianti', 'montalcino', 'bolgheri', 'montepulciano'],
-  },
-  veneto: {
-    name: 'Veneto',
-    subtitle: 'Il Veneto',
-    heroLine: 'From Amarone\'s dried-grape intensity to the volcanic minerality of Soave.',
-    description:
-      'The Veneto is Italy\'s most prolific wine region, yet quality and variety are everywhere. The Valpolicella zone produces Amarone della Valpolicella — one of the world\'s great red wines — through the appassimento technique of drying harvested grapes before pressing. The Soave hills, with their volcanic basalt soils, yield whites of subtle mineral depth. Prosecco, produced across a sweep of hillside vineyards in Conegliano-Valdobbiadene, has become an emblem of Italian conviviality.',
-    appellations: ['Amarone della Valpolicella DOCG', 'Valpolicella DOC', 'Soave Classico DOC', 'Prosecco di Valdobbiadene DOCG', 'Bardolino DOC', 'Ripasso Valpolicella DOC'],
-    grapes: ['Corvina', 'Rondinella', 'Garganega', 'Glera', 'Pinot Grigio'],
-    climateNote: 'Varied — Lake Garda moderates temperatures in the west; the Dolomites shape alpine conditions in the north.',
-    dbKeywords: ['veneto', 'valpolicella', 'amarone', 'soave', 'valdobbiadene'],
-  },
-  'alto-adige': {
-    name: 'Alto Adige',
-    subtitle: 'Südtirol',
-    heroLine: 'Alpine precision — cool-climate whites and elegant reds at the northern limit.',
-    description:
-      'Alto Adige (Südtirol) sits at the crossroads of Italian and Tyrolean culture, producing wines of remarkable intensity and finesse at vineyard elevations between 200 and 900 meters. The extreme diurnal temperature range — warm days, cold nights — locks in aromatics and acidity. This region is most celebrated for its Pinot Bianco, Gewürztraminer, and Pinot Nero, though Lagrein — a dark, inky, native red — offers something entirely unique.',
-    appellations: ['Alto Adige DOC / Südtirol DOC', 'Santa Maddalena DOC', 'Terlano DOC', 'Valle Isarco DOC'],
-    grapes: ['Pinot Bianco', 'Pinot Grigio', 'Gewürztraminer', 'Pinot Nero', 'Lagrein', 'Schiava'],
-    climateNote: 'Alpine continental — high altitude and large diurnal shifts produce wines of exceptional aromatic clarity.',
-    dbKeywords: ['alto adige', 'südtirol', 'south tyrol', 'trentino', 'bolzano'],
-  },
-}
 
 interface Props {
   params: { slug: string }
@@ -73,6 +16,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${region.name} Wine Region — ${region.subtitle} | Terra Trionfo`,
     description: region.description.slice(0, 160),
+    openGraph: {
+      title: `${region.name} Wine Region | Terra Trionfo`,
+      description: region.description.slice(0, 160),
+    },
   }
 }
 
@@ -93,8 +40,29 @@ export default async function RegionPage({ params }: Props) {
   })
   const producers = rawProducers as any[]
 
+  // JSON-LD structured data for SEO
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Place',
+    name: `${region.name} Wine Region`,
+    alternateName: region.subtitle,
+    description: region.description,
+    containedInPlace: {
+      '@type': 'Country',
+      name: 'Italy',
+    },
+    additionalProperty: [
+      { '@type': 'PropertyValue', name: 'Principal Grapes', value: region.grapes.join(', ') },
+      { '@type': 'PropertyValue', name: 'Key Appellations', value: region.appellations.join(', ') },
+    ],
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <Header />
 
       <main className="flex-grow">
@@ -110,10 +78,10 @@ export default async function RegionPage({ params }: Props) {
           />
           <div className="relative max-w-5xl mx-auto">
             <Link
-              href="/products"
+              href="/regions"
               className="text-parchment-400/50 text-xs uppercase tracking-widest hover:text-parchment-300/70 transition-colors mb-8 inline-flex items-center gap-2"
             >
-              ← Back to Products
+              ← Wine Regions
             </Link>
             <p className="text-[9px] font-medium text-amber-400/60 uppercase tracking-[0.3em] mb-4">
               {region.subtitle}

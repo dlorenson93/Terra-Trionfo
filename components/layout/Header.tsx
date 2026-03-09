@@ -58,6 +58,14 @@ export default function Header() {
               Browse
             </Link>
             <Link
+              href="/regions"
+              className={`text-sm font-medium transition-colors ${
+                pathname.startsWith('/regions') ? 'text-olive-900' : 'text-olive-600 hover:text-olive-900'
+              }`}
+            >
+              Regions
+            </Link>
+            <Link
               href="/restaurants"
               className={`text-sm font-medium transition-colors ${
                 isActive('/restaurants') || pathname.startsWith('/restaurants') ? 'text-olive-900' : 'text-olive-600 hover:text-olive-900'
@@ -188,6 +196,9 @@ export default function Header() {
         {/* Primary nav links */}
         <MobileLink href="/products" active={isActive('/products')} onClose={() => setMobileMenuOpen(false)}>
           Browse
+        </MobileLink>
+        <MobileLink href="/regions" active={pathname.startsWith('/regions')} onClose={() => setMobileMenuOpen(false)}>
+          Regions
         </MobileLink>
         <MobileLink href="/restaurants" active={pathname.startsWith('/restaurants')} onClose={() => setMobileMenuOpen(false)}>
           Restaurants

@@ -1,0 +1,17 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Phase 6 git push",
+      "type": "shell",
+      "command": "git add -A && git commit -m 'feat: Phase 6 -- Italy atlas, SVG map, region index, related wines, JSON-LD SEO, Regions nav' && git push origin main",
+      "options": {
+        "cwd": "/workspaces/Terra-Trionfo"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
+    }
+  ]
+}
