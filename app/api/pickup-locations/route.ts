@@ -31,7 +31,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { name, address, city, state, zipCode, latitude, longitude, partnerType } = body
+    const { name, address, city, state, zipCode, latitude, longitude, pickupType } = body
 
     if (!name || !address || !city || !state) {
       return NextResponse.json({ error: 'name, address, city, and state are required' }, { status: 400 })
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
         zipCode: zipCode || '',
         latitude: latitude ? parseFloat(latitude) : null,
         longitude: longitude ? parseFloat(longitude) : null,
-        partnerType: partnerType || 'WAREHOUSE',
+        pickupType: pickupType || 'WAREHOUSE',
       },
     })
 

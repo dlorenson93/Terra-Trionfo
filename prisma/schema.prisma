@@ -271,7 +271,7 @@ model PickupLocation {
 
   latitude    Float?
   longitude   Float?
-  partnerType String  @default("WAREHOUSE") // RESTAURANT | WAREHOUSE | RETAIL_PARTNER
+  pickupType  String  @default("WAREHOUSE") // WAREHOUSE | FUTURE_PARTNER
 
   status        CompanyStatus @default(PENDING)
   contentStatus ContentStatus @default(DRAFT)

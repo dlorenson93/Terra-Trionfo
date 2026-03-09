@@ -24,7 +24,7 @@ export async function POST(request: Request) {
 
     // shipping is forbidden for consumers
     if (fulfillmentType === 'SHIP') {
-      return NextResponse.json({ error: 'Shipping is not available' }, { status: 400 })
+      return NextResponse.json({ error: 'Shipping is not available at this time.' }, { status: 400 })
     }
 
     // fetch settings for delivery rules (generated type may not include the array fields)

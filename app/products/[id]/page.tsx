@@ -460,15 +460,16 @@ export default function ProductDetailPage({
         {/* Fulfillment compliance section */}
         <div className="bg-olive-50 border-t border-olive-200 py-10 px-4">
           <div className="max-w-5xl mx-auto">
-            <h2 className="text-lg font-serif font-semibold text-olive-900 mb-4">How to Get Your Order</h2>
+            <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-olive-400 mb-2">Ordering &amp; Fulfillment</p>
+            <h2 className="text-lg font-serif font-semibold text-olive-900 mb-4">How to Receive Your Order</h2>
             <div className="grid sm:grid-cols-2 gap-4">
               {product.allowedFulfillment.includes('PICKUP') && (
                 <div className="flex gap-3 bg-white rounded-xl p-4 border border-olive-200">
                   <div className="text-2xl">📦</div>
                   <div>
-                    <p className="font-semibold text-olive-900 text-sm">Pickup Available</p>
+                    <p className="font-semibold text-olive-900 text-sm">Pickup</p>
                     <p className="text-xs text-olive-600 mt-1">
-                      Reserve online and collect at a Terra Trionfo pickup location in Massachusetts.
+                      Available for pickup through Terra Trionfo at our warehouse location. Pickup is available on select scheduled days.
                     </p>
                   </div>
                 </div>
@@ -479,14 +480,26 @@ export default function ProductDetailPage({
                   <div>
                     <p className="font-semibold text-olive-900 text-sm">Local Delivery</p>
                     <p className="text-xs text-olive-600 mt-1">
-                      Hand-delivered within Massachusetts on your scheduled date.
+                      Local delivery available in select Massachusetts regions on scheduled delivery days. Regions served include Greater Boston, North Shore, Cape &amp; Islands, and Western Massachusetts.
                     </p>
                   </div>
                 </div>
               )}
             </div>
+            {/* Trade distribution note */}
+            <div className="mt-5 pt-5 border-t border-olive-200">
+              <div className="flex gap-3 bg-white rounded-xl p-4 border border-olive-200">
+                <div className="text-2xl">🍷</div>
+                <div>
+                  <p className="font-semibold text-olive-900 text-sm">Trade &amp; Restaurant Availability</p>
+                  <p className="text-xs text-olive-600 mt-1">
+                    Trade distribution and restaurant placements are supported through the Trionfo Distribution Group network. Contact us for wholesale and on-premise inquiries.
+                  </p>
+                </div>
+              </div>
+            </div>
             <p className="text-xs text-olive-500 mt-4">
-              ⚠️ Alcohol orders require compliance with Massachusetts state law. No interstate shipping.
+              ⚠️ All alcohol sales comply with Massachusetts state law. Interstate shipping is not available.
             </p>
           </div>
         </div>

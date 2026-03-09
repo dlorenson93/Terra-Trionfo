@@ -320,25 +320,50 @@ export default function AdminDashboard() {
 
         <div className="max-w-7xl mx-auto px-4 py-8">
           {/* Tabs */}
-          <div className="flex gap-4 mb-8 border-b border-olive-200">
-            {[
-              { key: 'overview', label: 'Overview' },
-              { key: 'companies', label: 'Companies' },
-              { key: 'products', label: 'Products' },
-              { key: 'restaurants', label: 'Restaurants' },
-            ].map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key as any)}
-                className={`px-6 py-3 font-medium transition-colors ${
-                  activeTab === tab.key
-                    ? 'text-olive-900 border-b-2 border-olive-700'
-                    : 'text-olive-600 hover:text-olive-800'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+          <div className="mb-8 border-b border-olive-200">
+            {/* Consumer Marketplace Operations */}
+            <div className="flex items-center gap-1 mb-0">
+              <span className="text-[9px] font-medium tracking-[0.14em] uppercase text-olive-400 px-1 pb-1">Consumer Marketplace</span>
+              <div className="flex gap-1">
+                {[
+                  { key: 'overview', label: 'Overview' },
+                  { key: 'companies', label: 'Companies' },
+                  { key: 'products', label: 'Products' },
+                ].map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key as any)}
+                    className={`px-6 py-3 font-medium transition-colors ${
+                      activeTab === tab.key
+                        ? 'text-olive-900 border-b-2 border-olive-700'
+                        : 'text-olive-600 hover:text-olive-800'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+              {/* Divider */}
+              <div className="w-px h-6 bg-olive-300 mx-2 self-center" />
+              <span className="text-[9px] font-medium tracking-[0.14em] uppercase text-olive-400 px-1 pb-1">Trade Distribution</span>
+              <div className="flex gap-1">
+                {[
+                  { key: 'restaurants', label: 'Restaurants' },
+                ].map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key as any)}
+                    className={`px-6 py-3 font-medium transition-colors ${
+                      activeTab === tab.key
+                        ? 'text-olive-900 border-b-2 border-olive-700'
+                        : 'text-olive-600 hover:text-olive-800'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           {/* Overview Tab */}
