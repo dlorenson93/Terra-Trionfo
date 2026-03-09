@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { WINES } from '@/data/wines'
 import { PRODUCERS } from '@/data/producers'
+import WineCard from '@/components/wines/WineCard'
 
 // Six representative portfolio wines for the homepage
 const FEATURED_IDS = [
@@ -39,37 +40,10 @@ export default function FeaturedProducts() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-10">
           {featuredWines.map((wine) => {
             const producer = PRODUCERS.find((p) => p.id === wine.producerId)
-            return (
-              <Link
-                key={wine.id}
-                href={`/wines/${wine.slug}`}
-                className="group border border-parchment-300 hover:border-olive-400 bg-parchment-50 hover:bg-white transition-all p-5 flex flex-col"
-              >
-                <span className="text-[9px] font-medium text-olive-400 uppercase tracking-wider mb-2">
-                  {wine.type}
-                </span>
-                <h3 className="font-serif font-bold text-olive-900 group-hover:text-olive-700 transition-colors text-sm leading-snug mb-1">
-                  {wine.displayName}
-                </h3>
-                {wine.appellation && (
-                  <p className="text-[10px] text-olive-500 mb-1">{wine.appellation}</p>
-                )}
-                {producer && (
-                  <p className="text-[10px] text-olive-400 mb-2 uppercase tracking-wider">
-                    {producer.region}
-                  </p>
-                )}
-                <p className="text-xs text-olive-600 leading-relaxed line-clamp-2 flex-grow">
-                  {wine.description}
-                </p>
-                {wine.criticScore && (
-                  <p className="text-[10px] text-amber-600/70 mt-2 font-medium">{wine.criticScore}</p>
-                )}
-              </Link>
-            )
+            return <WineCard key={wine.id} wine={wine} producer={producer} />
           })}
         </div>
 

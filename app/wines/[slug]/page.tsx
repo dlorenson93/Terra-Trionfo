@@ -5,6 +5,8 @@ import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import { WINES, getWine } from '@/data/wines'
 import { PRODUCERS, getProducer } from '@/data/producers'
+import WineCard from '@/components/wines/WineCard'
+import AddToCartButton from '@/components/wines/AddToCartButton'
 import type { Wine } from '@/types/wine'
 import type { Producer } from '@/types/producer'
 
@@ -227,6 +229,9 @@ export default function WineDetailPage({ params }: Props) {
                 </p>
                 <p className="text-xs text-olive-500 capitalize">{wine.importStatus}</p>
               </div>
+
+              {/* Add to Inquiry */}
+              <AddToCartButton wine={wine} producerName={producer.name} />
             </div>
           </div>
         </section>
@@ -243,27 +248,7 @@ export default function WineDetailPage({ params }: Props) {
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 {estateWines.map((w) => (
-                  <Link
-                    key={w.id}
-                    href={`/wines/${w.slug}`}
-                    className="group border border-parchment-300 hover:border-olive-400 bg-white hover:bg-parchment-50 transition-all p-5 flex flex-col"
-                  >
-                    <span className="text-[9px] font-medium text-olive-400 uppercase tracking-wider mb-2">
-                      {w.type}
-                    </span>
-                    <h3 className="font-serif font-bold text-olive-900 group-hover:text-olive-700 transition-colors text-sm leading-snug mb-1">
-                      {w.displayName}
-                    </h3>
-                    {w.appellation && (
-                      <p className="text-[10px] text-olive-500 mb-2">{w.appellation}</p>
-                    )}
-                    <p className="text-xs text-olive-600 leading-relaxed line-clamp-2 flex-grow">
-                      {w.description}
-                    </p>
-                    {w.criticScore && (
-                      <p className="text-[10px] text-amber-600/70 mt-2">{w.criticScore}</p>
-                    )}
-                  </Link>
+                  <WineCard key={w.id} wine={w} producer={producer} />
                 ))}
               </div>
               <div className="mt-6">
@@ -291,26 +276,7 @@ export default function WineDetailPage({ params }: Props) {
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 {regionWines.map((w) => {
                   const rProducer = getProducer(w.producerId)
-                  return (
-                    <Link
-                      key={w.id}
-                      href={`/wines/${w.slug}`}
-                      className="group border border-parchment-300 hover:border-olive-400 bg-parchment-50 hover:bg-white transition-all p-5 flex flex-col"
-                    >
-                      <span className="text-[9px] font-medium text-olive-400 uppercase tracking-wider mb-2">
-                        {w.type}
-                      </span>
-                      <h3 className="font-serif font-bold text-olive-900 group-hover:text-olive-700 transition-colors text-sm leading-snug mb-1">
-                        {w.displayName}
-                      </h3>
-                      {rProducer && (
-                        <p className="text-[10px] text-olive-500 mb-2">{rProducer.name}</p>
-                      )}
-                      <p className="text-xs text-olive-600 leading-relaxed line-clamp-2 flex-grow">
-                        {w.description}
-                      </p>
-                    </Link>
-                  )
+                  return <WineCard key={w.id} wine={w} producer={rProducer} />
                 })}
               </div>
             </div>

@@ -1,14 +1,22 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useMemo, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import ProductCard from '@/components/products/ProductCard'
+import WineCard from '@/components/wines/WineCard'
 import { VISIBLE_CATEGORIES, CATEGORY_LABELS } from '@/config/marketplace'
 import { WINES } from '@/data/wines'
 import { PRODUCERS } from '@/data/producers'
+import type { WineType } from '@/types/wine'
+
+// Derive unique wine types from the portfolio in a stable order
+const TYPE_ORDER: WineType[] = ['Red', 'White', 'Sparkling', 'Sparkling Rosé', 'Rosé']
+const PORTFOLIO_TYPES: WineType[] = TYPE_ORDER.filter((t) =>
+  WINES.some((w) => w.type === t)
+)
 
 interface Product {
   id: string
@@ -48,8 +56,20 @@ function ProductsContent() {
   const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory)
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
-  const [portfolioFilter, setPortfolioFilter] = useState<string>('all')
+  const [collectionFilter, setCollectionFilter] = useState<string>('all')
+  const [typeFilter, setTypeFilter] = useState<string>('all')
   const categories = ['All', ...VISIBLE_CATEGORIES.map((c) => CATEGORY_LABELS[c] ?? c)]
+
+  // Filtered portfolio wines derived from both filter dimensions
+  const filteredWines = useMemo(() => {
+    return WINES.filter((w) => {
+      const matchesType = typeFilter === 'all' || w.type === typeFilter
+      if (!matchesType) return false
+      if (collectionFilter === 'all') return true
+      const p = PRODUCERS.find((prod) => prod.id === w.producerId)
+      return p?.collection === collectionFilter
+    })
+  }, [typeFilter, collectionFilter])
 
   useEffect(() => {
     fetchProducts()
@@ -140,82 +160,86 @@ function ProductsContent() {
           ) : products.length === 0 ? (
             // No live products yet — show the incoming portfolio wines inline
             <div>
-              <div className="mb-8">
+              {/* Section header */}
+              <div className="mb-6">
                 <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-olive-400 mb-2">
                   Incoming Portfolio
                 </p>
-                <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-                  <div>
-                    <h2 className="text-2xl font-serif font-bold text-olive-900 mb-1">
-                      Wines Under Evaluation
-                    </h2>
-                    <p className="text-sm text-olive-500 leading-relaxed">
-                      Estates and wines currently being tasted for U.S. import. Pricing available to on-trade partners upon request.
-                    </p>
-                  </div>
-                  <div className="flex gap-2 flex-shrink-0">
-                    {[
-                      { value: 'all', label: 'All' },
-                      { value: 'classical', label: 'Classical' },
-                      { value: 'alternative-next-generation', label: 'Alternative' },
-                    ].map((f) => (
-                      <button
-                        key={f.value}
-                        onClick={() => setPortfolioFilter(f.value)}
-                        className={`text-[10px] uppercase tracking-[0.12em] px-3 py-1.5 border transition-colors ${
-                          portfolioFilter === f.value
-                            ? 'border-olive-700 text-olive-900 bg-olive-50'
-                            : 'border-olive-200 text-olive-500 hover:border-olive-400 hover:text-olive-700'
-                        }`}
-                      >
-                        {f.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                <h2 className="text-2xl font-serif font-bold text-olive-900 mb-1">
+                  Wines Under Evaluation
+                </h2>
+                <p className="text-sm text-olive-500 max-w-2xl leading-relaxed">
+                  Estates and wines currently being tasted for U.S. import.
+                  Pricing available to on-trade partners upon request.
+                </p>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                {WINES.filter((w) => {
-                  if (portfolioFilter === 'all') return true
-                  const p = PRODUCERS.find((prod) => prod.id === w.producerId)
-                  return p?.collection === portfolioFilter
-                }).map((wine) => {
-                  const producer = PRODUCERS.find((p) => p.id === wine.producerId)
-                  return (
-                    <Link
-                      key={wine.id}
-                      href={`/wines/${wine.slug}`}
-                      className="group border border-parchment-300 hover:border-olive-400 bg-parchment-50 hover:bg-white transition-all p-5 flex flex-col"
+
+              {/* Filter bar — wine type + collection */}
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-3 mb-8 pb-6 border-b border-parchment-200">
+                {/* Wine type */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[10px] text-olive-400 uppercase tracking-widest mr-1">Type</span>
+                  {(['all', ...PORTFOLIO_TYPES] as string[]).map((t) => (
+                    <button
+                      key={t}
+                      onClick={() => setTypeFilter(t)}
+                      className={`text-[10px] uppercase tracking-[0.12em] px-3 py-1.5 border transition-colors rounded-sm ${
+                        typeFilter === t
+                          ? 'border-olive-700 text-olive-900 bg-olive-50'
+                          : 'border-parchment-300 text-olive-500 hover:border-olive-400 hover:text-olive-700 bg-white'
+                      }`}
                     >
-                      <div className="flex items-start justify-between mb-2">
-                        <span className="text-[9px] font-medium text-olive-400 uppercase tracking-wider">
-                          {wine.type}
-                        </span>
-                        {wine.criticScore && (
-                          <span className="text-[9px] text-amber-500/70">★</span>
-                        )}
-                      </div>
-                      <h3 className="font-serif font-bold text-olive-900 group-hover:text-olive-700 transition-colors text-sm leading-snug mb-1">
-                        {wine.displayName}
-                      </h3>
-                      {wine.appellation && (
-                        <p className="text-[10px] text-olive-500 mb-1">{wine.appellation}</p>
-                      )}
-                      {producer && (
-                        <p className="text-[10px] text-olive-400 mb-2 uppercase tracking-wider">
-                          {producer.region}
-                        </p>
-                      )}
-                      <p className="text-xs text-olive-600 leading-relaxed line-clamp-3 flex-grow">
-                        {wine.description}
-                      </p>
-                      {wine.criticScore && (
-                        <p className="text-[10px] text-amber-600/70 mt-2 font-medium">{wine.criticScore}</p>
-                      )}
-                    </Link>
-                  )
-                })}
+                      {t === 'all' ? 'All Types' : t}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Divider */}
+                <span className="hidden sm:block w-px h-4 bg-parchment-300" />
+
+                {/* Collection */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[10px] text-olive-400 uppercase tracking-widest mr-1">Collection</span>
+                  {[
+                    { value: 'all', label: 'All' },
+                    { value: 'classical', label: 'Classical' },
+                    { value: 'alternative-next-generation', label: 'Alternative' },
+                  ].map((f) => (
+                    <button
+                      key={f.value}
+                      onClick={() => setCollectionFilter(f.value)}
+                      className={`text-[10px] uppercase tracking-[0.12em] px-3 py-1.5 border transition-colors rounded-sm ${
+                        collectionFilter === f.value
+                          ? 'border-olive-700 text-olive-900 bg-olive-50'
+                          : 'border-parchment-300 text-olive-500 hover:border-olive-400 hover:text-olive-700 bg-white'
+                      }`}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Result count */}
+                <span className="ml-auto text-[10px] text-olive-400 tabular-nums">
+                  {filteredWines.length} wine{filteredWines.length !== 1 ? 's' : ''}
+                </span>
               </div>
+
+              {/* Wine grid */}
+              {filteredWines.length === 0 ? (
+                <div className="py-16 text-center text-olive-400 text-sm">
+                  No wines match the selected filters.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                  {filteredWines.map((wine) => {
+                    const producer = PRODUCERS.find((p) => p.id === wine.producerId)
+                    return (
+                      <WineCard key={wine.id} wine={wine} producer={producer} />
+                    )
+                  })}
+                </div>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
