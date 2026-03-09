@@ -277,10 +277,6 @@ function MobileLink({
   )
 }
 
-            <img
-              src="/images/ChatGPT Image Dec 10, 2025, 09_43_23 PM.png"
-              alt="Terra Trionfo Logo"
-              className="h-12 w-auto"
             />
             <div>
               <h1 className="text-xl font-serif font-bold text-olive-900">
