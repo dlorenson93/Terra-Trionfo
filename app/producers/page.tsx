@@ -140,10 +140,10 @@ export default async function ProducersPage() {
 
         {/* ── Live on Platform ───────────────────────────────────────── */}
         {producers.length > 0 && (
-        <div className="max-w-7xl mx-auto px-4 py-12">
-          <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-olive-400 mb-6">
-            Live on Terra Trionfo
-          </p>
+          <div className="max-w-7xl mx-auto px-4 py-12">
+            <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-olive-400 mb-6">
+              Live on Terra Trionfo
+            </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
               {producers.map((p) => (
                 <Link
@@ -189,8 +189,7 @@ export default async function ProducersPage() {
                 </Link>
               ))}
             </div>
-          )}
-        </div>
+          </div>
         )}
       </main>
       <Footer />

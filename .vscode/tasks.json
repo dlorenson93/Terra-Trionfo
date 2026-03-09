@@ -2,9 +2,9 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Portfolio git push",
+      "label": "Fix push",
       "type": "shell",
-      "command": "git add -A && git commit -m 'feat: initial producer portfolio -- 6 wineries, 21 wines, /wines/[slug] detail pages, portfolio on producers/products/regions pages' && git push origin main",
+      "command": "git add -A && git commit -m 'fix: correct JSX structure in producers/page.tsx' && git push origin main",
       "options": {
         "cwd": "/workspaces/Terra-Trionfo"
       },
