@@ -2,6 +2,7 @@ import Link from 'next/link'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import { prisma } from '@/lib/prisma'
+import { PRODUCERS } from '@/data/producers'
 
 interface ProducerRow {
   id: string
@@ -37,10 +38,112 @@ export default async function ProducersPage() {
           </div>
         </div>
 
+        {/* ── Portfolio ──────────────────────────────────────────── */}
+        <section className="bg-parchment-50 border-t border-parchment-200 py-20 px-4">
+          <div className="max-w-5xl mx-auto">
+            <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-olive-400 mb-3">
+              Terra Trionfo Portfolio
+            </p>
+            <h2 className="text-3xl font-serif font-bold text-olive-900 mb-3">
+              Initial Producer Selection
+            </h2>
+            <p className="text-olive-500 text-sm leading-relaxed mb-14 max-w-xl">
+              Six Italian estates currently under evaluation for U.S. import — sourced directly from
+              Italy&apos;s most distinctive wine regions.
+            </p>
+
+            {/* Classical */}
+            <div className="mb-14">
+              <p className="text-[9px] font-medium text-amber-600/60 uppercase tracking-[0.3em] mb-6 border-b border-parchment-300 pb-3">
+                Classical Selection
+              </p>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {PRODUCERS.filter((p) => p.collection === 'classical').map((p) => (
+                  <Link
+                    key={p.id}
+                    href={`/producers/${p.slug}`}
+                    className="group border border-parchment-300 hover:border-olive-400 bg-white hover:bg-parchment-50 transition-all duration-200 p-7 flex flex-col"
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-[9px] font-medium text-amber-600/60 uppercase tracking-[0.3em]">
+                        Classical
+                      </span>
+                      <span className="text-[9px] text-olive-400 uppercase tracking-wider">
+                        {p.region}
+                      </span>
+                    </div>
+                    <h3 className="font-serif font-bold text-olive-900 text-xl leading-snug mb-1 group-hover:text-olive-700 transition-colors">
+                      {p.name}
+                    </h3>
+                    <p className="text-xs text-olive-500 mb-4">{p.subregion}</p>
+                    <p className="text-sm text-olive-600 leading-relaxed line-clamp-3 flex-grow">
+                      {p.summary}
+                    </p>
+                    <div className="mt-5 flex flex-wrap gap-1.5">
+                      {p.keywords.slice(0, 3).map((kw) => (
+                        <span key={kw} className="text-[9px] border border-olive-200 text-olive-500 px-2 py-0.5">
+                          {kw}
+                        </span>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-olive-400 group-hover:text-olive-600 mt-4 transition-colors uppercase tracking-wider">
+                      View estate →
+                    </p>
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            {/* Alternative & Next Generation */}
+            <div>
+              <p className="text-[9px] font-medium text-olive-500/60 uppercase tracking-[0.3em] mb-6 border-b border-parchment-300 pb-3">
+                Alternative &amp; Next Generation
+              </p>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {PRODUCERS.filter((p) => p.collection === 'alternative-next-generation').map((p) => (
+                  <Link
+                    key={p.id}
+                    href={`/producers/${p.slug}`}
+                    className="group border border-parchment-300 hover:border-olive-400 bg-white hover:bg-parchment-50 transition-all duration-200 p-7 flex flex-col"
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-[9px] font-medium text-olive-500/60 uppercase tracking-[0.3em]">
+                        Alt / Next Gen
+                      </span>
+                      <span className="text-[9px] text-olive-400 uppercase tracking-wider">
+                        {p.region}
+                      </span>
+                    </div>
+                    <h3 className="font-serif font-bold text-olive-900 text-xl leading-snug mb-1 group-hover:text-olive-700 transition-colors">
+                      {p.name}
+                    </h3>
+                    <p className="text-xs text-olive-500 mb-4">{p.subregion}</p>
+                    <p className="text-sm text-olive-600 leading-relaxed line-clamp-3 flex-grow">
+                      {p.summary}
+                    </p>
+                    <div className="mt-5 flex flex-wrap gap-1.5">
+                      {p.keywords.slice(0, 3).map((kw) => (
+                        <span key={kw} className="text-[9px] border border-olive-200 text-olive-500 px-2 py-0.5">
+                          {kw}
+                        </span>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-olive-400 group-hover:text-olive-600 mt-4 transition-colors uppercase tracking-wider">
+                      View estate →
+                    </p>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Live on Platform ───────────────────────────────────────── */}
+        {producers.length > 0 && (
         <div className="max-w-7xl mx-auto px-4 py-12">
-          {producers.length === 0 ? (
-            <p className="text-olive-600 text-center py-12">No producers listed yet.</p>
-          ) : (
+          <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-olive-400 mb-6">
+            Live on Terra Trionfo
+          </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
               {producers.map((p) => (
                 <Link
@@ -88,6 +191,7 @@ export default async function ProducersPage() {
             </div>
           )}
         </div>
+        )}
       </main>
       <Footer />
     </div>

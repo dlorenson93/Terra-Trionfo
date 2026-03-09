@@ -4,6 +4,9 @@ import Footer from '@/components/layout/Footer'
 import ProductCard from '@/components/products/ProductCard'
 import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
+import Link from 'next/link'
+import { PRODUCERS } from '@/data/producers'
+import { WINES } from '@/data/wines'
 
 interface ProducerFull {
   id: string
@@ -34,7 +37,18 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       OR: [{ slug }, { id: slug }],
     },
   })
-  if (!rawCompany) return { title: 'Producer Not Found | Terra Trionfo' }
+  if (!rawCompany) {
+    const staticProducer = PRODUCERS.find((p) => p.slug === slug)
+    if (!staticProducer) return { title: 'Producer Not Found | Terra Trionfo' }
+    return {
+      title: `${staticProducer.name} — ${staticProducer.region} | Terra Trionfo`,
+      description: staticProducer.summary.slice(0, 160),
+      openGraph: {
+        title: staticProducer.name,
+        description: staticProducer.summary.slice(0, 160),
+      },
+    }
+  }
   const company = rawCompany as any
   const regionLine = [company.region, company.country].filter(Boolean).join(', ')
   const description: string =
@@ -64,7 +78,168 @@ export default async function ProducerDetailPage({ params }: { params: { slug: s
     },
   })
 
-  if (!rawProducer) notFound()
+  if (!rawProducer) {
+    // Fall back to static portfolio data
+    const staticProducer = PRODUCERS.find((p) => p.slug === slug)
+    if (!staticProducer) notFound()
+
+    const winesForProducer = WINES.filter((w) => w.producerId === staticProducer.id)
+    const collectionLabel =
+      staticProducer.collection === 'classical'
+        ? 'Classical Selection'
+        : 'Alternative & Next Generation'
+
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-grow">
+          {/* Hero */}
+          <div className="bg-olive-900 py-20 px-6 relative overflow-hidden">
+            <div
+              className="absolute inset-0 opacity-[0.03]"
+              style={{
+                backgroundImage:
+                  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='1' height='4' fill='%23fff'/%3E%3Crect width='4' height='1' fill='%23fff'/%3E%3C/svg%3E\")",
+                backgroundSize: '4px 4px',
+              }}
+            />
+            <div className="relative max-w-5xl mx-auto">
+              <Link
+                href="/producers"
+                className="text-parchment-400/50 text-xs uppercase tracking-widest hover:text-parchment-300/70 transition-colors mb-8 inline-flex items-center gap-2"
+              >
+                ← Our Producers
+              </Link>
+
+              <div className="flex flex-wrap items-center gap-3 mb-4">
+                <span
+                  className={`text-[9px] font-medium uppercase tracking-[0.3em] border px-2.5 py-1 ${
+                    staticProducer.collection === 'classical'
+                      ? 'text-amber-300/80 border-amber-400/40'
+                      : 'text-olive-300/80 border-olive-400/40'
+                  }`}
+                >
+                  {collectionLabel}
+                </span>
+                {staticProducer.familyOwned && (
+                  <span className="text-[9px] font-medium text-parchment-400/50 uppercase tracking-[0.3em]">
+                    Family-Owned
+                  </span>
+                )}
+                {staticProducer.organicStatus === 'certified' && (
+                  <span className="text-[9px] font-medium text-green-300/70 uppercase tracking-[0.3em]">
+                    Certified Organic
+                  </span>
+                )}
+              </div>
+
+              <h1 className="text-5xl md:text-7xl font-serif font-bold text-parchment-100 mb-3 leading-none">
+                {staticProducer.name}
+              </h1>
+              <p className="text-parchment-400/60 text-sm uppercase tracking-wider mb-6">
+                {[staticProducer.subregion, staticProducer.region].filter(Boolean).join(' · ')}
+              </p>
+              <p className="text-parchment-200/80 text-base max-w-2xl leading-relaxed">
+                {staticProducer.summary}
+              </p>
+            </div>
+          </div>
+
+          {/* Estate profile + keywords */}
+          <section className="py-12 px-6 bg-parchment-50 border-t border-parchment-200">
+            <div className="max-w-5xl mx-auto grid md:grid-cols-3 gap-10">
+              <div className="md:col-span-2">
+                <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-olive-400 mb-4">
+                  Estate Keywords
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {staticProducer.keywords.map((kw) => (
+                    <span
+                      key={kw}
+                      className="text-xs border border-olive-200 text-olive-600 px-2.5 py-1"
+                    >
+                      {kw}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-6">
+                <div>
+                  <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-olive-400 mb-1">
+                    Region
+                  </p>
+                  <p className="text-sm text-olive-800 font-medium">{staticProducer.region}</p>
+                  {staticProducer.regionSlug && (
+                    <Link
+                      href={`/regions/${staticProducer.regionSlug}`}
+                      className="text-[10px] text-olive-400 hover:text-olive-700 transition-colors uppercase tracking-wider mt-1 block"
+                    >
+                      Explore region →
+                    </Link>
+                  )}
+                </div>
+                {staticProducer.organicStatus !== 'conventional' && (
+                  <div>
+                    <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-olive-400 mb-1">
+                      Viticulture
+                    </p>
+                    <p className="text-sm text-olive-700">
+                      {staticProducer.organicStatus === 'certified'
+                        ? 'Certified Organic'
+                        : 'Organically Inspired'}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+
+          {/* Wines */}
+          {winesForProducer.length > 0 && (
+            <section className="py-16 px-6 bg-white border-t border-parchment-200">
+              <div className="max-w-5xl mx-auto">
+                <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-olive-400 mb-3">
+                  The Portfolio
+                </p>
+                <h2 className="text-3xl font-serif font-bold text-olive-900 mb-10">
+                  Wines from {staticProducer.name}
+                </h2>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {winesForProducer.map((wine) => (
+                    <Link
+                      key={wine.id}
+                      href={`/wines/${wine.slug}`}
+                      className="group border border-parchment-300 hover:border-olive-400 bg-parchment-50 hover:bg-white transition-all p-6 flex flex-col"
+                    >
+                      <span className="text-[9px] font-medium text-olive-400 uppercase tracking-wider mb-3">
+                        {wine.type}
+                      </span>
+                      <h3 className="font-serif font-bold text-olive-900 group-hover:text-olive-700 transition-colors text-lg leading-snug mb-1">
+                        {wine.displayName}
+                      </h3>
+                      {wine.appellation && (
+                        <p className="text-xs text-olive-500 mb-3">{wine.appellation}</p>
+                      )}
+                      <p className="text-sm text-olive-600 leading-relaxed line-clamp-3 flex-grow">
+                        {wine.description}
+                      </p>
+                      {wine.criticScore && (
+                        <p className="text-xs text-amber-600/70 mt-3">{wine.criticScore}</p>
+                      )}
+                      <p className="text-[10px] text-olive-400 group-hover:text-olive-600 mt-4 transition-colors uppercase tracking-wider">
+                        View wine →
+                      </p>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+        </main>
+        <Footer />
+      </div>
+    )
+  }
 
   // Cast to access new fields (available after migration + prisma generate)
   const producer = rawProducer as unknown as ProducerFull

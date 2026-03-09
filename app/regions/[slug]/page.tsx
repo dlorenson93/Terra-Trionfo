@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 import { REGIONS } from '@/lib/regions'
+import { PRODUCERS } from '@/data/producers'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 
@@ -39,6 +40,9 @@ export default async function RegionPage({ params }: Props) {
     orderBy: { name: 'asc' },
   })
   const producers = rawProducers as any[]
+
+  // Portfolio producers mapped to this region
+  const portfolioProducers = PRODUCERS.filter((p) => p.regionSlug === params.slug)
 
   // JSON-LD structured data for SEO
   const jsonLd = {
@@ -148,7 +152,7 @@ export default async function RegionPage({ params }: Props) {
               {region.name} Producers
             </h2>
 
-            {producers.length === 0 ? (
+            {portfolioProducers.length === 0 && producers.length === 0 ? (
               <div className="border border-parchment-300 py-16 text-center">
                 <p className="text-olive-400 text-sm italic mb-2">
                   Producers from {region.name} are being prepared for introduction.
@@ -158,36 +162,86 @@ export default async function RegionPage({ params }: Props) {
                 </Link>
               </div>
             ) : (
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {producers.map((producer) => (
-                  <Link
-                    key={producer.id}
-                    href={`/producers/${producer.slug || producer.id}`}
-                    className="group border border-parchment-300 hover:border-olive-400 bg-parchment-50 hover:bg-white transition-all duration-200 p-7 flex flex-col"
-                  >
-                    {producer.isFoundingProducer && (
-                      <span className="text-[9px] font-medium text-amber-500/70 uppercase tracking-[0.3em] mb-3">
-                        Founding Producer
-                      </span>
-                    )}
-                    <h3 className="font-serif font-bold text-olive-900 text-xl leading-snug mb-2 group-hover:text-olive-700 transition-colors">
-                      {producer.name}
-                    </h3>
-                    <p className="text-xs text-olive-500 mb-3">
-                      {[producer.subregion, producer.region, producer.country].filter(Boolean).join(', ')}
-                      {producer.foundedYear ? ` · Est. ${producer.foundedYear}` : ''}
-                    </p>
-                    {producer.shortDescription && (
-                      <p className="text-sm text-olive-600 leading-relaxed line-clamp-3 flex-grow">
-                        {producer.shortDescription}
+              <>
+                {/* Portfolio producers */}
+                {portfolioProducers.length > 0 && (
+                  <div className={producers.length > 0 ? 'mb-12' : ''}>
+                    {producers.length > 0 && (
+                      <p className="text-[9px] font-medium text-amber-500/60 uppercase tracking-[0.3em] mb-5">
+                        Incoming Portfolio
                       </p>
                     )}
-                    <p className="text-xs text-olive-400 group-hover:text-olive-600 mt-4 transition-colors">
-                      View estate →
-                    </p>
-                  </Link>
-                ))}
-              </div>
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {portfolioProducers.map((p) => (
+                        <Link
+                          key={p.id}
+                          href={`/producers/${p.slug}`}
+                          className="group border border-parchment-300 hover:border-olive-400 bg-parchment-50 hover:bg-white transition-all duration-200 p-7 flex flex-col"
+                        >
+                          <div className="flex items-center justify-between mb-3">
+                            <span className={`text-[9px] font-medium uppercase tracking-[0.3em] ${
+                              p.collection === 'classical' ? 'text-amber-600/60' : 'text-olive-500/60'
+                            }`}>
+                              {p.collection === 'classical' ? 'Classical' : 'Alt / Next Gen'}
+                            </span>
+                          </div>
+                          <h3 className="font-serif font-bold text-olive-900 text-xl leading-snug mb-1 group-hover:text-olive-700 transition-colors">
+                            {p.name}
+                          </h3>
+                          <p className="text-xs text-olive-500 mb-3">{p.subregion}</p>
+                          <p className="text-sm text-olive-600 leading-relaxed line-clamp-3 flex-grow">
+                            {p.summary}
+                          </p>
+                          <p className="text-[10px] text-olive-400 group-hover:text-olive-600 mt-4 transition-colors uppercase tracking-wider">
+                            View estate →
+                          </p>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* DB live producers */}
+                {producers.length > 0 && (
+                  <div>
+                    {portfolioProducers.length > 0 && (
+                      <p className="text-[9px] font-medium text-parchment-400/50 uppercase tracking-[0.3em] mb-5">
+                        Live on Terra Trionfo
+                      </p>
+                    )}
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {producers.map((producer) => (
+                        <Link
+                          key={producer.id}
+                          href={`/producers/${producer.slug || producer.id}`}
+                          className="group border border-parchment-300 hover:border-olive-400 bg-parchment-50 hover:bg-white transition-all duration-200 p-7 flex flex-col"
+                        >
+                          {producer.isFoundingProducer && (
+                            <span className="text-[9px] font-medium text-amber-500/70 uppercase tracking-[0.3em] mb-3">
+                              Founding Producer
+                            </span>
+                          )}
+                          <h3 className="font-serif font-bold text-olive-900 text-xl leading-snug mb-2 group-hover:text-olive-700 transition-colors">
+                            {producer.name}
+                          </h3>
+                          <p className="text-xs text-olive-500 mb-3">
+                            {[producer.subregion, producer.region, producer.country].filter(Boolean).join(', ')}
+                            {producer.foundedYear ? ` · Est. ${producer.foundedYear}` : ''}
+                          </p>
+                          {producer.shortDescription && (
+                            <p className="text-sm text-olive-600 leading-relaxed line-clamp-3 flex-grow">
+                              {producer.shortDescription}
+                            </p>
+                          )}
+                          <p className="text-xs text-olive-400 group-hover:text-olive-600 mt-4 transition-colors">
+                            View estate →
+                          </p>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </section>

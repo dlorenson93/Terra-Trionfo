@@ -2,9 +2,9 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Phase 6 git push",
+      "label": "Portfolio git push",
       "type": "shell",
-      "command": "git add -A && git commit -m 'feat: Phase 6 -- Italy atlas, SVG map, region index, related wines, JSON-LD SEO, Regions nav' && git push origin main",
+      "command": "git add -A && git commit -m 'feat: initial producer portfolio -- 6 wineries, 21 wines, /wines/[slug] detail pages, portfolio on producers/products/regions pages' && git push origin main",
       "options": {
         "cwd": "/workspaces/Terra-Trionfo"
       },
