@@ -31,19 +31,19 @@ export default function Header() {
     <>
     <header className="bg-white border-b border-olive-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex justify-between items-center h-20">
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-3">
+          <Link href="/" className="flex items-center space-x-3.5">
             <img
               src="/images/ChatGPT Image Dec 10, 2025, 09_43_23 PM.png"
               alt="Terra Trionfo Logo"
-              className="h-12 w-auto"
+              className="h-14 w-auto"
             />
             <div>
-              <h1 className="text-xl font-serif font-bold text-olive-900">
+              <h1 className="text-2xl font-serif font-bold text-olive-900 leading-tight">
                 Terra Trionfo
               </h1>
-              <p className="text-xs text-olive-600 italic">Born of the Land</p>
+              <p className="text-[11px] text-olive-500 italic tracking-wide">Born of the Land</p>
             </div>
           </Link>
 
