@@ -35,28 +35,28 @@ export default function ProvenancePhilosophy() {
   return (
     <SectionAtmosphere
       imageSrc="/images/home/Golden Sunrise Over tuscany Vineyard.png"
-      overlayClassName="bg-white/[0.60]"
-      className="py-24 px-4 border-t border-olive-100"
+      overlayClassName="bg-olive-900/[0.72]"
+      className="py-24 px-4 border-t border-olive-800"
     >
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="max-w-2xl mb-16">
-          <p className="text-[10px] font-medium text-olive-400 uppercase tracking-[0.14em] mb-4">
+          <p className="text-[10px] font-medium text-amber-400/60 uppercase tracking-[0.14em] mb-4">
             Our Approach
           </p>
-          <h2 className="text-3xl md:text-4xl font-serif font-bold text-olive-900 mb-5 leading-snug">
+          <h2 className="text-3xl md:text-4xl font-serif font-bold text-parchment-100 mb-5 leading-snug">
             Imported with Intention
           </h2>
-          <p className="text-olive-600 leading-relaxed mb-3">
+          <p className="text-parchment-200/80 leading-relaxed mb-3">
             Terra Trionfo is not simply a catalog — it is a curated relationship between artisan Italian
             producers and a discerning American audience.
           </p>
-          <p className="text-olive-500 leading-relaxed mb-5">
+          <p className="text-parchment-300/65 leading-relaxed mb-5">
             We work closely with trusted partners and producers across Italy to identify wines and olive oils
             that express true regional character. Each estate represented through Terra Trionfo reflects
             provenance, craft, and a commitment to authenticity.
           </p>
-          <p className="text-sm text-olive-400 leading-relaxed italic">
+          <p className="text-sm text-parchment-400/50 leading-relaxed italic">
             Every estate we represent reflects a place, a family, and a tradition worth preserving.
           </p>
         </div>
@@ -65,16 +65,16 @@ export default function ProvenancePhilosophy() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-10">
           {pillars.map((pillar) => (
             <div key={pillar.label} className="flex gap-5">
-              <div className="flex-shrink-0 w-10 h-10 border border-olive-200 flex items-center justify-center mt-0.5">
-                <svg className="w-5 h-5 text-olive-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="flex-shrink-0 w-10 h-10 border border-parchment-100/20 flex items-center justify-center mt-0.5">
+                <svg className="w-5 h-5 text-parchment-300/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   {pillar.icon}
                 </svg>
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-olive-900 uppercase tracking-wider mb-2">
+                <h3 className="text-sm font-semibold text-parchment-100 uppercase tracking-wider mb-2">
                   {pillar.label}
                 </h3>
-                <p className="text-sm text-olive-600 leading-relaxed">
+                <p className="text-sm text-parchment-300/70 leading-relaxed">
                   {pillar.body}
                 </p>
               </div>
