@@ -55,7 +55,7 @@ export default function Header() {
                 isActive('/products') ? 'text-olive-900' : 'text-olive-600 hover:text-olive-900'
               }`}
             >
-              Browse
+              Portfolio
             </Link>
             <Link
               href="/producers"
@@ -80,6 +80,14 @@ export default function Header() {
               }`}
             >
               Restaurants
+            </Link>
+            <Link
+              href="/contact"
+              className={`text-sm font-medium transition-colors ${
+                isActive('/contact') ? 'text-olive-900' : 'text-olive-600 hover:text-olive-900'
+              }`}
+            >
+              Contact
             </Link>
 
             {session ? (
@@ -198,7 +206,7 @@ export default function Header() {
         <nav className="px-6 pt-4 pb-2">
           <p className="text-[9px] font-semibold text-olive-400 uppercase tracking-[0.18em] mb-3">Explore</p>
           <MobileLink href="/products" active={isActive('/products')} onClose={() => setMobileMenuOpen(false)}>
-            Browse Wines
+            Explore the Portfolio
           </MobileLink>
           <MobileLink href="/producers" active={pathname.startsWith('/producers')} onClose={() => setMobileMenuOpen(false)}>
             Producers

@@ -27,7 +27,23 @@ export default function Footer() {
                   href="/products"
                   className="text-parchment-300 hover:text-parchment-100 transition-colors"
                 >
-                  Shop Products
+                  Explore the Portfolio
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/producers"
+                  className="text-parchment-300 hover:text-parchment-100 transition-colors"
+                >
+                  Producers
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/regions"
+                  className="text-parchment-300 hover:text-parchment-100 transition-colors"
+                >
+                  Wine Regions
                 </Link>
               </li>
               <li>
@@ -43,7 +59,7 @@ export default function Footer() {
                   href="/about"
                   className="text-parchment-300 hover:text-parchment-100 transition-colors"
                 >
-                  Crafted Across Generations
+                  Our Story
                 </Link>
               </li>
               <li>
