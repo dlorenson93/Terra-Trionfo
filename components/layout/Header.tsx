@@ -170,50 +170,54 @@ export default function Header() {
 
     {/* Mobile menu backdrop */}
     <div
-      className={`fixed inset-0 z-40 bg-olive-900/40 md:hidden transition-opacity duration-300 ${
+      className={`fixed inset-0 z-40 bg-olive-900/50 md:hidden transition-opacity duration-300 ${
         mobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
       }`}
       onClick={() => setMobileMenuOpen(false)}
       aria-hidden="true"
     />
 
-    {/* Mobile menu drawer — slides in from top */}
+    {/* Mobile menu drawer — slides down from below the header */}
     <div
-      className={`fixed top-16 left-0 right-0 z-40 md:hidden bg-white border-b border-olive-200 transition-all duration-300 ease-in-out overflow-hidden ${
-        mobileMenuOpen ? 'max-h-[80vh] opacity-100' : 'max-h-0 opacity-0'
+      className={`fixed top-20 left-0 right-0 z-40 md:hidden bg-white shadow-xl border-b border-olive-100 transition-all duration-300 ease-in-out overflow-hidden ${
+        mobileMenuOpen ? 'max-h-[85vh] opacity-100' : 'max-h-0 opacity-0'
       }`}
     >
-      <nav className="px-4 py-2 pb-6 flex flex-col overflow-y-auto max-h-[calc(80vh-1px)]">
+      <div className="overflow-y-auto max-h-[calc(85vh-1px)]">
 
         {/* Signed-in user identity */}
         {session && (
-          <div className="py-4 border-b border-olive-100 mb-2">
-            <p className="text-sm font-semibold text-olive-900">{session.user.name}</p>
+          <div className="px-6 py-5 bg-olive-50 border-b border-olive-100">
+            <p className="text-xs font-medium text-olive-400 uppercase tracking-widest mb-1">Signed in as</p>
+            <p className="text-sm font-semibold text-olive-900 leading-tight">{session.user.name}</p>
             <p className="text-xs text-olive-500 mt-0.5">{session.user.email}</p>
           </div>
         )}
 
         {/* Primary nav links */}
-        <MobileLink href="/products" active={isActive('/products')} onClose={() => setMobileMenuOpen(false)}>
-          Browse
-        </MobileLink>
-        <MobileLink href="/producers" active={pathname.startsWith('/producers')} onClose={() => setMobileMenuOpen(false)}>
-          Producers
-        </MobileLink>
-        <MobileLink href="/regions" active={pathname.startsWith('/regions')} onClose={() => setMobileMenuOpen(false)}>
-          Regions
-        </MobileLink>
-        <MobileLink href="/restaurants" active={pathname.startsWith('/restaurants')} onClose={() => setMobileMenuOpen(false)}>
-          Restaurants
-        </MobileLink>
-        <MobileLink href="/contact" active={isActive('/contact')} onClose={() => setMobileMenuOpen(false)}>
-          Contact
-        </MobileLink>
+        <nav className="px-6 pt-4 pb-2">
+          <p className="text-[9px] font-semibold text-olive-400 uppercase tracking-[0.18em] mb-3">Explore</p>
+          <MobileLink href="/products" active={isActive('/products')} onClose={() => setMobileMenuOpen(false)}>
+            Browse Wines
+          </MobileLink>
+          <MobileLink href="/producers" active={pathname.startsWith('/producers')} onClose={() => setMobileMenuOpen(false)}>
+            Producers
+          </MobileLink>
+          <MobileLink href="/regions" active={pathname.startsWith('/regions')} onClose={() => setMobileMenuOpen(false)}>
+            Wine Regions
+          </MobileLink>
+          <MobileLink href="/restaurants" active={pathname.startsWith('/restaurants')} onClose={() => setMobileMenuOpen(false)}>
+            Restaurants
+          </MobileLink>
+          <MobileLink href="/contact" active={isActive('/contact')} onClose={() => setMobileMenuOpen(false)}>
+            Contact Us
+          </MobileLink>
+        </nav>
 
+        {/* Account section */}
         {session && (
-          <>
-            <div className="h-px bg-olive-100 my-2" />
-
+          <nav className="px-6 pt-5 pb-2 border-t border-olive-100 mt-2">
+            <p className="text-[9px] font-semibold text-olive-400 uppercase tracking-[0.18em] mb-3">Account</p>
             {session.user.role === 'ADMIN' && (
               <MobileLink href="/dashboard/admin" active={isActive('/dashboard/admin')} onClose={() => setMobileMenuOpen(false)}>
                 Admin Dashboard
@@ -229,47 +233,53 @@ export default function Header() {
                 Cart
               </MobileLink>
             )}
-            <MobileLink href="/account/orders" active={pathname.startsWith('/account')} onClose={() => setMobileMenuOpen(false)}>
-              Account
+            <MobileLink href="/account" active={pathname.startsWith('/account')} onClose={() => setMobileMenuOpen(false)}>
+              My Account
             </MobileLink>
-
-            <div className="h-px bg-olive-100 my-2" />
-
             <button
-              onClick={() => {
-                setMobileMenuOpen(false)
-                signOut({ callbackUrl: '/' })
-              }}
-              className="w-full text-left py-3 px-1 text-sm font-medium text-olive-500 hover:text-olive-800 transition-colors"
+              onClick={() => { setMobileMenuOpen(false); signOut({ callbackUrl: '/' }) }}
+              className="w-full text-left py-3.5 text-sm font-medium text-olive-400 hover:text-olive-700 transition-colors border-b border-olive-50"
             >
               Sign Out
             </button>
-          </>
+          </nav>
         )}
 
+        {/* Unauthenticated CTAs */}
         {!session && (
-          <>
-            <div className="h-px bg-olive-100 my-2" />
-            <MobileLink href="/auth/signup/vendor" active={false} onClose={() => setMobileMenuOpen(false)}>
-              Sell With Us
-            </MobileLink>
-            <MobileLink href="/auth/signup" active={false} onClose={() => setMobileMenuOpen(false)}>
+          <div className="px-6 pt-5 pb-6 border-t border-olive-100 mt-2 space-y-3">
+            <p className="text-[9px] font-semibold text-olive-400 uppercase tracking-[0.18em] mb-3">Account</p>
+            <Link
+              href="/auth/signin"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center justify-center w-full bg-olive-900 text-parchment-100 text-sm font-medium py-3.5 tracking-wide hover:bg-olive-800 transition-colors"
+            >
+              Sign In
+            </Link>
+            <Link
+              href="/auth/signup"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center justify-center w-full border border-olive-200 text-olive-700 text-sm font-medium py-3.5 tracking-wide hover:border-olive-400 hover:text-olive-900 transition-colors"
+            >
               Create Account
-            </MobileLink>
-            <div className="mt-4">
-              <Link
-                href="/auth/signin"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block w-full btn-primary text-sm text-center py-3"
-              >
-                Sign In
-              </Link>
-            </div>
-          </>
+            </Link>
+            <Link
+              href="/auth/signup/vendor"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block text-center text-xs text-olive-500 hover:text-olive-700 pt-1 transition-colors"
+            >
+              Sell with Terra Trionfo →
+            </Link>
+          </div>
         )}
-      </nav>
+
+        {/* Bottom brand tag */}
+        <div className="px-6 py-4 border-t border-olive-100 bg-olive-50">
+          <p className="text-[9px] text-olive-400 italic tracking-wide">Terra Trionfo · Born of the Land</p>
+        </div>
+      </div>
     </div>
-    </>
+</>
   )
 }
 
@@ -288,15 +298,17 @@ function MobileLink({
     <Link
       href={href}
       onClick={onClose}
-      className={`flex items-center justify-between py-3 px-1 text-sm font-medium border-b border-olive-50 transition-colors ${
+      className={`flex items-center justify-between py-3.5 text-sm font-medium border-b border-olive-50 transition-colors pl-3 ${
         active
-          ? 'text-olive-900'
-          : 'text-olive-600 hover:text-olive-900'
+          ? 'text-olive-900 border-l-2 border-l-amber-500 -ml-3 pl-3'
+          : 'text-olive-600 hover:text-olive-900 border-l-2 border-l-transparent -ml-3 pl-3'
       }`}
     >
       {children}
       {active && (
-        <span className="w-1 h-1 rounded-full bg-amber-500 flex-shrink-0" />
+        <svg className="w-3 h-3 text-amber-500 flex-shrink-0" fill="currentColor" viewBox="0 0 6 6">
+          <circle cx="3" cy="3" r="3" />
+        </svg>
       )}
     </Link>
   )
