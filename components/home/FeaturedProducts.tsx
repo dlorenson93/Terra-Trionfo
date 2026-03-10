@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { WINES } from '@/data/wines'
 import { PRODUCERS } from '@/data/producers'
 import WineCard from '@/components/wines/WineCard'
+import SectionAtmosphere from '@/components/home/SectionAtmosphere'
 
 // Six representative portfolio wines for the homepage
 const FEATURED_IDS = [
@@ -17,7 +18,11 @@ export default function FeaturedProducts() {
   const featuredWines = FEATURED_IDS.map((id) => WINES.find((w) => w.id === id)).filter(Boolean) as typeof WINES
 
   return (
-    <section className="py-24 px-4 bg-white border-t border-olive-100">
+    <SectionAtmosphere
+      imageSrc="/images/home/Texture Limestone.png"
+      overlayClassName="bg-white/[0.93]"
+      className="py-24 px-4 border-t border-olive-100"
+    >
       <div className="max-w-5xl mx-auto">
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10">
           <div>
@@ -62,6 +67,6 @@ export default function FeaturedProducts() {
           </Link>
         </div>
       </div>
-    </section>
+    </SectionAtmosphere>
   )
 }

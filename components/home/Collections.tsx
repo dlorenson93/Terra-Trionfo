@@ -1,8 +1,13 @@
 import Link from 'next/link'
+import SectionAtmosphere from '@/components/home/SectionAtmosphere'
 
 export default function Collections() {
   return (
-    <section className="py-20 px-4 bg-parchment-100 border-t border-olive-100">
+    <SectionAtmosphere
+      imageSrc="/images/home/WIne Cellar.png"
+      overlayClassName="bg-parchment-50/[0.90]"
+      className="py-20 px-4 border-t border-olive-100"
+    >
       <div className="max-w-5xl mx-auto">
         <p className="text-[10px] font-medium text-olive-400 uppercase tracking-[0.14em] mb-4">
           The Selection
@@ -48,6 +53,6 @@ export default function Collections() {
           </Link>
         </div>
       </div>
-    </section>
+    </SectionAtmosphere>
   )
 }

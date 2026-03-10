@@ -1,3 +1,5 @@
+import SectionAtmosphere from '@/components/home/SectionAtmosphere'
+
 export default function ProvenancePhilosophy() {
   const pillars = [
     {
@@ -31,7 +33,11 @@ export default function ProvenancePhilosophy() {
   ]
 
   return (
-    <section className="py-24 px-4 bg-white border-t border-olive-100">
+    <SectionAtmosphere
+      imageSrc="/images/home/Golden Sunrise Over tuscany Vineyard.png"
+      overlayClassName="bg-white/[0.91]"
+      className="py-24 px-4 border-t border-olive-100"
+    >
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="max-w-2xl mb-16">
@@ -76,6 +82,6 @@ export default function ProvenancePhilosophy() {
           ))}
         </div>
       </div>
-    </section>
+    </SectionAtmosphere>
   )
 }

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import SectionAtmosphere from '@/components/home/SectionAtmosphere'
 
 const regions = [
   {
@@ -29,7 +30,11 @@ const regions = [
 
 export default function RegionalDiscovery() {
   return (
-    <section className="py-24 px-4 bg-olive-900 border-t border-olive-800 relative overflow-hidden">
+    <SectionAtmosphere
+      imageSrc="/images/home/vineyard northern italy.png"
+      overlayClassName="bg-olive-900/[0.82]"
+      className="py-24 px-4 border-t border-olive-800"
+    >
       {/* Subtle grain texture */}
       <div
         className="absolute inset-0 opacity-[0.03]"
@@ -81,6 +86,6 @@ export default function RegionalDiscovery() {
           ))}
         </div>
       </div>
-    </section>
+    </SectionAtmosphere>
   )
 }

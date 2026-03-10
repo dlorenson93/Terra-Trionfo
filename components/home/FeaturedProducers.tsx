@@ -1,9 +1,14 @@
 import Link from 'next/link'
 import { PRODUCERS } from '@/data/producers'
+import SectionAtmosphere from '@/components/home/SectionAtmosphere'
 
 export default function FeaturedProducers() {
   return (
-    <section className="py-24 px-4 bg-parchment-200 border-t border-olive-100">
+    <SectionAtmosphere
+      imageSrc="/images/home/Grape ready for harvest.png"
+      overlayClassName="bg-parchment-100/[0.87]"
+      className="py-24 px-4 border-t border-olive-100"
+    >
       <div className="max-w-5xl mx-auto">
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10">
           <div>
@@ -62,6 +67,6 @@ export default function FeaturedProducers() {
           Explore All Producers →
         </Link>
       </div>
-    </section>
+    </SectionAtmosphere>
   )
 }
