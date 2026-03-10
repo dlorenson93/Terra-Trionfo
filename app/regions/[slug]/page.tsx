@@ -54,7 +54,7 @@ export default function RegionPage({ params }: Props) {
     },
     additionalProperty: [
       { '@type': 'PropertyValue', name: 'Principal Grapes', value: region.grapes.join(', ') },
-      { '@type': 'PropertyValue', name: 'Key Appellations', value: region.appellations.join(', ') },
+      { '@type': 'PropertyValue', name: 'Portfolio Focus', value: region.portfolioFocus.join('; ') },
     ],
   }
 
@@ -109,13 +109,13 @@ export default function RegionPage({ params }: Props) {
             <div className="space-y-8">
               <div>
                 <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-olive-400 mb-3">
-                  Key Appellations
+                  Portfolio Focus
                 </p>
-                <ul className="space-y-1">
-                  {region.appellations.map((a) => (
-                    <li key={a} className="text-sm text-olive-700 flex items-start gap-2">
-                      <span className="text-amber-500/50 mt-1">·</span>
-                      {a}
+                <ul className="space-y-2">
+                  {region.portfolioFocus.map((point) => (
+                    <li key={point} className="text-sm text-olive-700 flex items-start gap-2">
+                      <span className="text-amber-500/60 mt-1 flex-shrink-0">·</span>
+                      {point}
                     </li>
                   ))}
                 </ul>
@@ -134,6 +134,9 @@ export default function RegionPage({ params }: Props) {
                     </span>
                   ))}
                 </div>
+                <p className="text-[10px] text-olive-400/70 mt-3 leading-relaxed italic">
+                  These grapes illustrate the regional character Terra Trionfo considers within the portfolio.
+                </p>
               </div>
             </div>
           </div>

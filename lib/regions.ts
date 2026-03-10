@@ -4,7 +4,8 @@ export interface RegionData {
   subtitle: string
   heroLine: string
   description: string
-  appellations: string[]
+  /** Portfolio focus bullets — what Terra Trionfo values from this region */
+  portfolioFocus: string[]
   grapes: string[]
   climateNote: string
   /** Keywords matched against company.region (case-insensitive) */
@@ -25,11 +26,16 @@ export const REGIONS: Record<string, RegionData> = {
     slug: 'piedmont',
     name: 'Piedmont',
     subtitle: 'Il Piemonte',
-    heroLine: 'The kingdom of Nebbiolo — Barolo, Barbaresco, and alpine terroir.',
+    heroLine: 'The kingdom of Nebbiolo — structure, depth, and a deep tradition of cellaring.',
     description:
-      "Nestled at the foot of the Alps, Piedmont is home to some of Italy's most celebrated appellations. The Langhe hills cultivate Nebbiolo into Barolo and Barbaresco, wines of uncommon structure and longevity. Barbera d'Asti brings generosity; Moscato d'Asti, delicacy. Truffle country, slow fermentation, and a deep tradition of cellaring define the Piemontese ethos.",
-    appellations: ["Barolo DOCG", "Barbaresco DOCG", "Barbera d'Asti DOC", "Moscato d'Asti DOCG", "Gavi DOCG", "Dolcetto d'Alba DOC"],
-    grapes: ['Nebbiolo', 'Barbera', 'Dolcetto', 'Moscato Bianco', 'Cortese'],
+      "Piedmont sits at the foot of the Alps, where continental climate and hillside terroir shape wines of remarkable character and depth. Nebbiolo — the region's defining grape — produces wines of uncommon structure and aging potential. Barbera and Dolcetto offer freshness and food affinity at every occasion. The Langhe hills and Monferrato zone represent Italy's most compelling case for cellar-worthy reds alongside everyday drinking. Terra Trionfo's focus in Piemonte is on producers who honor the classical tradition while offering strong commercial positioning at their respective price points.",
+    portfolioFocus: [
+      'Nebbiolo-driven wines with structure, lift, and aging potential',
+      'Fresh, food-oriented everyday reds from Barbera and Dolcetto',
+      'Mineral northern whites that bring balance to the portfolio',
+      'Classic and cellar-worthy wines that represent Piemonte\'s depth',
+    ],
+    grapes: ['Nebbiolo', 'Barbera', 'Dolcetto', 'Arneis', 'Cortese'],
     climateNote: 'Continental climate with Alpine influence — significant diurnal shifts preserve acidity and aromatic precision.',
     dbKeywords: ['piedmont', 'piemonte', 'langhe', 'monferrato'],
     mapCoordinates: [7.9, 44.6],
@@ -40,11 +46,16 @@ export const REGIONS: Record<string, RegionData> = {
     slug: 'tuscany',
     name: 'Tuscany',
     subtitle: 'La Toscana',
-    heroLine: 'Sangiovese country — Chianti, Brunello, and the Bolgheri coast.',
+    heroLine: 'Sangiovese country — structure, character, and centuries of hillside winemaking.',
     description:
-      "Tuscany defines Italian wine for much of the world. The Sangiovese grape, expressed through an extraordinary range of soils and elevations, yields wines from the structured grandeur of Brunello di Montalcino to the vivid acidity of Chianti Classico. The Bolgheri coast introduced the Supertuscans — Cabernet and Merlot-driven blends that rewrote the international handbook. Ancient hilltop estates, olive groves, and Renaissance landscapes complete the story.",
-    appellations: ['Chianti Classico DOCG', 'Brunello di Montalcino DOCG', 'Vino Nobile di Montepulciano DOCG', 'Bolgheri DOC', 'Morellino di Scansano DOC', 'Vernaccia di San Gimignano DOCG'],
-    grapes: ['Sangiovese', 'Cabernet Sauvignon', 'Merlot', 'Vernaccia', 'Trebbiano Toscano'],
+      "Tuscany has shaped the image of Italian wine for generations, and Sangiovese — in all its regional expression — remains its defining voice. From elevated hillside zones with cool breezes and volcanic soils to the warmer coastal plains, the region rewards those who look beyond the familiar labels. Terra Trionfo values Tuscany for its depth of character, food affinity, and the broad stylistic range it offers — from elegant, medium-bodied reds to richer coastal expressions. The classical tradition and its modern evolution both have a place in the portfolio framework.",
+    portfolioFocus: [
+      'Sangiovese-led wines with acidity, elegance, and regional identity',
+      'Classic hillside expressions with savory depth and food affinity',
+      'Coastal Tuscan styles offering richer structure and Mediterranean character',
+      'Traditional and modern interpretations of Tuscan winemaking',
+    ],
+    grapes: ['Sangiovese', 'Canaiolo', 'Cabernet Sauvignon', 'Merlot', 'Vermentino'],
     climateNote: 'Warm Mediterranean tendencies moderated by maritime breezes along the coast and altitude inland.',
     dbKeywords: ['tuscany', 'toscana', 'chianti', 'montalcino', 'bolgheri', 'montepulciano'],
     mapCoordinates: [11.2, 43.5],
@@ -55,10 +66,15 @@ export const REGIONS: Record<string, RegionData> = {
     slug: 'veneto',
     name: 'Veneto',
     subtitle: 'Il Veneto',
-    heroLine: "From Amarone's dried-grape intensity to the volcanic minerality of Soave.",
+    heroLine: 'A region of real range — from mineral whites and bright reds to dried-grape depth.',
     description:
-      "The Veneto is Italy's most prolific wine region, yet quality and variety are everywhere. The Valpolicella zone produces Amarone della Valpolicella — one of the world's great red wines — through the appassimento technique of drying harvested grapes before pressing. The Soave hills, with their volcanic basalt soils, yield whites of subtle mineral depth. Prosecco, produced across a sweep of hillside vineyards in Conegliano-Valdobbiadene, has become an emblem of Italian conviviality.",
-    appellations: ['Amarone della Valpolicella DOCG', 'Valpolicella DOC', 'Soave Classico DOC', 'Prosecco di Valdobbiadene DOCG', 'Bardolino DOC', 'Ripasso Valpolicella DOC'],
+      "The Veneto encompasses some of Italy's most distinctive stylistic contrasts — volcanic whites from hillside vineyards, the bright, food-friendly reds of the Valpolicella zone, and rich, concentrated wines crafted through the dried-grape appassimento tradition. Lake Garda moderates the western zones; the Dolomites shape alpine character in the north. Terra Trionfo looks at Veneto as a region of genuine range — from aperitivo-ready sparkling wines to structured, cellar-worthy reds that illustrate the depth of the Italian northeast.",
+    portfolioFocus: [
+      'Soave-inspired whites with freshness, almond notes, and mineral clarity',
+      'Valpolicella-family reds with bright fruit and balance',
+      'Structured dried-grape traditions that illustrate Veneto\'s richer side',
+      'Sparkling and still wines that reflect the region\'s broad stylistic range',
+    ],
     grapes: ['Corvina', 'Rondinella', 'Garganega', 'Glera', 'Pinot Grigio'],
     climateNote: 'Varied — Lake Garda moderates temperatures in the west; the Dolomites shape alpine conditions in the north.',
     dbKeywords: ['veneto', 'valpolicella', 'amarone', 'soave', 'valdobbiadene'],
@@ -72,8 +88,13 @@ export const REGIONS: Record<string, RegionData> = {
     subtitle: 'Südtirol',
     heroLine: 'Alpine precision — cool-climate whites and elegant reds at the northern limit.',
     description:
-      'Alto Adige (Südtirol) sits at the crossroads of Italian and Tyrolean culture, producing wines of remarkable intensity and finesse at vineyard elevations between 200 and 900 meters. The extreme diurnal temperature range — warm days, cold nights — locks in aromatics and acidity. This region is most celebrated for its Pinot Bianco, Gewürztraminer, and Pinot Nero, though Lagrein — a dark, inky, native red — offers something entirely unique.',
-    appellations: ['Alto Adige DOC / Südtirol DOC', 'Santa Maddalena DOC', 'Terlano DOC', 'Valle Isarco DOC'],
+      "Alto Adige — known in German as Südtirol — sits at Italy's alpine northern boundary, producing wines that carry the precision and aromatic clarity of the mountains. Vineyard elevations between 200 and 900 meters, combined with dramatic diurnal temperature shifts, preserve vivid acidity and fragrance across both white and red varieties. The region is home to some of Italy's most compelling terroir-driven whites, alongside elegant, lighter reds shaped by altitude. Terra Trionfo's focus here is on producers whose wines reflect the alpine character of this unique cultural and viticultural crossroads.",
+    portfolioFocus: [
+      'Alpine whites with precision, minerality, and aromatic lift',
+      'Mountain-grown reds with freshness and elegance',
+      'High-elevation wines shaped by dramatic temperature shifts',
+      'Native and international varieties expressed through alpine terroir',
+    ],
     grapes: ['Pinot Bianco', 'Pinot Grigio', 'Gewürztraminer', 'Pinot Nero', 'Lagrein', 'Schiava'],
     climateNote: 'Alpine continental — high altitude and large diurnal shifts produce wines of exceptional aromatic clarity.',
     dbKeywords: ['alto adige', 'südtirol', 'south tyrol', 'trentino', 'bolzano'],
