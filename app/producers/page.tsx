@@ -3,6 +3,7 @@ import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import { prisma } from '@/lib/prisma'
 import { PRODUCERS } from '@/data/producers'
+import { WINES } from '@/data/wines'
 
 interface ProducerRow {
   id: string
@@ -20,77 +21,110 @@ export default async function ProducersPage() {
     where: { status: 'APPROVED', contentStatus: 'LIVE' },
     orderBy: { name: 'asc' },
   })
-  // Cast to access new fields (available after migration + prisma generate)
   const producers = rawProducers as unknown as ProducerRow[]
+
+  const classical = PRODUCERS.filter((p) => p.collection === 'classical')
+  const altNextGen = PRODUCERS.filter((p) => p.collection === 'alternative-next-generation')
 
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-grow">
+
+        {/* Page hero */}
         <div className="bg-gradient-to-br from-parchment-100 to-parchment-200 py-14 px-4">
           <div className="max-w-7xl mx-auto">
+            <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-olive-400 mb-3">
+              Terra Trionfo
+            </p>
             <h1 className="text-4xl md:text-5xl font-serif font-bold text-olive-900 mb-3">
-              Our Producers
+              Producer Portfolio
             </h1>
-            <p className="text-lg text-olive-700">
-              Artisan families and estates, curated for provenance, quality, and trust.
+            <p className="text-lg text-olive-700 max-w-2xl">
+              Six Italian estates under active evaluation for U.S. import — selected for quality,
+              story, and fit within the Terra Trionfo portfolio.
             </p>
           </div>
         </div>
 
-        {/* ── Portfolio ──────────────────────────────────────────── */}
+        {/* Portfolio stats band */}
+        <div className="bg-olive-900 py-8 px-4">
+          <div className="max-w-5xl mx-auto">
+            <div className="grid grid-cols-3 divide-x divide-parchment-100/10">
+              {[
+                { number: '6', label: 'Italian Estates' },
+                { number: '4', label: 'Portfolio Regions' },
+                { number: '21', label: 'Wines Under Evaluation' },
+              ].map((stat) => (
+                <div key={stat.label} className="text-center px-6">
+                  <p className="text-3xl font-serif font-bold text-parchment-100">{stat.number}</p>
+                  <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-parchment-400/70 mt-1">
+                    {stat.label}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Portfolio section ── */}
         <section className="bg-parchment-50 border-t border-parchment-200 py-20 px-4">
           <div className="max-w-5xl mx-auto">
             <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-olive-400 mb-3">
-              Terra Trionfo Portfolio
+              Current Portfolio
             </p>
             <h2 className="text-3xl font-serif font-bold text-olive-900 mb-3">
-              Initial Producer Selection
+              Estate Selection
             </h2>
             <p className="text-olive-500 text-sm leading-relaxed mb-14 max-w-xl">
-              Six Italian estates currently under evaluation for U.S. import — sourced directly from
-              Italy&apos;s most distinctive wine regions.
+              Six Italian estates across four distinct regions — from the Barolo hills of Piemonte
+              to the Adriatic coast of Emilia-Romagna.
             </p>
 
-            {/* Classical */}
+            {/* Classical Selection */}
             <div className="mb-14">
               <p className="text-[9px] font-medium text-amber-600/60 uppercase tracking-[0.3em] mb-6 border-b border-parchment-300 pb-3">
                 Classical Selection
               </p>
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {PRODUCERS.filter((p) => p.collection === 'classical').map((p) => (
-                  <Link
-                    key={p.id}
-                    href={`/producers/${p.slug}`}
-                    className="group border border-parchment-300 hover:border-olive-400 bg-white hover:bg-parchment-50 transition-all duration-200 p-7 flex flex-col"
-                  >
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-[9px] font-medium text-amber-600/60 uppercase tracking-[0.3em]">
-                        Classical
-                      </span>
-                      <span className="text-[9px] text-olive-400 uppercase tracking-wider">
-                        {p.region}
-                      </span>
-                    </div>
-                    <h3 className="font-serif font-bold text-olive-900 text-xl leading-snug mb-1 group-hover:text-olive-700 transition-colors">
-                      {p.name}
-                    </h3>
-                    <p className="text-xs text-olive-500 mb-4">{p.subregion}</p>
-                    <p className="text-sm text-olive-600 leading-relaxed line-clamp-3 flex-grow">
-                      {p.summary}
-                    </p>
-                    <div className="mt-5 flex flex-wrap gap-1.5">
-                      {p.keywords.slice(0, 3).map((kw) => (
-                        <span key={kw} className="text-[9px] border border-olive-200 text-olive-500 px-2 py-0.5">
-                          {kw}
+                {classical.map((p) => {
+                  const wineCount = WINES.filter((w) => w.producerId === p.id).length
+                  return (
+                    <Link
+                      key={p.id}
+                      href={`/producers/${p.slug}`}
+                      className="group border border-parchment-300 hover:border-olive-400 bg-white hover:bg-parchment-50 transition-all duration-200 p-7 flex flex-col"
+                    >
+                      <div className="flex items-center justify-between mb-4">
+                        <span className="text-[9px] font-medium text-amber-600/60 uppercase tracking-[0.3em]">
+                          Classical
                         </span>
-                      ))}
-                    </div>
-                    <p className="text-[10px] text-olive-400 group-hover:text-olive-600 mt-4 transition-colors uppercase tracking-wider">
-                      View estate →
-                    </p>
-                  </Link>
-                ))}
+                        {p.founded && (
+                          <span className="text-[9px] text-olive-400 uppercase tracking-wider">
+                            Est. {p.founded}
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="font-serif font-bold text-olive-900 text-xl leading-snug mb-1 group-hover:text-olive-700 transition-colors">
+                        {p.name}
+                      </h3>
+                      <p className="text-xs text-olive-500 mb-4">{p.subregion}</p>
+                      <p className="text-sm text-olive-600 leading-relaxed line-clamp-3 flex-grow">
+                        {p.summary}
+                      </p>
+                      <div className="mt-5 pt-4 border-t border-parchment-100 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2.5 text-[9px] text-olive-400 uppercase tracking-[0.12em]">
+                          <span>{p.region}</span>
+                          <span className="w-px h-3 bg-parchment-300" />
+                          <span>{wineCount} wine{wineCount !== 1 ? 's' : ''}</span>
+                        </div>
+                        <span className="text-[10px] text-olive-400 group-hover:text-olive-600 transition-colors uppercase tracking-wider">
+                          View →
+                        </span>
+                      </div>
+                    </Link>
+                  )
+                })}
               </div>
             </div>
 
@@ -100,45 +134,50 @@ export default async function ProducersPage() {
                 Alternative &amp; Next Generation
               </p>
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {PRODUCERS.filter((p) => p.collection === 'alternative-next-generation').map((p) => (
-                  <Link
-                    key={p.id}
-                    href={`/producers/${p.slug}`}
-                    className="group border border-parchment-300 hover:border-olive-400 bg-white hover:bg-parchment-50 transition-all duration-200 p-7 flex flex-col"
-                  >
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-[9px] font-medium text-olive-500/60 uppercase tracking-[0.3em]">
-                        Alt / Next Gen
-                      </span>
-                      <span className="text-[9px] text-olive-400 uppercase tracking-wider">
-                        {p.region}
-                      </span>
-                    </div>
-                    <h3 className="font-serif font-bold text-olive-900 text-xl leading-snug mb-1 group-hover:text-olive-700 transition-colors">
-                      {p.name}
-                    </h3>
-                    <p className="text-xs text-olive-500 mb-4">{p.subregion}</p>
-                    <p className="text-sm text-olive-600 leading-relaxed line-clamp-3 flex-grow">
-                      {p.summary}
-                    </p>
-                    <div className="mt-5 flex flex-wrap gap-1.5">
-                      {p.keywords.slice(0, 3).map((kw) => (
-                        <span key={kw} className="text-[9px] border border-olive-200 text-olive-500 px-2 py-0.5">
-                          {kw}
+                {altNextGen.map((p) => {
+                  const wineCount = WINES.filter((w) => w.producerId === p.id).length
+                  return (
+                    <Link
+                      key={p.id}
+                      href={`/producers/${p.slug}`}
+                      className="group border border-parchment-300 hover:border-olive-400 bg-white hover:bg-parchment-50 transition-all duration-200 p-7 flex flex-col"
+                    >
+                      <div className="flex items-center justify-between mb-4">
+                        <span className="text-[9px] font-medium text-olive-500/60 uppercase tracking-[0.3em]">
+                          Alt / Next Gen
                         </span>
-                      ))}
-                    </div>
-                    <p className="text-[10px] text-olive-400 group-hover:text-olive-600 mt-4 transition-colors uppercase tracking-wider">
-                      View estate →
-                    </p>
-                  </Link>
-                ))}
+                        {p.founded && (
+                          <span className="text-[9px] text-olive-400 uppercase tracking-wider">
+                            Est. {p.founded}
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="font-serif font-bold text-olive-900 text-xl leading-snug mb-1 group-hover:text-olive-700 transition-colors">
+                        {p.name}
+                      </h3>
+                      <p className="text-xs text-olive-500 mb-4">{p.subregion}</p>
+                      <p className="text-sm text-olive-600 leading-relaxed line-clamp-3 flex-grow">
+                        {p.summary}
+                      </p>
+                      <div className="mt-5 pt-4 border-t border-parchment-100 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2.5 text-[9px] text-olive-400 uppercase tracking-[0.12em]">
+                          <span>{p.region}</span>
+                          <span className="w-px h-3 bg-parchment-300" />
+                          <span>{wineCount} wine{wineCount !== 1 ? 's' : ''}</span>
+                        </div>
+                        <span className="text-[10px] text-olive-400 group-hover:text-olive-600 transition-colors uppercase tracking-wider">
+                          View →
+                        </span>
+                      </div>
+                    </Link>
+                  )
+                })}
               </div>
             </div>
           </div>
         </section>
 
-        {/* ── Live on Platform ───────────────────────────────────────── */}
+        {/* ── Live on Platform (DB producers) ── */}
         {producers.length > 0 && (
           <div className="max-w-7xl mx-auto px-4 py-12">
             <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-olive-400 mb-6">
@@ -149,7 +188,7 @@ export default async function ProducersPage() {
                 <Link
                   key={p.id}
                   href={`/producers/${p.slug || p.id}`}
-                  className="group block bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                  className="group block bg-white overflow-hidden shadow-sm hover:shadow-md transition-shadow border border-parchment-200"
                 >
                   <div className="relative h-44 bg-olive-200 overflow-hidden">
                     {p.heroImageUrl ? (

@@ -194,6 +194,90 @@ export default async function ProducerDetailPage({ params }: { params: { slug: s
             </div>
           </section>
 
+          {/* Estate Overview — structured facts */}
+          {(staticProducer.founded || staticProducer.farmingMethod || staticProducer.elevation || staticProducer.estateNotes) && (
+            <section className="py-12 px-6 bg-white border-t border-parchment-200">
+              <div className="max-w-5xl mx-auto">
+                <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-olive-400 mb-6">
+                  Estate Overview
+                </p>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                  {staticProducer.founded && (
+                    <div>
+                      <p className="text-[10px] font-medium tracking-[0.12em] uppercase text-olive-400 mb-1">
+                        Founded
+                      </p>
+                      <p className="text-sm text-olive-800 font-medium">{staticProducer.founded}</p>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-[10px] font-medium tracking-[0.12em] uppercase text-olive-400 mb-1">
+                      Location
+                    </p>
+                    <p className="text-sm text-olive-800 font-medium">
+                      {[staticProducer.subregion, staticProducer.region].filter(Boolean).join(', ')}
+                    </p>
+                  </div>
+                  {staticProducer.farmingMethod && (
+                    <div>
+                      <p className="text-[10px] font-medium tracking-[0.12em] uppercase text-olive-400 mb-1">
+                        Farming
+                      </p>
+                      <p className="text-sm text-olive-800">{staticProducer.farmingMethod}</p>
+                    </div>
+                  )}
+                  {staticProducer.elevation && (
+                    <div>
+                      <p className="text-[10px] font-medium tracking-[0.12em] uppercase text-olive-400 mb-1">
+                        Elevation
+                      </p>
+                      <p className="text-sm text-olive-800">{staticProducer.elevation}</p>
+                    </div>
+                  )}
+                </div>
+                {staticProducer.estateNotes && (
+                  <p className="text-sm text-olive-700 leading-relaxed max-w-2xl">
+                    {staticProducer.estateNotes}
+                  </p>
+                )}
+              </div>
+            </section>
+          )}
+
+          {/* Terra Trionfo Portfolio Note */}
+          {(staticProducer.portfolioNote || staticProducer.portfolioRole || staticProducer.distinctive) && (
+            <section className="py-12 px-6 bg-olive-900 border-t border-olive-800">
+              <div className="max-w-5xl mx-auto">
+                <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-parchment-400/60 mb-6">
+                  Terra Trionfo Portfolio Note
+                </p>
+                {staticProducer.portfolioNote && (
+                  <p className="text-parchment-200/90 text-base leading-relaxed max-w-2xl mb-8">
+                    {staticProducer.portfolioNote}
+                  </p>
+                )}
+                <div className="grid sm:grid-cols-2 gap-8">
+                  {staticProducer.portfolioRole && (
+                    <div>
+                      <p className="text-[10px] font-medium tracking-[0.12em] uppercase text-parchment-400/50 mb-2">
+                        Role in Portfolio
+                      </p>
+                      <p className="text-sm text-parchment-300/80">{staticProducer.portfolioRole}</p>
+                    </div>
+                  )}
+                  {staticProducer.distinctive && (
+                    <div>
+                      <p className="text-[10px] font-medium tracking-[0.12em] uppercase text-parchment-400/50 mb-2">
+                        Distinctive for U.S. Market
+                      </p>
+                      <p className="text-sm text-parchment-300/80">{staticProducer.distinctive}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </section>
+          )}
+
           {/* Wines */}
           {winesForProducer.length > 0 && (
             <section className="py-16 px-6 bg-white border-t border-parchment-200">

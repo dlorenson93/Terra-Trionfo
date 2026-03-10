@@ -58,6 +58,11 @@ export default function WineCard({ wine, producer, standalone = true }: Props) {
         <p className="text-[10px] text-olive-500 mb-1 font-medium">{wine.appellation}</p>
       )}
 
+      {/* Grape / style */}
+      {wine.tags && wine.tags.length > 0 && (
+        <p className="text-[10px] text-olive-400 italic mb-1">{wine.tags[0]}</p>
+      )}
+
       {/* Producer + region */}
       {producer && (
         <p className="text-[10px] text-olive-400 mb-3 uppercase tracking-wider">

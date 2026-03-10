@@ -18,6 +18,11 @@ const PORTFOLIO_TYPES: WineType[] = TYPE_ORDER.filter((t) =>
   WINES.some((w) => w.type === t)
 )
 
+// Derive unique regions from producers in the portfolio
+const PORTFOLIO_REGIONS: string[] = Array.from(
+  new Set(PRODUCERS.map((p) => p.region).filter(Boolean))
+) as string[]
+
 interface Product {
   id: string
   name: string
@@ -58,6 +63,8 @@ function ProductsContent() {
   const [loading, setLoading] = useState(true)
   const [collectionFilter, setCollectionFilter] = useState<string>('all')
   const [typeFilter, setTypeFilter] = useState<string>('all')
+  const [regionFilter, setRegionFilter] = useState<string>('all')
+  const [producerFilter, setProducerFilter] = useState<string>('all')
   const categories = ['All', ...VISIBLE_CATEGORIES.map((c) => CATEGORY_LABELS[c] ?? c)]
 
   // Filtered portfolio wines derived from both filter dimensions
@@ -65,11 +72,13 @@ function ProductsContent() {
     return WINES.filter((w) => {
       const matchesType = typeFilter === 'all' || w.type === typeFilter
       if (!matchesType) return false
-      if (collectionFilter === 'all') return true
       const p = PRODUCERS.find((prod) => prod.id === w.producerId)
-      return p?.collection === collectionFilter
+      if (collectionFilter !== 'all' && p?.collection !== collectionFilter) return false
+      if (regionFilter !== 'all' && p?.region !== regionFilter) return false
+      if (producerFilter !== 'all' && w.producerId !== producerFilter) return false
+      return true
     })
-  }, [typeFilter, collectionFilter])
+  }, [typeFilter, collectionFilter, regionFilter, producerFilter])
 
   useEffect(() => {
     fetchProducts()
@@ -177,8 +186,8 @@ function ProductsContent() {
                 </p>
               </div>
 
-              {/* Filter bar — wine type + collection */}
-              <div className="flex flex-wrap items-center gap-x-6 gap-y-3 mb-8 pb-6 border-b border-parchment-200">
+              {/* Filter bar — wine type + collection + region + producer */}
+              <div className="flex flex-wrap items-start gap-y-4 gap-x-6 mb-8 pb-6 border-b border-parchment-200">
                 {/* Wine type */}
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-[10px] text-olive-400 uppercase tracking-widest mr-1">Type</span>
@@ -198,7 +207,7 @@ function ProductsContent() {
                 </div>
 
                 {/* Divider */}
-                <span className="hidden sm:block w-px h-4 bg-parchment-300" />
+                <span className="hidden sm:block w-px h-4 bg-parchment-300 self-center" />
 
                 {/* Collection */}
                 <div className="flex items-center gap-2 flex-wrap">
@@ -222,8 +231,44 @@ function ProductsContent() {
                   ))}
                 </div>
 
+                {/* Region */}
+                <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
+                  <span className="text-[10px] text-olive-400 uppercase tracking-widest mr-1">Region</span>
+                  {(['all', ...PORTFOLIO_REGIONS]).map((r) => (
+                    <button
+                      key={r}
+                      onClick={() => setRegionFilter(r)}
+                      className={`text-[10px] uppercase tracking-[0.12em] px-3 py-1.5 border transition-colors rounded-sm ${
+                        regionFilter === r
+                          ? 'border-olive-700 text-olive-900 bg-olive-50'
+                          : 'border-parchment-300 text-olive-500 hover:border-olive-400 hover:text-olive-700 bg-white'
+                      }`}
+                    >
+                      {r === 'all' ? 'All Regions' : r}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Producer */}
+                <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
+                  <span className="text-[10px] text-olive-400 uppercase tracking-widest mr-1">Producer</span>
+                  {([{ id: 'all', name: 'All Producers' }, ...PRODUCERS]).map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => setProducerFilter(p.id)}
+                      className={`text-[10px] uppercase tracking-[0.12em] px-3 py-1.5 border transition-colors rounded-sm ${
+                        producerFilter === p.id
+                          ? 'border-olive-700 text-olive-900 bg-olive-50'
+                          : 'border-parchment-300 text-olive-500 hover:border-olive-400 hover:text-olive-700 bg-white'
+                      }`}
+                    >
+                      {p.name}
+                    </button>
+                  ))}
+                </div>
+
                 {/* Result count */}
-                <span className="ml-auto text-[10px] text-olive-400 tabular-nums">
+                <span className="ml-auto self-start text-[10px] text-olive-400 tabular-nums">
                   {filteredWines.length} wine{filteredWines.length !== 1 ? 's' : ''}
                 </span>
               </div>

@@ -422,6 +422,27 @@ export default function CartPage() {
                     <p className="mt-3 text-sm text-red-700 text-center">{checkoutError}</p>
                   )}
 
+                  {/* Fulfillment info block */}
+                  <div className="mt-6 pt-5 border-t border-parchment-200">
+                    <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-olive-400 mb-3">
+                      Fulfillment Information
+                    </p>
+                    <ul className="space-y-2 text-xs text-olive-600 leading-relaxed">
+                      <li className="flex gap-2">
+                        <span className="mt-0.5 w-1 h-1 rounded-full bg-amber-500 flex-shrink-0" />
+                        Pickup is coordinated through Terra Trionfo at a confirmed Massachusetts location.
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="mt-0.5 w-1 h-1 rounded-full bg-amber-500 flex-shrink-0" />
+                        Local delivery is available in select Massachusetts regions on scheduled days.
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="mt-0.5 w-1 h-1 rounded-full bg-amber-500 flex-shrink-0" />
+                        Pickup locations and fulfillment details are confirmed after order placement.
+                      </li>
+                    </ul>
+                  </div>
+
                 </div>
               </div>
             </div>

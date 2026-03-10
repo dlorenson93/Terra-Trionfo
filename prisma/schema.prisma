@@ -80,6 +80,12 @@ enum ContentStatus {
   LIVE       // publicly visible on the storefront
 }
 
+enum AgeVerificationStatus {
+  UNVERIFIED   // DOB not yet provided
+  ELIGIBLE     // 21+ confirmed from DOB
+  INELIGIBLE   // under 21
+}
+
 model User {
   id             String    @id @default(cuid())
   name           String
@@ -87,12 +93,22 @@ model User {
   passwordHash   String
   role           UserRole? // nullable until setup completed
   profileCompleted Boolean @default(false)
+
+  // Customer profile fields
+  firstName             String?
+  lastName              String?
+  phone                 String?
+  dateOfBirth           DateTime?
+  ageVerificationStatus AgeVerificationStatus @default(UNVERIFIED)
+  ageVerifiedAt         DateTime?
+
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
   // Relations
   companies Company[]
   orders    Order[]
+  addresses CustomerAddress[]
 
   @@map("users")
 }
@@ -329,6 +345,23 @@ model PickupSchedule {
   createdAt DateTime @default(now())
 
   @@map("pickup_schedules")
+}
+
+model CustomerAddress {
+  id       String @id @default(cuid())
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label    String @default("Home")  // "Home" | "Work" | "Other"
+  address1 String
+  address2 String?
+  city     String
+  state    String
+  zipCode  String
+  isDefault Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("customer_addresses")
 }
 
 model Restaurant {

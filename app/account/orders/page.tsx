@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 
@@ -89,15 +90,29 @@ export default function OrdersPage() {
               <h3 className="mt-4 text-lg font-medium text-olive-900">
                 No orders yet
               </h3>
-              <p className="text-olive-600 mt-2 mb-6">
-                Start shopping to place your first order
+              <p className="text-olive-600 mt-2 mb-8 max-w-sm mx-auto leading-relaxed">
+                You haven't placed any orders yet. Start exploring the portfolio.
               </p>
-              <button
-                onClick={() => router.push('/products')}
-                className="btn-primary"
-              >
-                Browse Products
-              </button>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <Link
+                  href="/products"
+                  className="inline-block bg-olive-900 text-parchment-100 text-sm font-medium px-6 py-2.5 hover:bg-olive-800 transition-colors uppercase tracking-wider"
+                >
+                  Browse Wines
+                </Link>
+                <Link
+                  href="/producers"
+                  className="inline-block border border-olive-300 text-olive-700 text-sm font-medium px-6 py-2.5 hover:border-olive-600 hover:text-olive-900 transition-colors uppercase tracking-wider"
+                >
+                  Explore Producers
+                </Link>
+                <Link
+                  href="/regions"
+                  className="inline-block border border-olive-300 text-olive-700 text-sm font-medium px-6 py-2.5 hover:border-olive-600 hover:text-olive-900 transition-colors uppercase tracking-wider"
+                >
+                  Discover Regions
+                </Link>
+              </div>
             </div>
           ) : (
             <div className="space-y-6">

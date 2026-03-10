@@ -94,6 +94,18 @@ interface PickupLocationAdmin {
   state: string
 }
 
+interface Customer {
+  id: string
+  name: string | null
+  email: string
+  createdAt: string
+  firstName?: string | null
+  lastName?: string | null
+  phone?: string | null
+  ageVerificationStatus?: 'UNVERIFIED' | 'ELIGIBLE' | 'INELIGIBLE' | null
+  ageVerifiedAt?: string | null
+}
+
 export default function AdminDashboard() {
   const { data: session } = useSession()
   const router = useRouter()
@@ -101,7 +113,8 @@ export default function AdminDashboard() {
   const [companies, setCompanies] = useState<Company[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
-  const [activeTab, setActiveTab] = useState<'overview' | 'companies' | 'products' | 'restaurants' | 'fulfillment' | 'portfolio-pricing'>('overview')
+  const [customers, setCustomers] = useState<Customer[]>([])
+  const [activeTab, setActiveTab] = useState<'overview' | 'companies' | 'products' | 'restaurants' | 'fulfillment' | 'portfolio-pricing' | 'customers'>('overview')
   const [fulfillmentSubTab, setFulfillmentSubTab] = useState<'zones' | 'routes' | 'schedules'>('zones')
 
   // Fulfillment ops state
@@ -133,7 +146,7 @@ export default function AdminDashboard() {
 
   const fetchData = async () => {
     try {
-      const [statsRes, companiesRes, productsRes, restaurantsRes, zonesRes, routesRes, schedulesRes, pickupLocsRes] = await Promise.all([
+      const [statsRes, companiesRes, productsRes, restaurantsRes, zonesRes, routesRes, schedulesRes, pickupLocsRes, customersRes] = await Promise.all([
         fetch('/api/admin/stats'),
         fetch('/api/companies'),
         fetch('/api/products'),
@@ -142,6 +155,7 @@ export default function AdminDashboard() {
         fetch('/api/delivery-routes'),
         fetch('/api/pickup-schedules'),
         fetch('/api/pickup-locations'),
+        fetch('/api/admin/customers'),
       ])
 
       setStats(await statsRes.json())
@@ -159,6 +173,8 @@ export default function AdminDashboard() {
       setPickupSchedules(Array.isArray(schedulesData) ? schedulesData : [])
       const pickupLocsData = await pickupLocsRes.json()
       setPickupLocationsList(Array.isArray(pickupLocsData) ? pickupLocsData : [])
+      const customersData = await customersRes.json()
+      setCustomers(Array.isArray(customersData) ? customersData : [])
     } catch (error) {
       console.error('Error fetching data:', error)
     }
@@ -485,6 +501,7 @@ export default function AdminDashboard() {
                   { key: 'overview', label: 'Overview' },
                   { key: 'companies', label: 'Companies' },
                   { key: 'products', label: 'Products' },
+                  { key: 'customers', label: 'Customers' },
                 ].map((tab) => (
                   <button
                     key={tab.key}
@@ -655,6 +672,75 @@ export default function AdminDashboard() {
                     </tbody>
                   </table>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Customers Tab */}
+          {activeTab === 'customers' && (
+            <div className="card p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-serif font-bold text-olive-900">Consumer Accounts</h2>
+                <p className="text-sm text-olive-500">{customers.length} registered consumer{customers.length !== 1 ? 's' : ''}</p>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="text-left border-b border-olive-200">
+                      <th className="pb-3 text-sm font-medium text-olive-700">Name / Email</th>
+                      <th className="pb-3 text-sm font-medium text-olive-700">Phone</th>
+                      <th className="pb-3 text-sm font-medium text-olive-700">Age Verification</th>
+                      <th className="pb-3 text-sm font-medium text-olive-700">Verified At</th>
+                      <th className="pb-3 text-sm font-medium text-olive-700">Joined</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {customers.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="py-8 text-center text-sm text-olive-400">
+                          No consumer accounts yet.
+                        </td>
+                      </tr>
+                    ) : customers.map((c) => (
+                      <tr key={c.id} className="border-b border-olive-100">
+                        <td className="py-3">
+                          <p className="text-sm font-medium text-olive-900">
+                            {c.firstName || c.lastName
+                              ? [c.firstName, c.lastName].filter(Boolean).join(' ')
+                              : c.name || '—'}
+                          </p>
+                          <p className="text-xs text-olive-500">{c.email}</p>
+                        </td>
+                        <td className="py-3 text-sm text-olive-700">{c.phone || '—'}</td>
+                        <td className="py-3">
+                          {c.ageVerificationStatus === 'ELIGIBLE' && (
+                            <span className="inline-block text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-sm bg-green-100 text-green-800">
+                              21+ Eligible
+                            </span>
+                          )}
+                          {c.ageVerificationStatus === 'INELIGIBLE' && (
+                            <span className="inline-block text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-sm bg-red-100 text-red-800">
+                              Ineligible
+                            </span>
+                          )}
+                          {(!c.ageVerificationStatus || c.ageVerificationStatus === 'UNVERIFIED') && (
+                            <span className="inline-block text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-sm bg-parchment-200 text-olive-500">
+                              Unverified
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3 text-sm text-olive-600">
+                          {c.ageVerifiedAt
+                            ? new Date(c.ageVerifiedAt).toLocaleDateString()
+                            : '—'}
+                        </td>
+                        <td className="py-3 text-sm text-olive-600">
+                          {new Date(c.createdAt).toLocaleDateString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}

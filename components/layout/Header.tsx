@@ -58,6 +58,14 @@ export default function Header() {
               Browse
             </Link>
             <Link
+              href="/producers"
+              className={`text-sm font-medium transition-colors ${
+                pathname.startsWith('/producers') ? 'text-olive-900' : 'text-olive-600 hover:text-olive-900'
+              }`}
+            >
+              Producers
+            </Link>
+            <Link
               href="/regions"
               className={`text-sm font-medium transition-colors ${
                 pathname.startsWith('/regions') ? 'text-olive-900' : 'text-olive-600 hover:text-olive-900'
@@ -68,18 +76,10 @@ export default function Header() {
             <Link
               href="/restaurants"
               className={`text-sm font-medium transition-colors ${
-                isActive('/restaurants') || pathname.startsWith('/restaurants') ? 'text-olive-900' : 'text-olive-600 hover:text-olive-900'
+                pathname.startsWith('/restaurants') ? 'text-olive-900' : 'text-olive-600 hover:text-olive-900'
               }`}
             >
               Restaurants
-            </Link>
-            <Link
-              href="/producers"
-              className={`text-sm font-medium transition-colors ${
-                isActive('/producers') ? 'text-olive-900' : 'text-olive-600 hover:text-olive-900'
-              }`}
-            >
-              Producers
             </Link>
 
             {session ? (
@@ -115,7 +115,7 @@ export default function Header() {
                   </Link>
                 )}
                 <Link
-                  href="/account/orders"
+                  href="/account"
                   className={`text-sm font-medium transition-colors ${
                     pathname.startsWith('/account') ? 'text-olive-900' : 'text-olive-600 hover:text-olive-900'
                   }`}
@@ -197,14 +197,14 @@ export default function Header() {
         <MobileLink href="/products" active={isActive('/products')} onClose={() => setMobileMenuOpen(false)}>
           Browse
         </MobileLink>
+        <MobileLink href="/producers" active={pathname.startsWith('/producers')} onClose={() => setMobileMenuOpen(false)}>
+          Producers
+        </MobileLink>
         <MobileLink href="/regions" active={pathname.startsWith('/regions')} onClose={() => setMobileMenuOpen(false)}>
           Regions
         </MobileLink>
         <MobileLink href="/restaurants" active={pathname.startsWith('/restaurants')} onClose={() => setMobileMenuOpen(false)}>
           Restaurants
-        </MobileLink>
-        <MobileLink href="/producers" active={isActive('/producers')} onClose={() => setMobileMenuOpen(false)}>
-          Producers
         </MobileLink>
 
         {session && (
