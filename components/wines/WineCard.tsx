@@ -27,13 +27,19 @@ interface Props {
   producer?: Producer
   /** When true the card renders as a plain div (for grid layouts already inside a Link) */
   standalone?: boolean
+  /** When true renders with translucent dark background for use over atmospheric photo sections */
+  dark?: boolean
 }
 
-export default function WineCard({ wine, producer, standalone = true }: Props) {
+export default function WineCard({ wine, producer, standalone = true, dark = false }: Props) {
   const typeStyle = TYPE_STYLES[wine.type] ?? 'bg-parchment-100 text-olive-600 border-parchment-300'
 
   const inner = (
-    <div className="group flex flex-col h-full bg-white border border-parchment-200 hover:border-olive-400 hover:shadow-md transition-all duration-200 rounded-sm p-5">
+    <div className={`group flex flex-col h-full border transition-all duration-200 rounded-sm p-5 ${
+      dark
+        ? 'bg-parchment-100/[0.07] border-parchment-100/15 hover:border-amber-400/30 hover:bg-parchment-100/[0.12]'
+        : 'bg-white border-parchment-200 hover:border-olive-400 hover:shadow-md'
+    }`}>
       {/* Top row: type badge + critic score */}
       <div className="flex items-start justify-between mb-3 gap-2">
         <span
@@ -49,46 +55,50 @@ export default function WineCard({ wine, producer, standalone = true }: Props) {
       </div>
 
       {/* Title */}
-      <h3 className="font-serif font-bold text-olive-900 group-hover:text-olive-700 transition-colors text-sm leading-snug mb-1">
+      <h3 className={`font-serif font-bold transition-colors text-sm leading-snug mb-1 ${
+        dark ? 'text-parchment-100 group-hover:text-amber-100/90' : 'text-olive-900 group-hover:text-olive-700'
+      }`}>
         {wine.displayName}
       </h3>
 
       {/* Appellation */}
       {wine.appellation && (
-        <p className="text-[10px] text-olive-500 mb-1 font-medium">{wine.appellation}</p>
+        <p className={`text-[10px] mb-1 font-medium ${dark ? 'text-parchment-300/60' : 'text-olive-500'}`}>{wine.appellation}</p>
       )}
 
       {/* Grape / style */}
       {wine.tags && wine.tags.length > 0 && (
-        <p className="text-[10px] text-olive-400 italic mb-1">{wine.tags[0]}</p>
+        <p className={`text-[10px] italic mb-1 ${dark ? 'text-parchment-400/50' : 'text-olive-400'}`}>{wine.tags[0]}</p>
       )}
 
       {/* Producer + region */}
       {producer && (
-        <p className="text-[10px] text-olive-400 mb-3 uppercase tracking-wider">
+        <p className={`text-[10px] mb-3 uppercase tracking-wider ${dark ? 'text-parchment-400/40' : 'text-olive-400'}`}>
           {producer.subregion} · {producer.region}
         </p>
       )}
 
       {/* Description */}
-      <p className="text-xs text-olive-600 leading-relaxed line-clamp-3 flex-grow mb-3">
+      <p className={`text-xs leading-relaxed line-clamp-3 flex-grow mb-3 ${dark ? 'text-parchment-300/60' : 'text-olive-600'}`}>
         {wine.description}
       </p>
 
       {/* Footer: collection label + COLA status + price */}
-      <div className="flex items-center justify-between mt-auto pt-3 border-t border-parchment-100">
+      <div className={`flex items-center justify-between mt-auto pt-3 border-t ${dark ? 'border-parchment-100/10' : 'border-parchment-100'}`}>
         <div className="flex items-center gap-3">
           {producer && (
             <span
               className={`text-[9px] font-medium uppercase tracking-[0.12em] ${
-                COLLECTION_STYLES[producer.collection] ?? 'text-olive-400'
+                dark
+                  ? 'text-amber-400/50'
+                  : (COLLECTION_STYLES[producer.collection] ?? 'text-olive-400')
               }`}
             >
               {COLLECTION_LABELS[producer.collection] ?? producer.collection}
             </span>
           )}
         </div>
-        <span className="text-sm font-serif font-semibold text-olive-900">
+        <span className={`text-sm font-serif font-semibold ${dark ? 'text-parchment-100' : 'text-olive-900'}`}>
           ${wine.consumerPurchasePriceUSD}
         </span>
       </div>
