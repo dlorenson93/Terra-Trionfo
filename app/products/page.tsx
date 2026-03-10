@@ -115,12 +115,15 @@ function ProductsContent() {
       <main className="flex-grow">
         <div className="bg-gradient-to-br from-parchment-100 to-parchment-200 py-12 px-4">
           <div className="max-w-7xl mx-auto">
+            <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-olive-400 mb-3">
+              Terra Trionfo
+            </p>
             <h1 className="text-4xl md:text-5xl font-serif font-bold text-olive-900 mb-4">
-              Shop Products
+              Browse
             </h1>
-            <p className="text-lg text-olive-700">
-              Authentic artisan products from family farms, winemakers, and
-              skilled producers who bring generations of tradition to every bottle and harvest
+            <p className="text-lg text-olive-700 max-w-2xl">
+              Italian wines and artisan provisions sourced from family estates.
+              Explore the current portfolio under evaluation for U.S. import.
             </p>
           </div>
         </div>
@@ -128,9 +131,9 @@ function ProductsContent() {
         <div className="max-w-7xl mx-auto px-4 py-12">
           {/* Category Filter */}
           <div className="mb-8">
-            <h2 className="text-sm font-medium text-olive-800 mb-3">
-              Filter by Category
-            </h2>
+            <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-olive-400 mb-3">
+              Category
+            </p>
             <div className="flex flex-wrap gap-2">
               {categories.map((category) => (
                 <button
@@ -157,7 +160,7 @@ function ProductsContent() {
               <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-olive-700"></div>
               <p className="text-olive-700 mt-4">Loading products...</p>
             </div>
-          ) : products.length === 0 ? (
+          ) : (selectedCategory === '' || selectedCategory === 'Wine') && products.length === 0 ? (
             // No live products yet — show the incoming portfolio wines inline
             <div>
               {/* Section header */}
@@ -241,7 +244,7 @@ function ProductsContent() {
                 </div>
               )}
             </div>
-          ) : (
+          ) : products.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {Array.isArray(products) ? products.map((product) => (
                 <ProductCard
@@ -264,6 +267,21 @@ function ProductsContent() {
                   contentStatus={product.contentStatus}
                 />
               )) : null}
+            </div>
+          ) : (
+            // Category has no products yet and no portfolio section applies (e.g. Olive Oil)
+            <div className="py-24 text-center">
+              <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-olive-400 mb-5">
+                Coming Soon
+              </p>
+              <h2 className="text-2xl font-serif font-semibold text-olive-800 mb-4">
+                {selectedCategory} Selection in Curation
+              </h2>
+              <p className="text-sm text-olive-500 max-w-sm mx-auto leading-relaxed">
+                We are actively sourcing exceptional single-estate producers for this
+                category. Selections will be added as estates complete the Terra Trionfo
+                review process.
+              </p>
             </div>
           )}
         </div>
