@@ -147,7 +147,7 @@ export default function RegionsIndexPage() {
 
                     <div className="flex items-center justify-between mt-auto pt-4 border-t border-parchment-200">
                       <span className="text-[10px] text-olive-500 uppercase tracking-wider">
-                        {region.appellations.length} appellation{region.appellations.length !== 1 ? 's' : ''}
+                        {region.portfolioFocus.length} portfolio focus{region.portfolioFocus.length !== 1 ? 'es' : ''}
                       </span>
                       <span className="text-[10px] text-olive-600 group-hover:text-olive-900 transition-colors uppercase tracking-wider">
                         Explore →
