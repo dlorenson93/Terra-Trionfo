@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 import { REGIONS } from '@/lib/regions'
 import { PRODUCERS } from '@/data/producers'
+import { WINES } from '@/data/wines'
+import WineCard from '@/components/wines/WineCard'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 
@@ -43,6 +45,11 @@ export default async function RegionPage({ params }: Props) {
 
   // Portfolio producers mapped to this region
   const portfolioProducers = PRODUCERS.filter((p) => p.regionSlug === params.slug)
+
+  // Portfolio wines from those producers
+  const portfolioWines = WINES.filter((w) =>
+    portfolioProducers.some((p) => p.id === w.producerId)
+  )
 
   // JSON-LD structured data for SEO
   const jsonLd = {
@@ -154,11 +161,11 @@ export default async function RegionPage({ params }: Props) {
 
             {portfolioProducers.length === 0 && producers.length === 0 ? (
               <div className="border border-parchment-300 py-16 text-center">
-                <p className="text-olive-400 text-sm italic mb-2">
-                  Producers from {region.name} are being prepared for introduction.
+                <p className="text-olive-400 text-sm italic mb-4">
+                  We are currently evaluating estates from {region.name} for portfolio inclusion.
                 </p>
-                <Link href="/products" className="text-olive-600 text-xs underline underline-offset-4 hover:text-olive-800">
-                  Browse all available wines →
+                <Link href="/producers" className="text-olive-600 text-xs underline underline-offset-4 hover:text-olive-800">
+                  Explore active portfolio →
                 </Link>
               </div>
             ) : (
@@ -246,25 +253,91 @@ export default async function RegionPage({ params }: Props) {
           </div>
         </section>
 
-        {/* ── Browse wines from region ───────────────────────────────── */}
-        <section className="py-12 px-6 bg-olive-900 border-t border-olive-800">
-          <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
-            <div>
-              <p className="text-parchment-300/60 text-xs uppercase tracking-wider mb-1">
-                Explore Further
+        {/* ── Portfolio wines from this region ─────────────────────── */}
+        {portfolioWines.length > 0 && (
+          <section className="py-16 px-6 bg-parchment-50 border-t border-parchment-200">
+            <div className="max-w-5xl mx-auto">
+              <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-olive-400 mb-2">
+                Portfolio Wines
               </p>
-              <p className="text-parchment-100 font-serif text-lg">
-                Shop wines from {region.name}.
-              </p>
+              <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
+                <div>
+                  <h2 className="text-3xl font-serif font-bold text-olive-900 mb-1">
+                    {region.name} Selection
+                  </h2>
+                  <p className="text-sm text-olive-500 max-w-xl leading-relaxed">
+                    Wines from {region.name} currently under evaluation for U.S. import.
+                    Pricing available to on-trade partners upon request.
+                  </p>
+                </div>
+                <Link
+                  href="/products"
+                  className="text-[10px] uppercase tracking-[0.12em] text-olive-500 border border-olive-300 px-4 py-2 hover:border-olive-600 hover:text-olive-800 transition-colors flex-shrink-0"
+                >
+                  All Portfolio Wines →
+                </Link>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+                {portfolioWines.map((wine) => {
+                  const producer = portfolioProducers.find((p) => p.id === wine.producerId)
+                  return <WineCard key={wine.id} wine={wine} producer={producer} />
+                })}
+              </div>
             </div>
-            <Link
-              href="/products"
-              className="border border-parchment-400/30 text-parchment-300/80 text-xs font-medium tracking-[0.15em] uppercase px-6 py-3 hover:border-parchment-400/60 hover:text-parchment-100 transition-colors"
-            >
-              Browse All Wines
-            </Link>
-          </div>
-        </section>
+          </section>
+        )}
+
+        {/* ── Browse wines from region ──────────────────────────────────── */}
+        {portfolioWines.length > 0 ? (
+          <section className="py-12 px-6 bg-olive-900 border-t border-olive-800">
+            <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
+              <div>
+                <p className="text-parchment-300/60 text-xs uppercase tracking-wider mb-1">
+                  Explore Further
+                </p>
+                <p className="text-parchment-100 font-serif text-lg">
+                  Discover all {region.name} wines in the portfolio.
+                </p>
+              </div>
+              <div className="flex gap-3 flex-wrap">
+                <Link
+                  href="/products"
+                  className="border border-parchment-400/30 text-parchment-300/80 text-xs font-medium tracking-[0.15em] uppercase px-6 py-3 hover:border-parchment-400/60 hover:text-parchment-100 transition-colors"
+                >
+                  Browse Portfolio Wines
+                </Link>
+                <Link
+                  href="/producers"
+                  className="border border-parchment-400/20 text-parchment-400/60 text-xs font-medium tracking-[0.15em] uppercase px-6 py-3 hover:border-parchment-400/40 hover:text-parchment-300/80 transition-colors"
+                >
+                  All Producers
+                </Link>
+              </div>
+            </div>
+          </section>
+        ) : (
+          <section className="py-12 px-6 bg-parchment-100 border-t border-parchment-200">
+            <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
+              <p className="text-olive-600 font-serif text-base">
+                Explore the active portfolio while we evaluate {region.name} producers.
+              </p>
+              <div className="flex gap-3 flex-wrap">
+                <Link
+                  href="/producers"
+                  className="border border-olive-300 text-olive-600 text-xs font-medium tracking-[0.15em] uppercase px-6 py-3 hover:border-olive-500 hover:text-olive-800 transition-colors"
+                >
+                  Our Producers
+                </Link>
+                <Link
+                  href="/products"
+                  className="border border-olive-200 text-olive-500 text-xs font-medium tracking-[0.15em] uppercase px-6 py-3 hover:border-olive-400 hover:text-olive-700 transition-colors"
+                >
+                  Portfolio Wines
+                </Link>
+              </div>
+            </div>
+          </section>
+        )}
       </main>
 
       <Footer />

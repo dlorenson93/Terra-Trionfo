@@ -2,9 +2,9 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Wine card filters push",
+      "label": "Regions portfolio alignment push",
       "type": "shell",
-      "command": "git add -A && git commit -m 'feat: wine type filters + Add to Inquiry on all wine cards -- WineCard/AddToCartButton components, type/collection dual-filter on /products, cards on homepage and wine detail pages' && git push origin main",
+      "command": "git add -A && git commit -m 'feat: align regions pages with portfolio -- active/forthcoming split on index, wines grid on detail pages, no false product claims for Tuscany/Veneto' && git push origin main",
       "options": {
         "cwd": "/workspaces/Terra-Trionfo"
       },

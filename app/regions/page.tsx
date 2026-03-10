@@ -3,6 +3,8 @@ import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 import { REGION_LIST } from '@/lib/regions'
+import { PRODUCERS } from '@/data/producers'
+import { WINES } from '@/data/wines'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 
@@ -42,6 +44,21 @@ export default async function RegionsIndexPage() {
         region.dbKeywords.some((kw) => p.region!.toLowerCase().includes(kw))
     ).length
   }
+
+  const portfolioProducersInRegion = (slug: string) =>
+    PRODUCERS.filter((p) => p.regionSlug === slug)
+
+  const portfolioWineCountInRegion = (slug: string) =>
+    WINES.filter((w) =>
+      portfolioProducersInRegion(slug).some((p) => p.id === w.producerId)
+    ).length
+
+  const activeRegions = REGION_LIST.filter(
+    (r) => portfolioProducersInRegion(r.slug).length > 0
+  )
+  const forthcomingRegions = REGION_LIST.filter(
+    (r) => portfolioProducersInRegion(r.slug).length === 0
+  )
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -83,9 +100,9 @@ export default async function RegionsIndexPage() {
                   varieties cultivated there for centuries.
                 </p>
                 <p className="text-parchment-400/45 text-sm leading-relaxed max-w-sm mt-3">
-                  Terra Trionfo works directly with estates in four key regions.
-                  Click any point on the map or select a region below to explore
-                  producers, appellations, and wines.
+                  Terra Trionfo currently sources from two active portfolio regions,
+                  with further estates under evaluation. Select a region below to
+                  explore producers, appellations, and wines.
                 </p>
               </div>
 
@@ -100,49 +117,72 @@ export default async function RegionsIndexPage() {
         {/* ── Region cards ──────────────────────────────────────────────── */}
         <section className="bg-parchment-50 border-t border-parchment-200 py-20 px-6">
           <div className="max-w-5xl mx-auto">
-            <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-olive-400 mb-10">
-              Select a Region
-            </p>
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-              {REGION_LIST.map((region) => {
-                const count = producerCount(region.slug)
+            {/* Active portfolio regions */}
+            <div className="mb-4">
+              <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-olive-400 mb-1">
+                Active Portfolio
+              </p>
+              <h2 className="text-2xl font-serif font-bold text-olive-900 mb-8">
+                Our Sourcing Regions
+              </h2>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-6 mb-16">
+              {activeRegions.map((region) => {
+                const porProducers = portfolioProducersInRegion(region.slug)
+                const wineCount = portfolioWineCountInRegion(region.slug)
                 return (
                   <Link
                     key={region.slug}
                     href={`/regions/${region.slug}`}
-                    className="group bg-white border border-parchment-300 hover:border-olive-400 p-8 flex flex-col transition-all duration-200 hover:shadow-sm"
+                    className="group bg-white border border-parchment-300 hover:border-olive-500 p-8 flex flex-col transition-all duration-200 hover:shadow-sm"
                   >
-                    <p className="text-[9px] font-medium text-amber-500/60 uppercase tracking-[0.3em] mb-4">
-                      {region.subtitle}
-                    </p>
-                    <h2 className="text-xl font-serif font-bold text-olive-900 mb-3 leading-tight group-hover:text-olive-700 transition-colors">
+                    <div className="flex items-center justify-between mb-5">
+                      <p className="text-[9px] font-medium text-amber-500/70 uppercase tracking-[0.3em]">
+                        {region.subtitle}
+                      </p>
+                      <span className="text-[9px] font-medium text-olive-500 uppercase tracking-wider bg-olive-50 border border-olive-200 px-2 py-0.5 rounded-sm">
+                        {wineCount} wine{wineCount !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    <h2 className="text-2xl font-serif font-bold text-olive-900 mb-2 leading-tight group-hover:text-olive-700 transition-colors">
                       {region.name}
                     </h2>
-                    <div className="h-px w-8 bg-olive-300 mb-4" />
-                    <p className="text-xs text-olive-600 leading-relaxed flex-grow">
+                    <div className="h-px w-10 bg-olive-300 mb-4" />
+                    <p className="text-sm text-olive-600 leading-relaxed flex-grow">
                       {region.heroLine}
                     </p>
 
-                    {/* Grape tags */}
-                    <div className="flex flex-wrap gap-1.5 mt-5 mb-4">
-                      {region.grapes.slice(0, 3).map((g) => (
-                        <span
-                          key={g}
-                          className="text-[9px] border border-olive-200 text-olive-500 px-2 py-0.5 rounded-sm"
-                        >
+                    {/* Portfolio estates */}
+                    <div className="mt-5 mb-4 space-y-2">
+                      {porProducers.map((p) => (
+                        <div key={p.id} className="flex items-baseline gap-2">
+                          <span className={`text-[9px] font-medium uppercase tracking-[0.2em] flex-shrink-0 ${
+                            p.collection === 'classical' ? 'text-amber-500/60' : 'text-olive-400/60'
+                          }`}>
+                            {p.collection === 'classical' ? 'Classical' : 'Alt'}
+                          </span>
+                          <span className="text-xs text-olive-800 font-medium">{p.name}</span>
+                          <span className="text-[9px] text-olive-400 truncate">· {p.subregion}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Regional grapes */}
+                    <div className="flex flex-wrap gap-1.5 mb-4">
+                      {region.grapes.slice(0, 4).map((g) => (
+                        <span key={g} className="text-[9px] border border-olive-200 text-olive-500 px-2 py-0.5 rounded-sm">
                           {g}
                         </span>
                       ))}
                     </div>
 
                     <div className="flex items-center justify-between mt-auto pt-4 border-t border-parchment-200">
-                      <span className="text-[10px] text-olive-400 uppercase tracking-wider">
-                        {count > 0
-                          ? `${count} producer${count !== 1 ? 's' : ''}`
-                          : 'Producers forthcoming'}
+                      <span className="text-[10px] text-olive-500 uppercase tracking-wider">
+                        {porProducers.length} estate{porProducers.length !== 1 ? 's' : ''} in portfolio
                       </span>
-                      <span className="text-[10px] text-olive-500 group-hover:text-olive-800 transition-colors uppercase tracking-wider">
+                      <span className="text-[10px] text-olive-600 group-hover:text-olive-900 transition-colors uppercase tracking-wider">
                         Explore →
                       </span>
                     </div>
@@ -150,6 +190,53 @@ export default async function RegionsIndexPage() {
                 )
               })}
             </div>
+
+            {/* Forthcoming regions */}
+            {forthcomingRegions.length > 0 && (
+              <div>
+                <div className="flex items-center gap-4 mb-8">
+                  <div className="h-px flex-grow bg-parchment-200" />
+                  <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-olive-300">
+                    On Our Radar
+                  </p>
+                  <div className="h-px flex-grow bg-parchment-200" />
+                </div>
+                <div className="grid sm:grid-cols-2 gap-5">
+                  {forthcomingRegions.map((region) => (
+                    <Link
+                      key={region.slug}
+                      href={`/regions/${region.slug}`}
+                      className="group border border-parchment-200 hover:border-parchment-300 bg-white/40 p-6 flex flex-col transition-all duration-200"
+                    >
+                      <p className="text-[9px] font-medium text-parchment-400/60 uppercase tracking-[0.3em] mb-3">
+                        {region.subtitle}
+                      </p>
+                      <h2 className="text-lg font-serif font-semibold text-olive-500/80 mb-2 leading-tight group-hover:text-olive-700 transition-colors">
+                        {region.name}
+                      </h2>
+                      <p className="text-xs text-olive-400/80 leading-relaxed flex-grow mb-4">
+                        {region.heroLine}
+                      </p>
+                      <div className="flex flex-wrap gap-1.5 mb-4">
+                        {region.grapes.slice(0, 3).map((g) => (
+                          <span key={g} className="text-[9px] border border-parchment-300 text-parchment-400 px-2 py-0.5 rounded-sm">
+                            {g}
+                          </span>
+                        ))}
+                      </div>
+                      <div className="flex items-center justify-between pt-4 border-t border-parchment-200/60">
+                        <span className="text-[9px] text-parchment-400 uppercase tracking-wider">
+                          Estates under evaluation
+                        </span>
+                        <span className="text-[9px] text-parchment-400 group-hover:text-olive-600 transition-colors uppercase tracking-wider">
+                          Learn more →
+                        </span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </section>
 
@@ -167,9 +254,10 @@ export default async function RegionsIndexPage() {
                 Italy contains more native grape varieties than any country on earth. Its
                 geography — from the Alpine north to the Mediterranean south — creates
                 a mosaic of microclimates, each expressing wine in a distinct voice. The
-                regions in the Terra Trionfo portfolio were selected because they
-                represent the structural, aromatic, and cultural diversity of Italian
-                wine at its most compelling.
+                two active sourcing regions in the Terra Trionfo portfolio were
+                selected because they represent a compelling range — from the
+                structured nobility of Piedmont Nebbiolo to the alpine precision
+                of Alto Adige whites and native varieties.
               </p>
               <p className="text-olive-500 leading-relaxed text-sm mt-4">
                 Every estate in our portfolio was identified through direct producer
@@ -181,9 +269,9 @@ export default async function RegionsIndexPage() {
             <div className="space-y-6">
               <div>
                 <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-olive-400 mb-2">
-                  Regions
+                  Active Portfolio Regions
                 </p>
-                <p className="text-2xl font-serif font-bold text-olive-900">{REGION_LIST.length}</p>
+                <p className="text-2xl font-serif font-bold text-olive-900">{activeRegions.length}</p>
               </div>
               <div>
                 <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-olive-400 mb-2">
