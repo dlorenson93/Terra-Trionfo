@@ -10,40 +10,65 @@ import FeaturedProducts from '@/components/home/FeaturedProducts'
 import VisualDivider from '@/components/marketing/VisualDivider'
 import EstatePhotoStrip from '@/components/marketing/EstatePhotoStrip'
 
-// ── Curated Unsplash imagery ─────────────────────────────────────────────────
-// Each placement uses a distinct image to prevent repetition.
+export default function HomePage() {
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Header />
+      <main className="flex-grow">
 
-/** After FoundingProducers: Tuscan vineyard hillside at golden hour */
-const IMG_WHERE_CRAFT_BEGINS =
-  'https://images.unsplash.com/photo-1560493676-04071c5f467b?auto=format&fit=crop&w=1920&q=75'
+        {/* 1. Brand-first hero */}
+        <Hero />
 
-/** Estate photo strip — 4 unique estate-life images */
-const STRIP_IMAGES = [
-  {
-    src: 'https://images.unsplash.com/photo-1474552226712-ac0f0961a954?auto=format&fit=crop&w=900&q=75',
-    alt: 'Vineyard rows at dusk, Italian wine estate',
-  },
-  {
-    src: 'https://images.unsplash.com/photo-1566754436393-50d0bc89a2d6?auto=format&fit=crop&w=900&q=75',
-    alt: 'Oak barrels ageing in a dimly lit Italian cellar',
-  },
-  {
-    src: 'https://images.unsplash.com/photo-1568213816046-0a4e23a7e9b6?auto=format&fit=crop&w=900&q=75',
-    alt: 'Harvested grapes held in both hands, close-up',
-  },
-  {
-    src: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=900&q=75',
-    alt: 'Barrel room inside a traditional Italian cantina',
-  },
-]
+        {/* 2. Founding Producers — dark prestige */}
+        <FoundingProducers />
 
-/** Between RegionalDiscovery and Collections: alpine panoramic vineyard */
-const IMG_ALPINE_PANORAMIC =
-  'https://images.unsplash.com/photo-1516302752625-fcc3c50ae61f?auto=format&fit=crop&w=1920&q=75'
+        {/* ── Visual break A: rolling Piemonte vineyard hills at golden hour ── */}
+        <VisualDivider
+          variant="vineyard-hills"
+          title="Where Craft Begins"
+          subtitle="Exploring Italy's Artisan Estates"
+          height="lg"
+        />
 
-/** After Collections: olive grove with harvest light */
-const IMG_BEYOND_WINE =
-  'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=1920&q=75'
+        {/* 3. Provenance Philosophy — editorial credibility */}
+        <ProvenancePhilosophy />
+
+        {/* ── Visual break B: four estate life illustration panels ── */}
+        <EstatePhotoStrip caption="Inside the Estates" />
+
+        {/* 4. Regional Discovery — Italian terroir storytelling */}
+        <RegionalDiscovery />
+
+        {/* ── Visual break C: Dolomite alpine panoramic ── */}
+        <VisualDivider
+          variant="alpine-panoramic"
+          title="From the Alpine Vineyards of Alto Adige to the Hills of Tuscany"
+          height="md"
+        />
+
+        {/* 5. Explore the Collection — category entry */}
+        <Collections />
+
+        {/* ── Visual break D: olive grove harvest light ── */}
+        <VisualDivider
+          variant="olive-grove"
+          title="Beyond Wine"
+          subtitle="Small Italian olive oil estates whose groves and presses reflect the same dedication to craft."
+          height="lg"
+        />
+
+        {/* 6. Families Behind the Bottle — producer-first */}
+        <FeaturedProducers />
+
+        {/* 7. Wines Under Evaluation — incoming portfolio */}
+        <FeaturedProducts />
+
+      </main>
+      <Footer />
+    </div>
+  )
+}
+
 
 export default function HomePage() {
   return (
