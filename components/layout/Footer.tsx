@@ -70,6 +70,14 @@ export default function Footer() {
                   For Investors
                 </Link>
               </li>
+              <li>
+                <Link
+                  href="/contact"
+                  className="text-parchment-300 hover:text-parchment-100 transition-colors"
+                >
+                  Contact Us
+                </Link>
+              </li>
             </ul>
           </div>
 

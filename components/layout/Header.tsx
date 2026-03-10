@@ -206,6 +206,9 @@ export default function Header() {
         <MobileLink href="/restaurants" active={pathname.startsWith('/restaurants')} onClose={() => setMobileMenuOpen(false)}>
           Restaurants
         </MobileLink>
+        <MobileLink href="/contact" active={isActive('/contact')} onClose={() => setMobileMenuOpen(false)}>
+          Contact
+        </MobileLink>
 
         {session && (
           <>
