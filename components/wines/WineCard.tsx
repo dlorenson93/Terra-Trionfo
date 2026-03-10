@@ -79,7 +79,7 @@ export default function WineCard({ wine, producer, standalone = true, dark = fal
       )}
 
       {/* Description */}
-      <p className={`text-xs leading-relaxed line-clamp-3 flex-grow mb-3 ${dark ? 'text-parchment-300/60' : 'text-olive-600'}`}>
+      <p className={`text-xs leading-relaxed line-clamp-4 flex-grow mb-3 ${dark ? 'text-parchment-300/60' : 'text-olive-600'}`}>
         {wine.description}
       </p>
 
