@@ -2,9 +2,9 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Remove OCM push",
+      "label": "Homepage visual rhythm push",
       "type": "shell",
-      "command": "git add -A && git commit -m 'fix: remove OCM Funds Available from producer keywords' && git push origin main",
+      "command": "git add -A && git commit -m 'feat: homepage editorial visual rhythm -- VisualDivider + EstatePhotoStrip components, 4 cinematic image breaks between sections' && git push origin main",
       "options": {
         "cwd": "/workspaces/Terra-Trionfo"
       },
