@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import { prisma } from '@/lib/prisma'
 import { REGION_LIST } from '@/lib/regions'
 import { PRODUCERS } from '@/data/producers'
 import { WINES } from '@/data/wines'
@@ -28,23 +27,7 @@ const ItalyMap = dynamic(() => import('@/components/maps/ItalyMap'), {
   ),
 })
 
-export default async function RegionsIndexPage() {
-  // Fetch LIVE producer counts keyed by region slug
-  const producers = await prisma.company.findMany({
-    where: { status: 'APPROVED', contentStatus: 'LIVE' },
-    select: { region: true },
-  })
-
-  const producerCount = (slug: string): number => {
-    const region = REGION_LIST.find((r) => r.slug === slug)
-    if (!region) return 0
-    return producers.filter(
-      (p) =>
-        p.region &&
-        region.dbKeywords.some((kw) => p.region!.toLowerCase().includes(kw))
-    ).length
-  }
-
+export default function RegionsIndexPage() {
   const portfolioProducersInRegion = (slug: string) =>
     PRODUCERS.filter((p) => p.regionSlug === slug)
 
@@ -102,7 +85,7 @@ export default async function RegionsIndexPage() {
                 <p className="text-parchment-400/45 text-sm leading-relaxed max-w-sm mt-3">
                   Terra Trionfo currently sources from two active portfolio regions,
                   with further estates under evaluation. Select a region below to
-                  explore producers, appellations, and wines.
+                  explore appellations, wine styles, and portfolio selections.
                 </p>
               </div>
 
@@ -130,7 +113,6 @@ export default async function RegionsIndexPage() {
 
             <div className="grid sm:grid-cols-2 gap-6 mb-16">
               {activeRegions.map((region) => {
-                const porProducers = portfolioProducersInRegion(region.slug)
                 const wineCount = portfolioWineCountInRegion(region.slug)
                 return (
                   <Link
@@ -154,23 +136,8 @@ export default async function RegionsIndexPage() {
                       {region.heroLine}
                     </p>
 
-                    {/* Portfolio estates */}
-                    <div className="mt-5 mb-4 space-y-2">
-                      {porProducers.map((p) => (
-                        <div key={p.id} className="flex items-baseline gap-2">
-                          <span className={`text-[9px] font-medium uppercase tracking-[0.2em] flex-shrink-0 ${
-                            p.collection === 'classical' ? 'text-amber-500/60' : 'text-olive-400/60'
-                          }`}>
-                            {p.collection === 'classical' ? 'Classical' : 'Alt'}
-                          </span>
-                          <span className="text-xs text-olive-800 font-medium">{p.name}</span>
-                          <span className="text-[9px] text-olive-400 truncate">· {p.subregion}</span>
-                        </div>
-                      ))}
-                    </div>
-
                     {/* Regional grapes */}
-                    <div className="flex flex-wrap gap-1.5 mb-4">
+                    <div className="flex flex-wrap gap-1.5 mt-5 mb-4">
                       {region.grapes.slice(0, 4).map((g) => (
                         <span key={g} className="text-[9px] border border-olive-200 text-olive-500 px-2 py-0.5 rounded-sm">
                           {g}
@@ -180,7 +147,7 @@ export default async function RegionsIndexPage() {
 
                     <div className="flex items-center justify-between mt-auto pt-4 border-t border-parchment-200">
                       <span className="text-[10px] text-olive-500 uppercase tracking-wider">
-                        {porProducers.length} estate{porProducers.length !== 1 ? 's' : ''} in portfolio
+                        {region.appellations.length} appellation{region.appellations.length !== 1 ? 's' : ''}
                       </span>
                       <span className="text-[10px] text-olive-600 group-hover:text-olive-900 transition-colors uppercase tracking-wider">
                         Explore →
