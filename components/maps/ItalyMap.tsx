@@ -33,18 +33,30 @@ const SARDINIA = 'M42,255 L50,240 L62,238 L67,250 L72,268 L65,285 L55,290 L44,27
 const SICILY   = 'M110,415 L130,408 L160,410 L178,420 L170,430 L140,432 L115,426 Z'
 
 // SVG marker [cx, cy] for each region — pre-computed from coordinates
-// Piedmont    (7.9°E, 44.6°N)  → (33, 112)
-// Alto Adige  (11.3°E, 46.6°N) → (112, 22)
-// Veneto      (11.5°E, 45.3°N) → (117, 81)
-// Tuscany     (11.2°E, 43.5°N) → (110, 161)
+// Formula: x = (lng - 6.5) * 23.3 | y = (47.1 - lat) * 44.8
+// Piedmont       (7.9°E, 44.6°N)  → (33,  112)
+// Lombardy       (9.7°E, 45.7°N)  → (75,   63)
+// Alto Adige     (11.3°E, 46.6°N) → (112,  22)
+// Veneto         (11.5°E, 45.3°N) → (117,  81)
+// Tuscany        (11.2°E, 43.5°N) → (110, 161)
+// Emilia-Romagna (12.1°E, 44.1°N) → (130, 134)
 const MARKERS: Record<string, { cx: number; cy: number; labelAnchor: 'end' | 'start' }> = {
-  'piedmont':   { cx: 33,  cy: 112, labelAnchor: 'end'   },
-  'alto-adige': { cx: 112, cy: 22,  labelAnchor: 'start' },
-  'veneto':     { cx: 117, cy: 81,  labelAnchor: 'start' },
-  'tuscany':    { cx: 110, cy: 161, labelAnchor: 'start' },
+  'piedmont':        { cx: 33,  cy: 112, labelAnchor: 'end'   },
+  'lombardy':        { cx: 75,  cy: 63,  labelAnchor: 'start' },
+  'alto-adige':      { cx: 112, cy: 22,  labelAnchor: 'start' },
+  'veneto':          { cx: 117, cy: 81,  labelAnchor: 'start' },
+  'tuscany':         { cx: 110, cy: 161, labelAnchor: 'start' },
+  'emilia-romagna':  { cx: 130, cy: 134, labelAnchor: 'start' },
 }
 
-export default function ItalyMap() {
+interface ItalyMapProps {
+  /** Slugs of regions with active portfolio producers — these render in full amber;
+   *  all others render in a muted tone to indicate forthcoming / aspirational status.
+   *  If omitted, all markers render identically. */
+  activeRegionSlugs?: string[]
+}
+
+export default function ItalyMap({ activeRegionSlugs }: ItalyMapProps = {}) {
   const router = useRouter()
   const [hovered, setHovered] = useState<string | null>(null)
 
@@ -89,7 +101,14 @@ export default function ItalyMap() {
         {REGION_LIST.map((region) => {
           const marker = MARKERS[region.slug]
           if (!marker) return null
-          const active = hovered === region.slug
+          const hoverActive = hovered === region.slug
+          const isPortfolio = !activeRegionSlugs || activeRegionSlugs.includes(region.slug)
+
+          // Active portfolio regions → amber; forthcoming → muted olive
+          const markerFill     = hoverActive ? (isPortfolio ? '#f59e0b' : '#8a9e70') : (isPortfolio ? '#b45309' : '#5a7248')
+          const ringStroke     = isPortfolio ? '#d97706' : '#6b8a57'
+          const ringOpacity    = hoverActive ? 0.45 : (isPortfolio ? 0.25 : 0.15)
+          const labelOpacity   = hoverActive ? 1 : (isPortfolio ? 0.55 : 0.30)
 
           return (
             <g
@@ -105,19 +124,19 @@ export default function ItalyMap() {
               <circle
                 cx={marker.cx}
                 cy={marker.cy}
-                r={active ? 14 : 11}
+                r={hoverActive ? 14 : 11}
                 fill="none"
-                stroke="#d97706"
-                strokeWidth={active ? 1.5 : 0.8}
-                opacity={active ? 0.45 : 0.25}
+                stroke={ringStroke}
+                strokeWidth={hoverActive ? 1.5 : 0.8}
+                opacity={ringOpacity}
                 style={{ transition: 'r 0.2s ease, opacity 0.2s ease' }}
               />
               {/* Inner filled marker */}
               <circle
                 cx={marker.cx}
                 cy={marker.cy}
-                r={active ? 7 : 5}
-                fill={active ? '#f59e0b' : '#b45309'}
+                r={hoverActive ? 7 : 5}
+                fill={markerFill}
                 stroke="#fef3c7"
                 strokeWidth={1.5}
                 style={{ transition: 'r 0.2s ease, fill 0.2s ease' }}
@@ -132,7 +151,7 @@ export default function ItalyMap() {
                 fontSize={7}
                 fontFamily="Georgia, 'Times New Roman', serif"
                 letterSpacing={0.5}
-                opacity={active ? 1 : 0.55}
+                opacity={labelOpacity}
                 style={{ pointerEvents: 'none', transition: 'opacity 0.2s ease' }}
               >
                 {region.name}

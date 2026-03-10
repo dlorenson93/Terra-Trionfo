@@ -10,7 +10,7 @@ import Footer from '@/components/layout/Footer'
 export const metadata: Metadata = {
   title: 'Italian Wine Regions | Terra Trionfo',
   description:
-    'Explore Piedmont, Tuscany, Veneto, and Alto Adige — the Italian wine regions at the heart of the Terra Trionfo portfolio.',
+    'Explore Piedmont, Lombardy, Trentino–Alto Adige, and Emilia-Romagna — the Italian wine regions at the heart of the Terra Trionfo portfolio.',
   openGraph: {
     title: 'Italian Wine Regions | Terra Trionfo',
     description:
@@ -83,15 +83,16 @@ export default function RegionsIndexPage() {
                   varieties cultivated there for centuries.
                 </p>
                 <p className="text-parchment-400/45 text-sm leading-relaxed max-w-sm mt-3">
-                  Terra Trionfo currently sources from two active portfolio regions,
-                  with further estates under evaluation. Select a region below to
-                  explore appellations, wine styles, and portfolio selections.
+                  Terra Trionfo currently sources from four active regions across
+                  northern and central Italy, with further estates under evaluation.
+                  Select a region below to explore appellations, wine styles, and
+                  portfolio selections.
                 </p>
               </div>
 
               {/* Right: Italy map */}
               <div className="w-full max-w-[260px] mx-auto lg:ml-auto pt-6">
-                <ItalyMap />
+                <ItalyMap activeRegionSlugs={activeRegions.map((r) => r.slug)} />
               </div>
             </div>
           </div>
