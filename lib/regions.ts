@@ -102,6 +102,46 @@ export const REGIONS: Record<string, RegionData> = {
     lat: 46.6,
     lng: 11.3,
   },
+  lombardy: {
+    slug: 'lombardy',
+    name: 'Lombardy',
+    subtitle: 'La Lombardia',
+    heroLine: 'Two distinct expressions — the traditional-method sparkling wines of Franciacorta and the steep terraced Nebbiolo of Valtellina.',
+    description:
+      "Lombardy hosts two of Italy's most compelling and contrasting wine zones. Franciacorta, on the morainic soils south of Lake Iseo, produces Italy's most serious traditional-method sparkling wines — certified organic estates here rival Champagne for quality and consistency. Valtellina, carved into the steep alpine slopes of the Rhaetian Alps, produces Chiavennasca (Nebbiolo) at altitude, where granite soils and cool mountain air shape wines of remarkable freshness and structural restraint. Terra Trionfo sources from both zones, bringing complementary styles — sparkling and still, Franciacorta and alpine — within a single regional story.",
+    portfolioFocus: [
+      'Certified organic Franciacorta DOCG — Brut, Satèn, and Rosé expressions',
+      'Valtellina Nebbiolo with alpine freshness and terraced-vineyard character',
+      'Traditional-method sparkling wines as a premium Prosecco alternative',
+      'Small-production mountain reds for wine-forward on-trade programs',
+    ],
+    grapes: ['Chardonnay', 'Pinot Nero', 'Pinot Bianco', 'Nebbiolo (Chiavennasca)'],
+    climateNote: 'Varied — moraine and lake-moderated soils in Franciacorta; steep granite alpine slopes and dramatic altitude in Valtellina.',
+    dbKeywords: ['lombardy', 'lombardia', 'franciacorta', 'valtellina'],
+    mapCoordinates: [9.7, 45.7],
+    lat: 45.7,
+    lng: 9.7,
+  },
+  'emilia-romagna': {
+    slug: 'emilia-romagna',
+    name: 'Emilia-Romagna',
+    subtitle: "L'Emilia-Romagna",
+    heroLine: 'Adriatic coast organic viticulture — native varietals, low-intervention craft, and the near-extinct Burson grape.',
+    description:
+      "Emilia-Romagna stretches from the Po Valley to the Adriatic coast, encompassing a remarkable breadth of Italian food and wine culture. The Romagna coast — where Terra Trionfo sources — is home to certified organic estates producing native varietals rarely seen in the U.S. market. The near-extinct Burson grape, indigenous to this stretch of the Adriatic coast, survives in very few vineyards. Alongside Sangiovese and Trebbiano, it represents a wine story of genuine discovery value. The region also leads in format innovation, with one of the portfolio's estates producing a pioneering 200 ml canned wine range for aperitif, events, and casual on-trade occasions.",
+    portfolioFocus: [
+      'Certified organic and vegan-certified Adriatic coast production',
+      'Native varietals — including the near-extinct Burson grape',
+      'Broadest price range in the portfolio — accessible entry points and event-friendly formats',
+      '200 ml canned wine range for aperitif and on-trade occasion coverage',
+    ],
+    grapes: ['Sangiovese', 'Trebbiano', 'Burson', 'Cabernet Sauvignon'],
+    climateNote: 'Adriatic coastal influence — moderate temperatures, sea breezes, and alluvial soils shaping fresh, food-friendly wines.',
+    dbKeywords: ['emilia-romagna', 'emilia romagna', 'romagna', 'adriatic'],
+    mapCoordinates: [12.1, 44.1],
+    lat: 44.1,
+    lng: 12.1,
+  },
 }
 
 export const REGION_LIST: RegionData[] = Object.values(REGIONS)

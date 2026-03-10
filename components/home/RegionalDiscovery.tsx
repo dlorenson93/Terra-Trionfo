@@ -3,28 +3,32 @@ import SectionAtmosphere from '@/components/home/SectionAtmosphere'
 
 const regions = [
   {
-    name: 'Piedmont',
+    name: 'Piemonte',
     slug: 'piedmont',
-    descriptor: 'Home of Barolo, Barbaresco, and alpine Nebbiolo vineyards.',
     detail: 'Piedmont — Il Piemonte',
+    producers: 2,
+    descriptor: 'Two estates across Barolo country and the Piemonte Alps — Nebbiolo in its most powerful DOCG form and its most alpine, high-altitude expression.',
   },
   {
-    name: 'Tuscany',
-    slug: 'tuscany',
-    descriptor: 'Sangiovese country: Chianti, Brunello, Bolgheri, and hillside estates shaped by centuries of winemaking.',
-    detail: 'Tuscany — La Toscana',
+    name: 'Lombardy',
+    slug: 'lombardy',
+    detail: 'Lombardy — La Lombardia',
+    producers: 2,
+    descriptor: 'Franciacorta’s certified organic traditional-method sparkling wines alongside Valtellina’s steep-terraced alpine Nebbiolo — two of Italy’s most distinct expressions in one region.',
   },
   {
-    name: 'Veneto',
-    slug: 'veneto',
-    descriptor: 'A region of remarkable diversity, from Amarone and Valpolicella to the volcanic soils behind Soave.',
-    detail: 'Veneto — Il Veneto',
-  },
-  {
-    name: 'Alto Adige',
+    name: 'Trentino–Alto Adige',
     slug: 'alto-adige',
-    descriptor: 'Alpine vineyards producing refined whites and elegant cool-climate reds at the crossroads of Italian and Tyrolean culture.',
     detail: 'Alto Adige — Südtirol',
+    producers: 1,
+    descriptor: 'High-altitude Dolomite vineyards producing alpine whites and native reds with precision, freshness, and a mountain character found nowhere else in Italy.',
+  },
+  {
+    name: 'Emilia-Romagna',
+    slug: 'emilia-romagna',
+    detail: 'Emilia-Romagna — Adriatic Coast',
+    producers: 1,
+    descriptor: 'Certified organic Adriatic coast estate producing native varietals — including the near-extinct Burson grape — with vegan certification and Italy’s most innovative small-format canned wine range.',
   },
 ]
 
@@ -67,7 +71,7 @@ export default function RegionalDiscovery() {
             <Link
               key={region.name}
               href={`/regions/${region.slug}`}
-              className="block border border-parchment-300/10 bg-parchment-100/[0.03] p-9 flex flex-col hover:border-amber-400/20 hover:bg-parchment-100/[0.06] transition-colors duration-300 group"
+              className="border border-parchment-300/10 bg-parchment-100/[0.03] p-9 flex flex-col hover:border-amber-400/20 hover:bg-parchment-100/[0.06] transition-colors duration-300 group"
             >
               <span className="text-[9px] font-medium text-amber-400/50 uppercase tracking-[0.3em] mb-5">
                 {region.detail}
@@ -76,12 +80,17 @@ export default function RegionalDiscovery() {
                 {region.name}
               </h3>
               <div className="h-px w-8 bg-amber-400/15 mb-5" />
-              <p className="text-xs text-parchment-400/55 leading-loose">
+              <p className="text-xs text-parchment-400/55 leading-loose flex-grow">
                 {region.descriptor}
               </p>
-              <p className="mt-4 text-[10px] text-amber-400/30 group-hover:text-amber-400/60 transition-colors uppercase tracking-wider">
-                Explore region →
-              </p>
+              <div className="mt-6 flex items-center justify-between">
+                <span className="text-[9px] text-parchment-400/40 uppercase tracking-wider">
+                  {region.producers} estate{region.producers !== 1 ? 's' : ''}
+                </span>
+                <span className="text-[10px] text-amber-400/30 group-hover:text-amber-400/60 transition-colors uppercase tracking-wider">
+                  Explore →
+                </span>
+              </div>
             </Link>
           ))}
         </div>
