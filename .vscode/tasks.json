@@ -2,9 +2,9 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Regions portfolio alignment push",
+      "label": "Remove OCM push",
       "type": "shell",
-      "command": "git add -A && git commit -m 'feat: align regions pages with portfolio -- active/forthcoming split on index, wines grid on detail pages, no false product claims for Tuscany/Veneto' && git push origin main",
+      "command": "git add -A && git commit -m 'fix: remove OCM Funds Available from producer keywords' && git push origin main",
       "options": {
         "cwd": "/workspaces/Terra-Trionfo"
       },
