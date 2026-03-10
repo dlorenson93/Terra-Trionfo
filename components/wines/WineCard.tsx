@@ -70,22 +70,27 @@ export default function WineCard({ wine, producer, standalone = true }: Props) {
         {wine.description}
       </p>
 
-      {/* Footer: collection label + COLA status */}
-      <div className="flex items-center justify-between mb-0">
-        {producer && (
-          <span
-            className={`text-[9px] font-medium uppercase tracking-[0.12em] ${
-              COLLECTION_STYLES[producer.collection] ?? 'text-olive-400'
-            }`}
-          >
-            {COLLECTION_LABELS[producer.collection] ?? producer.collection}
-          </span>
-        )}
-        {wine.colaWaiverStatus === 'requested' && (
-          <span className="text-[9px] text-parchment-500 uppercase tracking-wider ml-auto">
-            COLA Pending
-          </span>
-        )}
+      {/* Footer: collection label + COLA status + price */}
+      <div className="flex items-center justify-between mt-auto pt-3 border-t border-parchment-100">
+        <div className="flex items-center gap-3">
+          {producer && (
+            <span
+              className={`text-[9px] font-medium uppercase tracking-[0.12em] ${
+                COLLECTION_STYLES[producer.collection] ?? 'text-olive-400'
+              }`}
+            >
+              {COLLECTION_LABELS[producer.collection] ?? producer.collection}
+            </span>
+          )}
+          {wine.colaWaiverStatus === 'requested' && (
+            <span className="text-[9px] text-parchment-500 uppercase tracking-wider">
+              COLA Pending
+            </span>
+          )}
+        </div>
+        <span className="text-sm font-serif font-semibold text-olive-900">
+          ${wine.consumerPurchasePriceUSD}
+        </span>
       </div>
 
       {/* Add to Inquiry button */}

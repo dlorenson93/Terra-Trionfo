@@ -230,6 +230,19 @@ export default function WineDetailPage({ params }: Props) {
                 <p className="text-xs text-olive-500 capitalize">{wine.importStatus}</p>
               </div>
 
+              {/* Marketplace price — consumer-visible */}
+              <div className="border border-parchment-300 bg-parchment-50 p-4">
+                <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-olive-400 mb-2">
+                  Marketplace Price
+                </p>
+                <p className="text-2xl font-serif font-bold text-olive-900">
+                  ${wine.consumerPurchasePriceUSD}
+                </p>
+                <p className="text-[10px] text-olive-400 mt-1">
+                  per bottle · U.S. market
+                </p>
+              </div>
+
               {/* Add to Inquiry */}
               <AddToCartButton wine={wine} producerName={producer.name} />
             </div>

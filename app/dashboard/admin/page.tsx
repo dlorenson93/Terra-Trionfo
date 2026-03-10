@@ -5,6 +5,8 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
+import { WINES } from '@/data/wines'
+import { PRODUCERS } from '@/data/producers'
 
 interface Stats {
   totalVendors: number
@@ -99,7 +101,7 @@ export default function AdminDashboard() {
   const [companies, setCompanies] = useState<Company[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
-  const [activeTab, setActiveTab] = useState<'overview' | 'companies' | 'products' | 'restaurants' | 'fulfillment'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'companies' | 'products' | 'restaurants' | 'fulfillment' | 'portfolio-pricing'>('overview')
   const [fulfillmentSubTab, setFulfillmentSubTab] = useState<'zones' | 'routes' | 'schedules'>('zones')
 
   // Fulfillment ops state
@@ -516,6 +518,21 @@ export default function AdminDashboard() {
                     {tab.label}
                   </button>
                 ))}
+              </div>
+              {/* Divider */}
+              <div className="w-px h-6 bg-olive-300 mx-2 self-center" />
+              <span className="text-[9px] font-medium tracking-[0.14em] uppercase text-olive-400 px-1 pb-1">Importer Economics</span>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setActiveTab('portfolio-pricing')}
+                  className={`px-6 py-3 font-medium transition-colors ${
+                    activeTab === 'portfolio-pricing'
+                      ? 'text-olive-900 border-b-2 border-olive-700'
+                      : 'text-olive-600 hover:text-olive-800'
+                  }`}
+                >
+                  Portfolio Pricing
+                </button>
               </div>
               {/* Divider */}
               <div className="w-px h-6 bg-olive-300 mx-2 self-center" />
@@ -1245,6 +1262,79 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* ── Portfolio Pricing Tab (INTERNAL ONLY) ───────────────────────── */}
+          {activeTab === 'portfolio-pricing' && (
+            <div className="space-y-6">
+              <div>
+                <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-amber-600 mb-1">Internal Use Only · Not visible to consumers</p>
+                <h2 className="text-2xl font-serif font-bold text-olive-900 mb-1">Portfolio Pricing</h2>
+                <p className="text-sm text-olive-500">Full distribution chain economics for all 21 portfolio wines. Consumers see only the final marketplace price.</p>
+              </div>
+
+              {/* Chain legend */}
+              <div className="flex flex-wrap gap-3 text-[10px] font-medium uppercase tracking-wider">
+                {[
+                  { label: 'EUR Cost', color: 'text-olive-400' },
+                  { label: 'USD Cost', color: 'text-olive-400' },
+                  { label: 'Importer Sell', color: 'text-olive-600' },
+                  { label: 'Distributor', color: 'text-olive-600' },
+                  { label: 'Retail Est.', color: 'text-olive-700' },
+                  { label: 'Restaurant', color: 'text-olive-600' },
+                  { label: 'Consumer ✓', color: 'text-amber-700 font-bold' },
+                ].map((col) => (
+                  <span key={col.label} className={`${col.color} border border-olive-200 px-2 py-0.5 bg-parchment-50`}>{col.label}</span>
+                ))}
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b-2 border-olive-300 text-left">
+                      <th className="py-3 pr-4 text-[10px] font-medium text-olive-600 uppercase tracking-wider">Wine</th>
+                      <th className="py-3 px-3 text-[10px] font-medium text-olive-400 uppercase tracking-wider">EUR Cost</th>
+                      <th className="py-3 px-3 text-[10px] font-medium text-olive-400 uppercase tracking-wider">USD Cost</th>
+                      <th className="py-3 px-3 text-[10px] font-medium text-olive-500 uppercase tracking-wider">Importer Sell</th>
+                      <th className="py-3 px-3 text-[10px] font-medium text-olive-500 uppercase tracking-wider">Distributor</th>
+                      <th className="py-3 px-3 text-[10px] font-medium text-olive-600 uppercase tracking-wider">Retail Est.</th>
+                      <th className="py-3 px-3 text-[10px] font-medium text-olive-500 uppercase tracking-wider">Restaurant</th>
+                      <th className="py-3 px-3 text-[10px] font-bold text-amber-700 uppercase tracking-wider">Consumer ✓</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {WINES.map((wine) => {
+                      const producer = PRODUCERS.find((p) => p.id === wine.producerId)
+                      return (
+                        <tr key={wine.id} className="border-b border-parchment-200 hover:bg-parchment-50 transition-colors">
+                          <td className="py-3 pr-4">
+                            <p className="font-medium text-olive-900 leading-tight">{wine.displayName}</p>
+                            <p className="text-[10px] text-olive-400 mt-0.5">{producer?.name} · {wine.region}</p>
+                          </td>
+                          <td className="py-3 px-3 text-olive-400 tabular-nums">€{wine.internalWholesalePriceEUR.toFixed(2)}</td>
+                          <td className="py-3 px-3 text-olive-400 tabular-nums">${wine.costUSD.toFixed(2)}</td>
+                          <td className="py-3 px-3 text-olive-600 tabular-nums">${wine.importerSellPriceUSD.toFixed(2)}</td>
+                          <td className="py-3 px-3 text-olive-600 tabular-nums">${wine.distributorWholesalePriceUSD.toFixed(2)}</td>
+                          <td className="py-3 px-3 text-olive-700 tabular-nums font-medium">${wine.retailEstimatedPriceUSD.toFixed(2)}</td>
+                          <td className="py-3 px-3 text-olive-600 tabular-nums">${wine.restaurantBottlePriceUSD.toFixed(2)}</td>
+                          <td className="py-3 px-3 text-amber-700 tabular-nums font-semibold">${wine.consumerPurchasePriceUSD.toFixed(2)}</td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                  <tfoot>
+                    <tr className="border-t-2 border-olive-300">
+                      <td className="py-3 pr-4 text-[10px] font-medium text-olive-500 uppercase tracking-wider">
+                        {WINES.length} wines · Multiplier chain: ×1.35 → ×1.30 → ×1.45 → ×2.7
+                      </td>
+                      <td colSpan={7} className="py-3 px-3 text-[10px] text-olive-400">
+                        FX rate EUR/USD = 1.08 · Price bands: $15 $18 $20 $22 $25 $28 $32 $36 $40 $45 $55 $60
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
             </div>
           )}
         </div>

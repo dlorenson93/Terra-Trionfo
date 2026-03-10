@@ -1,8 +1,28 @@
 import type { Wine } from '@/types/wine'
+import { buildWinePricing } from '@/utils/pricingEngine'
+
+/**
+ * Enriches a raw wine record with all computed pricing tiers.
+ * The only price consumers see is `consumerPurchasePriceUSD`.
+ * All other layers are for internal / admin use.
+ */
+function w(
+  base: Omit<
+    Wine,
+    | 'costUSD'
+    | 'importerSellPriceUSD'
+    | 'distributorWholesalePriceUSD'
+    | 'retailEstimatedPriceUSD'
+    | 'restaurantBottlePriceUSD'
+    | 'consumerPurchasePriceUSD'
+  >,
+): Wine {
+  return { ...base, ...buildWinePricing(base.internalWholesalePriceEUR) }
+}
 
 export const WINES: Wine[] = [
   // ── Stroppiana ────────────────────────────────────────────────────────
-  {
+  w({
     id: 'stroppiana-barolo-leonardo',
     slug: 'stroppiana-barolo-leonardo',
     producerId: 'stroppiana',
@@ -19,8 +39,8 @@ export const WINES: Wine[] = [
     tags: ['Barolo', 'Nebbiolo', 'By-the-Glass', 'La Morra', 'Structured'],
     importStatus: 'candidate',
     image: null,
-  },
-  {
+  }),
+  w({
     id: 'stroppiana-barbera-d-alba',
     slug: 'stroppiana-barbera-d-alba',
     producerId: 'stroppiana',
@@ -36,8 +56,8 @@ export const WINES: Wine[] = [
     tags: ['Barbera', 'Value', 'Approachable', 'Versatile'],
     importStatus: 'candidate',
     image: null,
-  },
-  {
+  }),
+  w({
     id: 'stroppiana-barolo-bussia',
     slug: 'stroppiana-barolo-bussia',
     producerId: 'stroppiana',
@@ -54,9 +74,9 @@ export const WINES: Wine[] = [
     tags: ['Barolo', 'Single Vineyard', 'Bussia', 'Nebbiolo', 'Cellar Candidate', 'High Score'],
     importStatus: 'candidate',
     image: null,
-  },
+  }),
   // ── Lantieri ──────────────────────────────────────────────────────────
-  {
+  w({
     id: 'lantieri-franciacorta-brut',
     slug: 'lantieri-franciacorta-brut',
     producerId: 'lantieri',
@@ -72,8 +92,8 @@ export const WINES: Wine[] = [
     tags: ['Sparkling', 'Franciacorta', 'Metodo Classico', 'Brut', 'Versatile'],
     importStatus: 'candidate',
     image: null,
-  },
-  {
+  }),
+  w({
     id: 'lantieri-franciacorta-saten',
     slug: 'lantieri-franciacorta-saten',
     producerId: 'lantieri',
@@ -89,8 +109,8 @@ export const WINES: Wine[] = [
     tags: ['Sparkling', 'Franciacorta', 'Blanc de Blancs', 'Satèn', 'Creamy'],
     importStatus: 'candidate',
     image: null,
-  },
-  {
+  }),
+  w({
     id: 'lantieri-franciacorta-brut-rose',
     slug: 'lantieri-franciacorta-brut-rose',
     producerId: 'lantieri',
@@ -105,9 +125,9 @@ export const WINES: Wine[] = [
     tags: ['Sparkling', 'Rosé', 'Franciacorta', 'Pinot Noir'],
     importStatus: 'candidate',
     image: null,
-  },
+  }),
   // ── Zanotelli ─────────────────────────────────────────────────────────
-  {
+  w({
     id: 'zanotelli-pinot-grigio',
     slug: 'zanotelli-pinot-grigio',
     producerId: 'zanotelli',
@@ -122,8 +142,8 @@ export const WINES: Wine[] = [
     tags: ['White', 'Pinot Grigio', 'Alpine', 'Mineral', 'By-the-Glass'],
     importStatus: 'sample',
     image: null,
-  },
-  {
+  }),
+  w({
     id: 'zanotelli-kerner',
     slug: 'zanotelli-kerner',
     producerId: 'zanotelli',
@@ -138,8 +158,8 @@ export const WINES: Wine[] = [
     tags: ['White', 'Kerner', 'Alpine', 'Native Varietal', 'Aperitif', 'Aromatic'],
     importStatus: 'sample',
     image: null,
-  },
-  {
+  }),
+  w({
     id: 'zanotelli-lagrein',
     slug: 'zanotelli-lagrein',
     producerId: 'zanotelli',
@@ -154,9 +174,9 @@ export const WINES: Wine[] = [
     tags: ['Red', 'Lagrein', 'Alpine', 'By-the-Glass', 'Native Varietal', 'Chilled'],
     importStatus: 'sample',
     image: null,
-  },
+  }),
   // ── Randi ─────────────────────────────────────────────────────────────
-  {
+  w({
     id: 'randi-burson-blu',
     slug: 'randi-burson-blu',
     producerId: 'randi',
@@ -170,8 +190,8 @@ export const WINES: Wine[] = [
     tags: ['Red', 'Burson', 'Native Varietal', 'Approachable', 'Organic', 'Fruit-Forward'],
     importStatus: 'candidate',
     image: null,
-  },
-  {
+  }),
+  w({
     id: 'randi-burson-selezione',
     slug: 'randi-burson-selezione',
     producerId: 'randi',
@@ -186,8 +206,8 @@ export const WINES: Wine[] = [
     tags: ['Red', 'Burson', 'Appassimento', 'Structured', 'Native Varietal', 'Organic'],
     importStatus: 'candidate',
     image: null,
-  },
-  {
+  }),
+  w({
     id: 'randi-rambela-bianca',
     slug: 'randi-rambela-bianca',
     producerId: 'randi',
@@ -201,8 +221,8 @@ export const WINES: Wine[] = [
     tags: ['White', 'Dry', 'Aromatic', 'Food-Friendly', 'Organic', 'Native Varietal'],
     importStatus: 'candidate',
     image: null,
-  },
-  {
+  }),
+  w({
     id: 'randi-organic-canned-white',
     slug: 'randi-organic-canned-white',
     producerId: 'randi',
@@ -217,8 +237,8 @@ export const WINES: Wine[] = [
     tags: ['White', 'Canned', 'Organic', '200ml', 'On-Trade'],
     importStatus: 'candidate',
     image: null,
-  },
-  {
+  }),
+  w({
     id: 'randi-organic-canned-red',
     slug: 'randi-organic-canned-red',
     producerId: 'randi',
@@ -233,8 +253,8 @@ export const WINES: Wine[] = [
     tags: ['Red', 'Canned', 'Organic', '200ml', 'On-Trade'],
     importStatus: 'candidate',
     image: null,
-  },
-  {
+  }),
+  w({
     id: 'randi-organic-canned-sparkling-white',
     slug: 'randi-organic-canned-sparkling-white',
     producerId: 'randi',
@@ -249,8 +269,8 @@ export const WINES: Wine[] = [
     tags: ['Sparkling', 'White', 'Canned', 'Organic', '200ml', 'Aperitif'],
     importStatus: 'candidate',
     image: null,
-  },
-  {
+  }),
+  w({
     id: 'randi-organic-canned-sparkling-rose',
     slug: 'randi-organic-canned-sparkling-rose',
     producerId: 'randi',
@@ -265,9 +285,9 @@ export const WINES: Wine[] = [
     tags: ['Sparkling', 'Rosé', 'Canned', 'Organic', '200ml'],
     importStatus: 'candidate',
     image: null,
-  },
+  }),
   // ── Luca Faccinelli ───────────────────────────────────────────────────
-  {
+  w({
     id: 'luca-faccinelli-valtellina-rosso',
     slug: 'luca-faccinelli-valtellina-rosso',
     producerId: 'luca-faccinelli',
@@ -282,8 +302,8 @@ export const WINES: Wine[] = [
     tags: ['Red', 'Nebbiolo', 'Valtellina', 'Alpine', 'Mineral', 'Elegant'],
     importStatus: 'sample',
     image: null,
-  },
-  {
+  }),
+  w({
     id: 'luca-faccinelli-valtellina-superiore',
     slug: 'luca-faccinelli-valtellina-superiore',
     producerId: 'luca-faccinelli',
@@ -299,9 +319,9 @@ export const WINES: Wine[] = [
     tags: ['Red', 'Nebbiolo', 'Valtellina', 'Old Vine', 'Structured', 'Superiore'],
     importStatus: 'sample',
     image: null,
-  },
+  }),
   // ── L'Autin ───────────────────────────────────────────────────────────
-  {
+  w({
     id: 'l-autin-bonarda',
     slug: 'l-autin-bonarda',
     producerId: 'l-autin',
@@ -316,8 +336,8 @@ export const WINES: Wine[] = [
     tags: ['Red', 'Bonarda', 'Lightly Sparkling', 'Low Alcohol', 'Aperitif', 'Alpine'],
     importStatus: 'candidate',
     image: null,
-  },
-  {
+  }),
+  w({
     id: 'l-autin-ramie',
     slug: 'l-autin-ramie',
     producerId: 'l-autin',
@@ -331,8 +351,8 @@ export const WINES: Wine[] = [
     tags: ['Red', 'Alpine', 'Historic Varietal', 'Mount Monviso', 'Organic'],
     importStatus: 'candidate',
     image: null,
-  },
-  {
+  }),
+  w({
     id: 'l-autin-timorasso',
     slug: 'l-autin-timorasso',
     producerId: 'l-autin',
@@ -346,7 +366,7 @@ export const WINES: Wine[] = [
     tags: ['White', 'Timorasso', 'Structured', 'Alpine', 'Aging Potential', 'Organic'],
     importStatus: 'candidate',
     image: null,
-  },
+  }),
 ]
 
 export function getWine(slug: string): Wine | undefined {
