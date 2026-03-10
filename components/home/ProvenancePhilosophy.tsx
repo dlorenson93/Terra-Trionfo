@@ -35,7 +35,7 @@ export default function ProvenancePhilosophy() {
   return (
     <SectionAtmosphere
       imageSrc="/images/home/Golden Sunrise Over tuscany Vineyard.png"
-      overlayClassName="bg-white/[0.50]"
+      overlayClassName="bg-white/[0.60]"
       className="py-24 px-4 border-t border-olive-100"
     >
       <div className="max-w-5xl mx-auto">
