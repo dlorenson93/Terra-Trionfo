@@ -321,6 +321,128 @@ export default function VendorOnboardingPage() {
         </div>
       </section>
 
+      {/* Partnership Models */}
+      <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl md:text-4xl font-serif font-bold text-olive-900 text-center mb-4">
+            Choose Your Partnership Model
+          </h2>
+          <p className="text-center text-olive-600 max-w-2xl mx-auto mb-12">
+            Terra Trionfo offers two flexible arrangements to suit different producers. Both models give your wines full access to our curated customer base across New England.
+          </p>
+
+          {/* Comparison Table */}
+          <div className="overflow-x-auto mb-12">
+            <table className="w-full border-collapse bg-parchment-50 rounded-xl overflow-hidden shadow-md">
+              <thead>
+                <tr className="bg-olive-900 text-white">
+                  <th className="p-4 text-left font-semibold w-1/3"></th>
+                  <th className="p-4 text-center font-semibold border-l border-olive-700">Marketplace Model</th>
+                  <th className="p-4 text-center font-semibold border-l border-olive-700">Wholesale Model</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-olive-100 text-sm">
+                <tr className="hover:bg-parchment-100 transition-colors">
+                  <td className="p-4 font-semibold text-olive-900">Inventory Ownership</td>
+                  <td className="p-4 text-center border-l border-olive-100">You retain ownership</td>
+                  <td className="p-4 text-center border-l border-olive-100">Terra Trionfo purchases upfront</td>
+                </tr>
+                <tr className="hover:bg-parchment-100 transition-colors">
+                  <td className="p-4 font-semibold text-olive-900">Pricing Control</td>
+                  <td className="p-4 text-center border-l border-olive-100">You set base price</td>
+                  <td className="p-4 text-center border-l border-olive-100">Negotiated wholesale rate</td>
+                </tr>
+                <tr className="hover:bg-parchment-100 transition-colors">
+                  <td className="p-4 font-semibold text-olive-900">Revenue Model</td>
+                  <td className="p-4 text-center border-l border-olive-100">Per-sale earnings</td>
+                  <td className="p-4 text-center border-l border-olive-100">Guaranteed bulk payment</td>
+                </tr>
+                <tr className="hover:bg-parchment-100 transition-colors">
+                  <td className="p-4 font-semibold text-olive-900">Payment Timing</td>
+                  <td className="p-4 text-center border-l border-olive-100">Bi-weekly after sales</td>
+                  <td className="p-4 text-center border-l border-olive-100">Net 15–30 on delivery</td>
+                </tr>
+                <tr className="hover:bg-parchment-100 transition-colors">
+                  <td className="p-4 font-semibold text-olive-900">Fulfillment</td>
+                  <td className="p-4 text-center border-l border-olive-100">Vendor ships to customer</td>
+                  <td className="p-4 text-center border-l border-olive-100">Terra Trionfo handles fulfillment</td>
+                </tr>
+                <tr className="hover:bg-parchment-100 transition-colors">
+                  <td className="p-4 font-semibold text-olive-900">Best For</td>
+                  <td className="p-4 text-center border-l border-olive-100">Flexible inventory, direct control</td>
+                  <td className="p-4 text-center border-l border-olive-100">Large volumes, predictable revenue</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* Model Cards */}
+          <div className="grid md:grid-cols-2 gap-8">
+            {/* Marketplace */}
+            <div className="border border-olive-200 rounded-xl overflow-hidden">
+              <div className="bg-olive-700 px-6 py-5 text-white">
+                <h3 className="text-2xl font-serif font-bold">Marketplace Model</h3>
+                <p className="text-olive-100 mt-1 text-sm">Consignment-Based Partnership</p>
+              </div>
+              <div className="p-6 space-y-4">
+                <div className="space-y-3 text-olive-700 text-sm">
+                  <div className="flex items-start gap-3">
+                    <span className="w-6 h-6 bg-olive-100 rounded-full flex-shrink-0 flex items-center justify-center text-olive-700 font-bold text-xs mt-0.5">1</span>
+                    <p><span className="font-semibold">You set your base price</span> — the amount you want to earn per bottle sold.</p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="w-6 h-6 bg-olive-100 rounded-full flex-shrink-0 flex items-center justify-center text-olive-700 font-bold text-xs mt-0.5">2</span>
+                    <p><span className="font-semibold">Terra Trionfo adds its markup</span> to form the consumer price.</p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="w-6 h-6 bg-olive-100 rounded-full flex-shrink-0 flex items-center justify-center text-olive-700 font-bold text-xs mt-0.5">3</span>
+                    <p><span className="font-semibold">Earn your base price</span> on every unit sold, paid bi-weekly.</p>
+                  </div>
+                </div>
+                <div className="bg-olive-50 rounded-lg p-4 text-sm text-olive-700">
+                  <p className="font-semibold text-olive-900 mb-1">Example</p>
+                  <p>Your base price: <span className="font-semibold">$10.00</span> &nbsp;+&nbsp; markup: <span className="font-semibold">$3.00</span></p>
+                  <p className="pt-1 font-semibold text-olive-900">Consumer pays $13.00 · You earn $10.00</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Wholesale */}
+            <div className="border border-olive-200 rounded-xl overflow-hidden">
+              <div className="bg-olive-900 px-6 py-5 text-white">
+                <h3 className="text-2xl font-serif font-bold">Wholesale Model</h3>
+                <p className="text-olive-100 mt-1 text-sm">Bulk Purchase Partnership</p>
+              </div>
+              <div className="p-6 space-y-4">
+                <div className="space-y-3 text-olive-700 text-sm">
+                  <div className="flex items-start gap-3">
+                    <span className="w-6 h-6 bg-olive-100 rounded-full flex-shrink-0 flex items-center justify-center text-olive-700 font-bold text-xs mt-0.5">1</span>
+                    <p><span className="font-semibold">Terra Trionfo places a bulk order</span> and purchases inventory at your wholesale rate.</p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="w-6 h-6 bg-olive-100 rounded-full flex-shrink-0 flex items-center justify-center text-olive-700 font-bold text-xs mt-0.5">2</span>
+                    <p><span className="font-semibold">You deliver and get paid</span> on net 15–30 terms upon delivery.</p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="w-6 h-6 bg-olive-100 rounded-full flex-shrink-0 flex items-center justify-center text-olive-700 font-bold text-xs mt-0.5">3</span>
+                    <p><span className="font-semibold">We handle the rest</span> — pricing, fulfillment, and customer relations.</p>
+                  </div>
+                </div>
+                <div className="bg-olive-50 rounded-lg p-4 text-sm text-olive-700">
+                  <p className="font-semibold text-olive-900 mb-1">Example</p>
+                  <p>Your wholesale rate: <span className="font-semibold">$8.00/unit</span> &nbsp;×&nbsp; 500 units</p>
+                  <p className="pt-1 font-semibold text-olive-900">You receive $4,000 — guaranteed, upfront</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <p className="text-center text-sm text-olive-500 italic mt-8">
+            Many producers use both models across different SKUs. Discuss which arrangement fits your portfolio during onboarding.
+          </p>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="py-16 bg-gradient-to-b from-parchment-50 to-olive-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">

@@ -64,11 +64,6 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/pricing/models" className="text-parchment-300 hover:text-parchment-100 transition-colors">
-                  Pricing Models
-                </Link>
-              </li>
-              <li>
                 <Link href="/investors" className="text-parchment-300 hover:text-parchment-100 transition-colors">
                   For Investors
                 </Link>
