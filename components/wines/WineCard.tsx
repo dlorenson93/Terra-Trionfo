@@ -82,11 +82,6 @@ export default function WineCard({ wine, producer, standalone = true }: Props) {
               {COLLECTION_LABELS[producer.collection] ?? producer.collection}
             </span>
           )}
-          {wine.colaWaiverStatus === 'requested' && (
-            <span className="text-[9px] text-parchment-500 uppercase tracking-wider">
-              COLA Pending
-            </span>
-          )}
         </div>
         <span className="text-sm font-serif font-semibold text-olive-900">
           ${wine.consumerPurchasePriceUSD}
