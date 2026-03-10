@@ -36,12 +36,7 @@ export default function RegionsIndexPage() {
       portfolioProducersInRegion(slug).some((p) => p.id === w.producerId)
     ).length
 
-  const activeRegions = REGION_LIST.filter(
-    (r) => portfolioProducersInRegion(r.slug).length > 0
-  )
-  const forthcomingRegions = REGION_LIST.filter(
-    (r) => portfolioProducersInRegion(r.slug).length === 0
-  )
+  const activeRegions = REGION_LIST
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -92,7 +87,7 @@ export default function RegionsIndexPage() {
 
               {/* Right: Italy map */}
               <div className="w-full max-w-[260px] mx-auto lg:ml-auto pt-6">
-                <ItalyMap activeRegionSlugs={activeRegions.map((r) => r.slug)} />
+                <ItalyMap />
               </div>
             </div>
           </div>
@@ -158,53 +153,6 @@ export default function RegionsIndexPage() {
                 )
               })}
             </div>
-
-            {/* Forthcoming regions */}
-            {forthcomingRegions.length > 0 && (
-              <div>
-                <div className="flex items-center gap-4 mb-8">
-                  <div className="h-px flex-grow bg-parchment-200" />
-                  <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-olive-300">
-                    On Our Radar
-                  </p>
-                  <div className="h-px flex-grow bg-parchment-200" />
-                </div>
-                <div className="grid sm:grid-cols-2 gap-5">
-                  {forthcomingRegions.map((region) => (
-                    <Link
-                      key={region.slug}
-                      href={`/regions/${region.slug}`}
-                      className="group border border-parchment-200 hover:border-parchment-300 bg-white/40 p-6 flex flex-col transition-all duration-200"
-                    >
-                      <p className="text-[9px] font-medium text-parchment-400/60 uppercase tracking-[0.3em] mb-3">
-                        {region.subtitle}
-                      </p>
-                      <h2 className="text-lg font-serif font-semibold text-olive-500/80 mb-2 leading-tight group-hover:text-olive-700 transition-colors">
-                        {region.name}
-                      </h2>
-                      <p className="text-xs text-olive-400/80 leading-relaxed flex-grow mb-4">
-                        {region.heroLine}
-                      </p>
-                      <div className="flex flex-wrap gap-1.5 mb-4">
-                        {region.grapes.slice(0, 3).map((g) => (
-                          <span key={g} className="text-[9px] border border-parchment-300 text-parchment-400 px-2 py-0.5 rounded-sm">
-                            {g}
-                          </span>
-                        ))}
-                      </div>
-                      <div className="flex items-center justify-between pt-4 border-t border-parchment-200/60">
-                        <span className="text-[9px] text-parchment-400 uppercase tracking-wider">
-                          Estates under evaluation
-                        </span>
-                        <span className="text-[9px] text-parchment-400 group-hover:text-olive-600 transition-colors uppercase tracking-wider">
-                          Learn more →
-                        </span>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </section>
 
@@ -222,10 +170,11 @@ export default function RegionsIndexPage() {
                 Italy contains more native grape varieties than any country on earth. Its
                 geography — from the Alpine north to the Mediterranean south — creates
                 a mosaic of microclimates, each expressing wine in a distinct voice. The
-                two active sourcing regions in the Terra Trionfo portfolio were
-                selected because they represent a compelling range — from the
-                structured nobility of Piedmont Nebbiolo to the alpine precision
-                of Alto Adige whites and native varieties.
+                four active sourcing regions in the Terra Trionfo portfolio — Piemonte,
+                Lombardy, Trentino–Alto Adige, and Emilia-Romagna — were
+                selected because they represent a compelling range: from the structured
+                nobility of Piemonte Nebbiolo and the sparkling excellence of Franciacorta,
+                to alpine precision in the north and native organic varietals on the Adriatic coast.
               </p>
               <p className="text-olive-500 leading-relaxed text-sm mt-4">
                 Every estate in our portfolio was identified through direct producer
