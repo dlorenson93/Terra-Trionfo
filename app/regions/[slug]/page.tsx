@@ -6,6 +6,7 @@ import { PRODUCERS } from '@/data/producers'
 import { WINES } from '@/data/wines'
 import WineCard from '@/components/wines/WineCard'
 import RegionPortfolioStyles from '@/components/regions/RegionPortfolioStyles'
+import SommelierAsk from '@/components/ai/SommelierAsk'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 
@@ -178,7 +179,32 @@ export default function RegionPage({ params }: Props) {
             )}
           </div>
         </section>
-
+        {/* ── Ask the Sommelier ─ region contextual guide ──────────────── */}
+        <section className="py-16 px-6 bg-white border-t border-parchment-200">
+          <div className="max-w-5xl mx-auto">
+            <div className="max-w-2xl">
+              <SommelierAsk
+                sectionLabel="Explore Italian Wines"
+                heading={`Learn about ${region.name} wines`}
+                placeholder={`Ask about ${region.name} wines, grapes, or pairings…`}
+                suggestions={[
+                  `What grapes grow in ${region.name}?`,
+                  `What makes ${region.name} wines distinctive?`,
+                  `What food pairs with wines from ${region.name}?`,
+                  `Recommend a wine from ${region.name}`,
+                ]}
+                regionContext={{
+                  name: region.name,
+                  subtitle: region.subtitle,
+                  description: region.description,
+                  grapes: region.grapes,
+                  climateNote: region.climateNote,
+                  portfolioFocus: region.portfolioFocus,
+                }}
+              />
+            </div>
+          </div>
+        </section>
         {/* ── Explore Other Regions ───────────────────────────────────── */}
         <section className="py-16 px-6 bg-white border-t border-parchment-200">
           <div className="max-w-5xl mx-auto">

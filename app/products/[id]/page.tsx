@@ -7,6 +7,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
+import SommelierAsk from '@/components/ai/SommelierAsk'
 
 interface Product {
   id: string
@@ -489,6 +490,39 @@ export default function ProductDetailPage({
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Ask the Sommelier — wine page panel */}
+        {isWine && product && (
+          <div className="bg-parchment-50 border-t border-parchment-300 py-14 px-4">
+            <div className="max-w-5xl mx-auto">
+              <SommelierAsk
+                sectionLabel="Ask the Sommelier"
+                heading={`Questions about ${product.name}?`}
+                suggestions={[
+                  'What foods pair with this wine?',
+                  'How long should this wine age?',
+                  'Tell me about this producer.',
+                  'What makes this region special?',
+                ]}
+                wineContext={{
+                  name: product.name,
+                  producer: product.company.name,
+                  region: product.region ?? product.company.region ?? '',
+                  type: product.category,
+                  description:
+                    product.tastingNotesFull ??
+                    product.tastingNotesShort ??
+                    product.description ??
+                    '',
+                  appellation: product.appellation ?? undefined,
+                  grapes: product.grapeVarietals,
+                  vintage: product.vintage ?? undefined,
+                  price: product.retailPriceCents / 100,
+                }}
+              />
             </div>
           </div>
         )}
