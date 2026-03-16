@@ -91,18 +91,16 @@ export default function SommelierChat() {
         className="fixed bottom-6 right-6 z-50 w-12 h-12 bg-olive-900 hover:bg-olive-800 text-parchment-100 rounded-full shadow-xl flex items-center justify-center transition-all duration-200 hover:scale-105 border border-olive-700/50"
       >
         {open ? (
-          /* Close / chevron-down */
+          /* Close × */
           <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
           </svg>
         ) : (
-          /* Wine glass */
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M9.75 3.104v5.714a2.25 2.25 0 0 1-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 0 1 4.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0 1 12 15a9.065 9.065 0 0 1-6.23-.693L5 14.5m14.8.8 1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0 1 12 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5"
-            />
+          /* Wine glass — bowl, stem, base */
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.6} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M7 3h10l-2.5 7a4.5 4.5 0 0 1-5 0L7 3z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 13v6" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8.5 19h7" />
           </svg>
         )}
       </button>
@@ -116,8 +114,10 @@ export default function SommelierChat() {
           {/* Header */}
           <div className="bg-olive-900 px-4 py-3 flex items-center justify-between flex-shrink-0">
             <div className="flex items-center gap-2.5">
-              <svg className="w-3.5 h-3.5 text-amber-400/70" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 0 1-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 0 1 4.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0 1 12 15a9.065 9.065 0 0 1-6.23-.693L5 14.5m14.8.8 1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0 1 12 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5" />
+              <svg className="w-3.5 h-3.5 text-amber-400/70" fill="none" stroke="currentColor" strokeWidth={1.6} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M7 3h10l-2.5 7a4.5 4.5 0 0 1-5 0L7 3z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 13v6" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.5 19h7" />
               </svg>
               <div>
                 <p className="text-[8px] uppercase tracking-[0.22em] text-amber-400/50 leading-none mb-0.5">

@@ -1,8 +1,12 @@
 import './globals.css'
 import type { Metadata } from 'next'
 import { Inter, Playfair_Display } from 'next/font/google'
+import dynamic from 'next/dynamic'
 import { AuthProvider } from '@/components/providers/AuthProvider'
-import SommelierChat from '@/components/ai/SommelierChat'
+
+const SommelierChat = dynamic(() => import('@/components/ai/SommelierChat'), {
+  ssr: false,
+})
 
 const inter = Inter({
   subsets: ['latin'],
