@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { checkoutSchema } from '@/lib/validation/checkout'
+
+export const dynamic = 'force-dynamic'
 // local union type for fulfillment
 
 type Fulfillment = 'PICKUP' | 'LOCAL_DELIVERY' | 'SHIP'
