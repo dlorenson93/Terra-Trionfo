@@ -178,6 +178,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!process.env.OPENAI_API_KEY) {
+      console.error('[Sommelier] OPENAI_API_KEY is not set in environment variables.')
       return NextResponse.json(
         {
           answer:
@@ -186,6 +187,7 @@ export async function POST(request: NextRequest) {
         { status: 200 },
       )
     }
+    console.log('[Sommelier] API key present, key prefix:', process.env.OPENAI_API_KEY.slice(0, 10))
 
     const systemPrompt = buildSystemPrompt()
     const userMessage = buildUserMessage(
