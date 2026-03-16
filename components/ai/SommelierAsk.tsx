@@ -74,17 +74,13 @@ export default function SommelierAsk({
     <div className="border border-olive-200 rounded-xl overflow-hidden bg-white shadow-sm">
       {/* ── Header ──────────────────────────────────────────────────── */}
       <div className="bg-olive-900 px-6 py-4 flex items-start gap-3">
-        {/* Wine glass icon */}
-        <svg
-          className="w-4 h-4 text-amber-400/80 flex-shrink-0 mt-0.5"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={1.6}
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M7 3h10l-2.5 7a4.5 4.5 0 0 1-5 0L7 3z" />
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 13v6" />
-          <path strokeLinecap="round" strokeLinejoin="round" d="M8.5 19h7" />
+        {/* Wine glass icon — cold palette with garnet fill */}
+        <svg className="w-4 h-4 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none">
+          <path d="M9 7.5h6l-1.5 3a4.5 4.5 0 0 1-3 0z" fill="rgba(159,18,57,0.65)" />
+          <path d="M7 3h10l-2.5 7a4.5 4.5 0 0 1-5 0L7 3z"
+            stroke="#e2e8f0" strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round" />
+          <line x1="12" y1="13" x2="12" y2="20" stroke="#94a3b8" strokeWidth={1.3} strokeLinecap="round" />
+          <line x1="8.5" y1="20" x2="15.5" y2="20" stroke="#e2e8f0" strokeWidth={1.5} strokeLinecap="round" />
         </svg>
         <div>
           <p className="text-[9px] font-medium uppercase tracking-[0.22em] text-amber-400/60 mb-0.5">

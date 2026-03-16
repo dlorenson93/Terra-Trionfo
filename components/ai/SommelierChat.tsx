@@ -17,10 +17,12 @@ const WELCOME_MESSAGE: Message = {
 }
 
 const SUGGESTION_PROMPTS = [
-  'What wine should I try tonight?',
+  'Recommend a red wine under $50',
+  'What pairs with grilled steak?',
   'What pairs with pasta carbonara?',
-  'Tell me about Barolo',
-  'How is Franciacorta made?',
+  'How does Franciacorta compare to Champagne?',
+  'What is Nebbiolo?',
+  'I like Burgundy — what should I try?',
 ]
 
 export default function SommelierChat() {
@@ -88,19 +90,33 @@ export default function SommelierChat() {
         onClick={() => setOpen((o) => !o)}
         aria-label={open ? 'Close wine guide' : 'Open wine guide'}
         title="Explore Italian Wines"
-        className="fixed bottom-6 right-6 z-50 w-12 h-12 bg-olive-900 hover:bg-olive-800 text-parchment-100 rounded-full shadow-xl flex items-center justify-center transition-all duration-200 hover:scale-105 border border-olive-700/50"
+        className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95"
+        style={{
+          background: open
+            ? 'linear-gradient(145deg, #1e293b 0%, #0f172a 100%)'
+            : 'linear-gradient(145deg, #0f172a 0%, #1a2540 100%)',
+          boxShadow: '0 8px 28px rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.3), 0 0 0 1px rgba(148,163,184,0.1)',
+        }}
       >
         {open ? (
           /* Close × */
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+          <svg className="w-4 h-4" fill="none" stroke="#94a3b8" strokeWidth={2} viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
           </svg>
         ) : (
-          /* Wine glass — bowl, stem, base */
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.6} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M7 3h10l-2.5 7a4.5 4.5 0 0 1-5 0L7 3z" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 13v6" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M8.5 19h7" />
+          /* Wine glass — cold palette with garnet fill */
+          <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
+            {/* Garnet wine fill inside bowl */}
+            <path d="M9 7.5h6l-1.5 3a4.5 4.5 0 0 1-3 0z" fill="rgba(159,18,57,0.7)" />
+            {/* Bowl outline — icy white stroke */}
+            <path d="M7 3h10l-2.5 7a4.5 4.5 0 0 1-5 0L7 3z"
+              stroke="#e2e8f0" strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round" />
+            {/* Rim highlight — subtle cool sheen */}
+            <line x1="8" y1="3" x2="16" y2="3" stroke="#bfdbfe" strokeWidth={1} strokeLinecap="round" opacity={0.5} />
+            {/* Stem — slate */}
+            <line x1="12" y1="13" x2="12" y2="20" stroke="#94a3b8" strokeWidth={1.3} strokeLinecap="round" />
+            {/* Base */}
+            <line x1="8.5" y1="20" x2="15.5" y2="20" stroke="#e2e8f0" strokeWidth={1.5} strokeLinecap="round" />
           </svg>
         )}
       </button>
@@ -114,10 +130,12 @@ export default function SommelierChat() {
           {/* Header */}
           <div className="bg-olive-900 px-4 py-3 flex items-center justify-between flex-shrink-0">
             <div className="flex items-center gap-2.5">
-              <svg className="w-3.5 h-3.5 text-amber-400/70" fill="none" stroke="currentColor" strokeWidth={1.6} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M7 3h10l-2.5 7a4.5 4.5 0 0 1-5 0L7 3z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 13v6" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8.5 19h7" />
+              <svg className="w-3.5 h-3.5 text-amber-400/70" viewBox="0 0 24 24" fill="none">
+                <path d="M9 7.5h6l-1.5 3a4.5 4.5 0 0 1-3 0z" fill="rgba(159,18,57,0.6)" />
+                <path d="M7 3h10l-2.5 7a4.5 4.5 0 0 1-5 0L7 3z"
+                  stroke="currentColor" strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round" />
+                <line x1="12" y1="13" x2="12" y2="20" stroke="currentColor" strokeWidth={1.3} strokeLinecap="round" />
+                <line x1="8.5" y1="20" x2="15.5" y2="20" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" />
               </svg>
               <div>
                 <p className="text-[8px] uppercase tracking-[0.22em] text-amber-400/50 leading-none mb-0.5">
