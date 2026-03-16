@@ -509,6 +509,7 @@ export default function ProductDetailPage({
                 ]}
                 wineContext={{
                   name: product.name,
+                  slug: product.id,
                   producer: product.company.name,
                   region: product.region ?? product.company.region ?? '',
                   type: product.category,
@@ -521,6 +522,8 @@ export default function ProductDetailPage({
                   grapes: product.grapeVarietals,
                   vintage: product.vintage ?? undefined,
                   price: product.retailPriceCents / 100,
+                  releaseStatus: product.contentStatus === 'LIVE' ? 'AVAILABLE' : product.contentStatus === 'DRAFT' ? 'UPCOMING' : 'AVAILABLE',
+                  isLimitedAllocation: product.isLimitedAllocation ?? false,
                 }}
               />
             </div>

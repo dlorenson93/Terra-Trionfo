@@ -2,12 +2,13 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
-import type { SommelierResponse } from '@/lib/ai/types'
+import SommelierPanel from './SommelierPanel'
+import type { SommelierResponse, SessionPreferences } from '@/lib/ai/types'
 
 interface Message {
   role: 'user' | 'sommelier'
   content: string
-  suggestedWines?: SommelierResponse['suggestedWines']
+  response?: SommelierResponse
 }
 
 const WELCOME_MESSAGE: Message = {
@@ -24,6 +25,37 @@ const SUGGESTION_PROMPTS = [
   'What is Nebbiolo?',
   'I like Burgundy — what should I try?',
 ]
+
+// ── Extract lightweight session preferences from conversation history ───────
+function extractPreferences(messages: Message[]): SessionPreferences {
+  const prefs: SessionPreferences = {}
+  const allText = messages
+    .filter((m) => m.role === 'user')
+    .map((m) => m.content.toLowerCase())
+    .join(' ')
+
+  if (/\b(red|reds)\b/.test(allText)) prefs.preferredColor = 'red'
+  else if (/\b(white|whites)\b/.test(allText)) prefs.preferredColor = 'white'
+  else if (/\bsparkling\b/.test(allText)) prefs.preferredColor = 'sparkling'
+  else if (/\brosé|rosé\b/.test(allText)) prefs.preferredColor = 'rosé'
+
+  if (/\blighter reds?\b/.test(allText)) prefs.preferredStyle = 'lighter reds'
+  else if (/\bstructured\b/.test(allText)) prefs.preferredStyle = 'structured'
+  else if (/\bcrisp\b/.test(allText)) prefs.preferredStyle = 'crisp whites'
+
+  const compPoints: string[] = []
+  if (/\bburgundy\b/.test(allText)) compPoints.push('Burgundy')
+  if (/\bchampagne\b/.test(allText)) compPoints.push('Champagne')
+  if (/\bprosecco\b/.test(allText)) compPoints.push('Prosecco')
+  if (/\bbordeaux\b/.test(allText)) compPoints.push('Bordeaux')
+  if (compPoints.length > 0) prefs.comparisonPoints = compPoints
+
+  if (/\bunder\s*\$?(30|35|40)\b/.test(allText)) prefs.priceRange = 'approachable'
+  else if (/\bunder\s*\$?(60|70)\b/.test(allText)) prefs.priceRange = 'mid'
+  else if (/\bspecial|premium|gift|cellar\b/.test(allText)) prefs.priceRange = 'premium'
+
+  return prefs
+}
 
 export default function SommelierChat() {
   const [open, setOpen] = useState(false)
@@ -46,13 +78,19 @@ export default function SommelierChat() {
     if (!q || loading) return
     setInput('')
     setHasInteracted(true)
-    setMessages((prev) => [...prev, { role: 'user', content: q }])
+
+    const userMsg: Message = { role: 'user', content: q }
+    setMessages((prev) => [...prev, userMsg])
     setLoading(true)
+
     try {
+      const currentMessages = [...messages, userMsg]
+      const sessionPreferences = extractPreferences(currentMessages)
+
       const res = await fetch('/api/ai/sommelier', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: q }),
+        body: JSON.stringify({ question: q, sessionPreferences }),
       })
       const data: SommelierResponse = await res.json()
       setMessages((prev) => [
@@ -60,7 +98,7 @@ export default function SommelierChat() {
         {
           role: 'sommelier',
           content: data.answer,
-          suggestedWines: data.suggestedWines,
+          response: data,
         },
       ])
     } catch {
@@ -99,23 +137,16 @@ export default function SommelierChat() {
         }}
       >
         {open ? (
-          /* Close × */
           <svg className="w-4 h-4" fill="none" stroke="#94a3b8" strokeWidth={2} viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
           </svg>
         ) : (
-          /* Wine glass — cold palette with garnet fill */
           <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
-            {/* Garnet wine fill inside bowl */}
             <path d="M9 7.5h6l-1.5 3a4.5 4.5 0 0 1-3 0z" fill="rgba(159,18,57,0.7)" />
-            {/* Bowl outline — icy white stroke */}
             <path d="M7 3h10l-2.5 7a4.5 4.5 0 0 1-5 0L7 3z"
               stroke="#e2e8f0" strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round" />
-            {/* Rim highlight — subtle cool sheen */}
             <line x1="8" y1="3" x2="16" y2="3" stroke="#bfdbfe" strokeWidth={1} strokeLinecap="round" opacity={0.5} />
-            {/* Stem — slate */}
             <line x1="12" y1="13" x2="12" y2="20" stroke="#94a3b8" strokeWidth={1.3} strokeLinecap="round" />
-            {/* Base */}
             <line x1="8.5" y1="20" x2="15.5" y2="20" stroke="#e2e8f0" strokeWidth={1.5} strokeLinecap="round" />
           </svg>
         )}
@@ -125,7 +156,7 @@ export default function SommelierChat() {
       {open && (
         <div
           className="fixed bottom-[4.5rem] right-6 z-50 w-80 sm:w-[22rem] bg-white border border-olive-200 rounded-xl shadow-2xl flex flex-col overflow-hidden"
-          style={{ maxHeight: 'min(72vh, 560px)' }}
+          style={{ maxHeight: 'min(76vh, 600px)' }}
         >
           {/* Header */}
           <div className="bg-olive-900 px-4 py-3 flex items-center justify-between flex-shrink-0">
@@ -161,33 +192,24 @@ export default function SommelierChat() {
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
             {messages.map((msg, i) => (
               <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div
-                  className={`max-w-[88%] text-sm leading-relaxed px-3.5 py-2.5 rounded-xl ${
-                    msg.role === 'user'
-                      ? 'bg-olive-800 text-parchment-100 rounded-br-sm'
-                      : 'bg-parchment-50 text-olive-800 border border-olive-100 rounded-bl-sm'
-                  }`}
-                >
-                  {msg.content}
-
-                  {/* Suggested portfolio wines */}
-                  {msg.suggestedWines && msg.suggestedWines.length > 0 && (
-                    <div className="mt-2 pt-2 border-t border-olive-200 space-y-1">
-                      <p className="text-[9px] uppercase tracking-wider text-olive-400">From the Portfolio</p>
-                      {msg.suggestedWines.map((w) => (
-                        <Link
-                          key={w.id}
-                          href={`/products/${w.id}`}
-                          onClick={() => setOpen(false)}
-                          className="flex items-center justify-between hover:text-olive-900 text-olive-600 transition-colors"
-                        >
-                          <span className="text-xs font-medium">{w.displayName}</span>
-                          <span className="text-xs ml-2 flex-shrink-0">${w.price.toFixed(0)}</span>
-                        </Link>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                {msg.role === 'user' ? (
+                  <div className="max-w-[88%] text-sm leading-relaxed px-3.5 py-2.5 rounded-xl rounded-br-sm bg-olive-800 text-parchment-100">
+                    {msg.content}
+                  </div>
+                ) : (
+                  <div className="max-w-[92%] text-sm leading-relaxed px-3.5 py-2.5 rounded-xl rounded-bl-sm bg-parchment-50 text-olive-800 border border-olive-100">
+                    {msg.response ? (
+                      <SommelierPanel
+                        response={msg.response}
+                        askedQuestion=""
+                        compact
+                        onFollowUp={(p) => sendMessage(p)}
+                      />
+                    ) : (
+                      msg.content
+                    )}
+                  </div>
+                )}
               </div>
             ))}
 

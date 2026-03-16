@@ -1,8 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
-import type { SommelierRequest, SommelierResponse } from '@/lib/ai/types'
+import SommelierPanel from './SommelierPanel'
+import type {
+  SommelierRequest,
+  SommelierResponse,
+  SessionPreferences,
+} from '@/lib/ai/types'
 
 interface SommelierAskProps {
   /** Quick-select suggestion chips displayed above the input */
@@ -10,6 +14,7 @@ interface SommelierAskProps {
   wineContext?: SommelierRequest['wineContext']
   regionContext?: SommelierRequest['regionContext']
   producerContext?: SommelierRequest['producerContext']
+  sessionPreferences?: SessionPreferences
   /** Small label above the heading (default: "Ask the Sommelier") */
   sectionLabel?: string
   /** Main heading text */
@@ -23,6 +28,7 @@ export default function SommelierAsk({
   wineContext,
   regionContext,
   producerContext,
+  sessionPreferences,
   sectionLabel = 'Ask the Sommelier',
   heading,
   placeholder = 'Ask anything about this wine…',
@@ -49,6 +55,7 @@ export default function SommelierAsk({
           wineContext,
           regionContext,
           producerContext,
+          sessionPreferences,
         } as SommelierRequest),
       })
       const data: SommelierResponse = await res.json()
@@ -157,61 +164,18 @@ export default function SommelierAsk({
           </div>
         )}
 
-        {/* ── Response ────────────────────────────────────────── */}
+        {/* ── Response via SommelierPanel ──────────────────────── */}
         {response && !loading && (
-          <div className="mt-5">
-            <p className="text-[9px] font-medium uppercase tracking-[0.15em] text-olive-400 mb-2.5">
-              On:{' '}
-              <span className="italic normal-case tracking-normal text-olive-500">
-                &ldquo;{askedQuestion}&rdquo;
-              </span>
-            </p>
-
-            <div className="border-l-2 border-amber-400/50 pl-4 pr-1">
-              <p className="text-sm text-olive-800 leading-relaxed">{response.answer}</p>
-            </div>
-
-            {/* Suggested portfolio wines */}
-            {response.suggestedWines && response.suggestedWines.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-olive-100">
-                <p className="text-[9px] font-medium uppercase tracking-[0.15em] text-olive-400 mb-2">
-                  From the Portfolio
-                </p>
-                <div className="space-y-1.5">
-                  {response.suggestedWines.map((w) => (
-                    <Link
-                      key={w.id}
-                      href={`/products/${w.id}`}
-                      className="flex items-center justify-between group hover:bg-olive-50 px-2 py-1.5 -mx-2 rounded transition-colors"
-                    >
-                      <div>
-                        <span className="text-sm font-serif font-semibold text-olive-800 group-hover:text-olive-900">
-                          {w.displayName}
-                        </span>
-                        <span className="text-xs text-olive-500 ml-2">{w.type}</span>
-                      </div>
-                      <span className="text-xs text-olive-500 flex-shrink-0">
-                        ${w.price.toFixed(0)}
-                      </span>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Ask another question prompt */}
-            <button
-              type="button"
-              onClick={() => {
-                setResponse(null)
-                setInputValue('')
-                setAskedQuestion('')
-              }}
-              className="mt-4 text-xs text-olive-400 hover:text-olive-700 transition-colors underline underline-offset-2"
-            >
-              Ask another question
-            </button>
-          </div>
+          <SommelierPanel
+            response={response}
+            askedQuestion={askedQuestion}
+            onFollowUp={(p) => ask(p)}
+            onReset={() => {
+              setResponse(null)
+              setInputValue('')
+              setAskedQuestion('')
+            }}
+          />
         )}
       </div>
     </div>

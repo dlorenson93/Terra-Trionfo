@@ -7,6 +7,7 @@ import type {
   SommelierResponse,
   SuggestedWine,
   SuggestedProducer,
+  RecommendationCard,
 } from '@/lib/ai/types'
 
 // OpenAI Chat Completions response shape (subset we need)
@@ -38,7 +39,7 @@ async function callOpenAI(systemPrompt: string, userMessage: string): Promise<st
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userMessage },
       ],
-      max_tokens: 650,
+      max_tokens: 700,
       temperature: 0.72,
     }),
   })
@@ -84,6 +85,78 @@ function resolveSuggestedProducers(answer: string): SuggestedProducer[] {
     }))
 }
 
+/**
+ * Extract the first named Terra Trionfo wine from the answer as the
+ * primary recommendation, and subsequent named wines as secondaries.
+ * This is a heuristic based on name-matching — no LLM structured output needed.
+ */
+function extractRecommendations(
+  answer: string,
+  suggestedWines: SuggestedWine[],
+): { primary?: RecommendationCard; secondary?: RecommendationCard[] } {
+  if (suggestedWines.length === 0) return {}
+  const [first, ...rest] = suggestedWines
+
+  // Find the sentence containing the wine name as the reason snippet
+  const reasonSentence = (name: string): string => {
+    const sentences = answer.split(/(?<=[.!?])\s+/)
+    const hit = sentences.find((s) => s.toLowerCase().includes(name.toLowerCase()))
+    return hit ? hit.trim().slice(0, 180) : ''
+  }
+
+  const primary: RecommendationCard = {
+    name: first.displayName,
+    slug: first.slug,
+    producer: first.displayName.split(' ')[0], // first word is always producer name
+    reason: reasonSentence(first.displayName),
+  }
+
+  const secondary: RecommendationCard[] = rest.map((w) => ({
+    name: w.displayName,
+    slug: w.slug,
+    producer: w.displayName.split(' ')[0],
+    reason: reasonSentence(w.displayName),
+  }))
+
+  return { primary, secondary: secondary.length > 0 ? secondary : undefined }
+}
+
+/**
+ * Generate 2–3 contextual follow-up prompts based on what wines appeared
+ * in the answer and the original question.
+ */
+function generateFollowUpPrompts(
+  question: string,
+  suggestedWines: SuggestedWine[],
+): string[] {
+  const prompts: string[] = []
+  const q = question.toLowerCase()
+
+  if (suggestedWines.length > 0) {
+    const first = suggestedWines[0]
+    prompts.push(`Tell me more about ${first.displayName}`)
+    if (first.displayName.toLowerCase().includes('barolo')) {
+      prompts.push('How long should I age this Barolo?')
+    } else if (first.type === 'Sparkling' || first.type === 'Sparkling Rosé') {
+      prompts.push('What occasions suit this wine best?')
+    } else {
+      prompts.push('What foods pair best with this wine?')
+    }
+  }
+
+  if (q.includes('pair') || q.includes('food')) {
+    prompts.push('What other wines in the portfolio are great for entertaining?')
+  } else if (q.includes('region') || q.includes('barolo') || q.includes('franciacorta')) {
+    prompts.push('Which wine should I try first from this region?')
+  } else if (q.includes('age') || q.includes('cellar')) {
+    prompts.push('Which Terra Trionfo wines are best for cellaring?')
+  } else {
+    prompts.push('What is a good wine for a special occasion?')
+  }
+
+  return prompts.slice(0, 3)
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Basic content-type check
@@ -98,7 +171,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'A question is required.' }, { status: 400 })
     }
 
-    // Sanitise question — strip excessive whitespace and enforce length limit
+    // Sanitise question
     const question = body.question.trim().replace(/\s+/g, ' ').slice(0, 500)
     if (question.length === 0) {
       return NextResponse.json({ error: 'Question cannot be empty.' }, { status: 400 })
@@ -120,15 +193,21 @@ export async function POST(request: NextRequest) {
       body.wineContext,
       body.regionContext,
       body.producerContext,
+      body.sessionPreferences,
     )
 
     const answerText = await callOpenAI(systemPrompt, userMessage)
 
     const suggestedWines = resolveSuggestedWines(answerText)
     const suggestedProducers = resolveSuggestedProducers(answerText)
+    const { primary, secondary } = extractRecommendations(answerText, suggestedWines)
+    const followUpPrompts = generateFollowUpPrompts(question, suggestedWines)
 
     const response: SommelierResponse = {
       answer: answerText,
+      ...(primary && { primaryRecommendation: primary }),
+      ...(secondary && secondary.length > 0 && { secondaryRecommendations: secondary }),
+      ...(followUpPrompts.length > 0 && { followUpPrompts }),
       ...(suggestedWines.length > 0 && { suggestedWines }),
       ...(suggestedProducers.length > 0 && { suggestedProducers }),
     }

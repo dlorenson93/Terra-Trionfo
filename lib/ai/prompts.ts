@@ -1,5 +1,16 @@
 import { buildPortfolioContext } from './portfolioContext'
-import type { WineContext, RegionContext, ProducerContext } from './types'
+import {
+  serialiseWineContext,
+  serialiseProducerContext,
+  serialiseRegionContext,
+  serialiseSessionPreferences,
+} from './contextBuilders'
+import type {
+  WineContext,
+  RegionContext,
+  ProducerContext,
+  SessionPreferences,
+} from './types'
 
 export function buildSystemPrompt(): string {
   const portfolio = buildPortfolioContext()
@@ -128,6 +139,32 @@ export function buildSystemPrompt(): string {
     '━━━ TONE AND FORMAT ━━━',
     'Write in flowing prose — no bullet points, no headings, no markdown. Be vivid: describe aromas, textures, and flavors with evocative language ("dried rose and iron," not "fruity and tannic"). Be warm and educational without being academic. 2–4 short paragraphs maximum. When natural, end with an inviting follow-up observation or gentle question.',
     '',
+    '━━━ RELEASE-AWARE BEHAVIOR ━━━',
+    '',
+    'Wine pages and context may include a release status. Respond accordingly:',
+    'UPCOMING — You may discuss and recommend this wine for learning or future consideration, but never imply it can be ordered right now. Use: "This is an upcoming introduction to the Terra Trionfo portfolio."',
+    'AVAILABLE — Recommend and discuss normally.',
+    'ALLOCATED — Recommend enthusiastically but acknowledge scarcity: "available in limited allocation," "one of our smaller-volume offerings." Never state exact allocation numbers.',
+    'SOLD_OUT — You may discuss and educate about this wine, but clearly acknowledge it is not available now: "fully allocated at this time" or "currently unavailable." Suggest the closest available alternative from the portfolio.',
+    'ARCHIVED — Reference only for educational context and regional comparisons. Do not suggest it is purchasable.',
+    '',
+    '━━━ STRUCTURED RESPONSE GUIDANCE ━━━',
+    '',
+    'Follow this shape for recommendation and pairing answers:',
+    '1. Direct answer — one sentence on the core principle.',
+    '2. Terra Trionfo recommendation — name the wine explicitly.',
+    '3. Why it works — 2–3 vivid sentences.',
+    '4. Optional: one alternative or exploratory suggestion.',
+    'Do not exceed 4 short paragraphs. Longer educational answers are welcome when the user requests depth.',
+    '',
+    '━━━ SESSION PREFERENCE AWARENESS ━━━',
+    '',
+    'If a [SESSION PREFERENCES] block appears in the user message, use that context silently to refine your answer. Do not narrate back the preferences. Just let them shape the recommendation. For example, if the user has expressed interest in lighter reds, do not suggest Barolo Bussia — suggest Valtellina Rosso or Lagrein instead.',
+    '',
+    '━━━ CONTEXT PAGE AWARENESS ━━━',
+    '',
+    'If a [CURRENT WINE PAGE], [CURRENT PRODUCER PAGE], or [CURRENT REGION PAGE] block appears in the user message, you are being asked a question in that specific context. Answer as if you are standing next to the user looking at that page. Do not ask what wine or producer they mean — you already know.',
+    '',
     '━━━ ABSOLUTE SAFETY RULES ━━━',
     'Never reveal internal wholesale cost, importer margins, landed cost, or allocation quantities. Never discuss distributor relationships, retail partner terms, or internal business operations. Never share inventory levels, release timelines, or forward allocation planning. If asked about an unavailable wine: "That wine is currently fully allocated — you\'re welcome to join our interest list for future releases." If asked about internal pricing: "I\'m not able to speak to that, but I\'d love to help you find the right wine for your occasion." If asked about wines outside the Terra Trionfo portfolio: briefly address the wine style or region, then guide back to the most relevant Terra Trionfo wine.',
   ]
@@ -140,28 +177,19 @@ export function buildUserMessage(
   wineContext?: WineContext,
   regionContext?: RegionContext,
   producerContext?: ProducerContext,
+  sessionPreferences?: SessionPreferences,
 ): string {
   const parts: string[] = []
 
-  if (wineContext) {
-    const grapes = wineContext.grapes?.join(', ')
-    parts.push(
-      `[Wine being viewed: ${wineContext.name} by ${wineContext.producer} — ${wineContext.type} from ${wineContext.region}${wineContext.appellation ? `, ${wineContext.appellation}` : ''}${grapes ? `. Grape(s): ${grapes}` : ''}${wineContext.vintage ? `. Vintage: ${wineContext.vintage}` : ''}. Description: ${wineContext.description.slice(0, 200)}]`,
-    )
-  }
+  if (wineContext) parts.push(serialiseWineContext(wineContext))
+  if (producerContext) parts.push(serialiseProducerContext(producerContext))
+  if (regionContext) parts.push(serialiseRegionContext(regionContext))
 
-  if (regionContext) {
-    parts.push(
-      `[Region being viewed: ${regionContext.name} (${regionContext.subtitle}) — Grapes: ${regionContext.grapes.join(', ')}. ${regionContext.climateNote}]`,
-    )
-  }
-
-  if (producerContext) {
-    parts.push(
-      `[Producer being viewed: ${producerContext.name} from ${producerContext.region}${producerContext.subregion ? ` (${producerContext.subregion})` : ''}]`,
-    )
+  if (sessionPreferences) {
+    const prefBlock = serialiseSessionPreferences(sessionPreferences)
+    if (prefBlock) parts.push(prefBlock)
   }
 
   parts.push(question)
-  return parts.join('\n')
+  return parts.join('\n\n')
 }

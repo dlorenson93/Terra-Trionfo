@@ -254,6 +254,33 @@ export default function RegionPage({ params }: Props) {
         </section>
       </main>
 
+      {/* Ask the Sommelier — region page */}
+      <section className="bg-parchment-50 border-t border-parchment-300 py-14 px-6">
+        <div className="max-w-4xl mx-auto">
+          <SommelierAsk
+            sectionLabel="Ask the Sommelier"
+            heading={`Explore ${region.name} with our wine guide`}
+            placeholder={`Ask about ${region.name} wines, grapes, or producers…`}
+            suggestions={[
+              `What grapes define ${region.name}?`,
+              `Which Terra Trionfo wines represent ${region.name}?`,
+              `How does ${region.name} compare to other Italian regions?`,
+              `What wine from ${region.name} should I try first?`,
+            ]}
+            regionContext={{
+              name: region.name,
+              subtitle: region.subtitle,
+              description: region.description,
+              grapes: region.grapes,
+              climateNote: region.climateNote,
+              portfolioFocus: region.portfolioFocus,
+              portfolioProducers: portfolioProducers.map((p) => p.name),
+              portfolioWines: portfolioWines.map((w) => w.displayName),
+            }}
+          />
+        </div>
+      </section>
+
       <Footer />
     </div>
   )

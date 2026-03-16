@@ -7,6 +7,7 @@ import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import { PRODUCERS } from '@/data/producers'
 import { WINES } from '@/data/wines'
+import SommelierAsk from '@/components/ai/SommelierAsk'
 
 interface ProducerFull {
   id: string
@@ -319,6 +320,35 @@ export default async function ProducerDetailPage({ params }: { params: { slug: s
               </div>
             </section>
           )}
+
+          {/* Ask the Sommelier — producer page */}
+          <section className="bg-parchment-50 border-t border-parchment-300 py-14 px-6">
+            <div className="max-w-5xl mx-auto">
+              <SommelierAsk
+                sectionLabel="Ask the Sommelier"
+                heading={`Questions about ${staticProducer.name}?`}
+                placeholder="Ask about this estate, its wines, or the region…"
+                suggestions={[
+                  `What makes ${staticProducer.name} distinctive?`,
+                  'Which wine should I start with from this producer?',
+                  `Tell me about the ${staticProducer.region} region`,
+                  'What style defines this estate?',
+                ]}
+                producerContext={{
+                  name: staticProducer.name,
+                  region: staticProducer.region,
+                  subregion: staticProducer.subregion,
+                  summary: staticProducer.summary,
+                  farmingMethod: staticProducer.farmingMethod,
+                  collection: staticProducer.collection,
+                  organicStatus: staticProducer.organicStatus,
+                  founded: staticProducer.founded,
+                  distinctive: staticProducer.distinctive,
+                  signatureWines: winesForProducer.map((w) => w.displayName),
+                }}
+              />
+            </div>
+          </section>
         </main>
         <Footer />
       </div>
