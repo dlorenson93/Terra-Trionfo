@@ -43,14 +43,27 @@ export interface ProductSignals {
   tradeInterestCount: number
   totalCaseInterest: number   // sum of caseInterest from trade inquiries
 
+  // Time-decayed scores — weight = exp(-daysSince / decayFactor)
+  // Consumer half-life: 30 days (decayFactor 43.3) — waitlists and purchases
+  // Trade half-life: 60 days (decayFactor 86.6) — B2B cycles are slower
+  // A signal from today = 1.0; from 30 days ago ≈ 0.5 (consumer); from 60 days ago ≈ 0.5 (trade)
+  /** Σ exp(-daysSince / 43.3) per waitlist entry */
+  weightedWaitlistScore: number
+  /** Σ exp(-daysSince / 86.6) per trade inquiry */
+  weightedTradeScore: number
+  /** Σ quantity × exp(-daysSince / 43.3) per order item */
+  weightedPurchaseScore: number
+
   // Derived signals
-  /**
-   * Weighted demand intensity:
-   *   waitlistCount + (tradeInterestCount × 2) + purchaseCount
-   * Trade interest is weighted 2× — B2B buyers move higher volume than
-   * individual consumers and represent stronger commercial signal quality.
-   */
+  /** Raw: waitlistCount + (tradeInterestCount × 2) + purchaseCount — for display */
   demandIntensity: number
+  /**
+   * Time-decayed demand intensity (primary signal used by rule engine):
+   *   weightedWaitlistScore + (weightedTradeScore × 2) + weightedPurchaseScore
+   * Recent signals carry full weight; stale signals fade exponentially.
+   * Old hype does not distort current import decisions.
+   */
+  signalScore: number
   /** purchaseCount / (waitlistCount + tradeInterestCount + 1) — conversion proxy without view data */
   conversionProxy: number
   /** waitlistCount − recentPurchaseCount — how many interested parties are not converting */
@@ -118,6 +131,18 @@ for (const [slug, data] of Object.entries(REGIONS)) {
   REGION_KEYWORDS[slug] = { displayName: data.name, keywords: data.dbKeywords }
 }
 
+// ─── Signal decay ────────────────────────────────────────────────────────────
+// weight = exp(-daysSince / decayFactor)
+// Half-life: decayFactor × ln(2)  →  consumer ≈ 30 days, trade ≈ 60 days
+const DECAY_CONSUMER = 43.3  // 30-day half-life
+const DECAY_TRADE    = 86.6  // 60-day half-life
+const MS_PER_DAY     = 86_400_000
+
+function decayWeight(createdAt: Date, decayFactor: number): number {
+  const daysSince = (Date.now() - createdAt.getTime()) / MS_PER_DAY
+  return Math.exp(-daysSince / decayFactor)
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function classifyPriceTier(cents: number): string {
@@ -146,8 +171,8 @@ export async function buildDemandSnapshot(): Promise<DemandSnapshot> {
     products,
     allOrderItems,
     recentOrderItems,
-    waitlistCounts,
-    tradeInterestCounts,
+    waitlistRows,
+    tradeRows,
   ] = await Promise.all([
     // All APPROVED products — includes non-LIVE for upcoming interest signals
     prisma.product.findMany({
@@ -166,9 +191,9 @@ export async function buildDemandSnapshot(): Promise<DemandSnapshot> {
       },
     }),
 
-    // All-time order quantities
+    // All-time order items with timestamps for decay weighting
     prisma.orderItem.findMany({
-      select: { productId: true, quantity: true },
+      select: { productId: true, quantity: true, order: { select: { createdAt: true } } },
     }),
 
     // Recent (30-day) order quantities for velocity
@@ -177,24 +202,29 @@ export async function buildDemandSnapshot(): Promise<DemandSnapshot> {
       select: { productId: true, quantity: true },
     }),
 
-    // Waitlist counts per product
-    (prisma as any).waitlist.groupBy({
-      by: ['productId'],
-      _count: { id: true },
+    // Waitlist entries with timestamps for decay weighting
+    (prisma as any).waitlist.findMany({
+      select: { productId: true, createdAt: true },
     }),
 
-    // Trade interest counts + total case interest per product
-    (prisma as any).tradeInterest.groupBy({
-      by: ['productId'],
-      _count: { id: true },
-      _sum: { caseInterest: true },
+    // Trade interest entries with timestamps for decay weighting
+    (prisma as any).tradeInterest.findMany({
+      select: { productId: true, createdAt: true, caseInterest: true },
     }),
   ])
 
-  // ── Build lookup maps ──────────────────────────────────────────────────
+  // ── Build lookup maps ─────────────────────────────────────────────────
+
+  // Order items: raw count + decay-weighted score
   const purchaseMap = new Map<string, number>()
+  const weightedPurchaseMap = new Map<string, number>()
   for (const item of allOrderItems) {
     purchaseMap.set(item.productId, (purchaseMap.get(item.productId) ?? 0) + item.quantity)
+    const w = decayWeight(item.order.createdAt, DECAY_CONSUMER)
+    weightedPurchaseMap.set(
+      item.productId,
+      (weightedPurchaseMap.get(item.productId) ?? 0) + item.quantity * w,
+    )
   }
 
   const recentPurchaseMap = new Map<string, number>()
@@ -202,17 +232,25 @@ export async function buildDemandSnapshot(): Promise<DemandSnapshot> {
     recentPurchaseMap.set(item.productId, (recentPurchaseMap.get(item.productId) ?? 0) + item.quantity)
   }
 
+  // Waitlist entries: raw count + decay-weighted score
   const waitlistMap = new Map<string, number>()
-  for (const row of waitlistCounts) {
-    waitlistMap.set(row.productId, row._count.id)
+  const weightedWaitlistMap = new Map<string, number>()
+  for (const row of waitlistRows) {
+    waitlistMap.set(row.productId, (waitlistMap.get(row.productId) ?? 0) + 1)
+    const w = decayWeight(new Date(row.createdAt), DECAY_CONSUMER)
+    weightedWaitlistMap.set(row.productId, (weightedWaitlistMap.get(row.productId) ?? 0) + w)
   }
 
+  // Trade interest entries: raw count + decay-weighted score
   const tradeMap = new Map<string, { count: number; caseInterest: number }>()
-  for (const row of tradeInterestCounts) {
-    tradeMap.set(row.productId, {
-      count: row._count.id,
-      caseInterest: row._sum?.caseInterest ?? 0,
-    })
+  const weightedTradeMap = new Map<string, number>()
+  for (const row of tradeRows) {
+    const existing = tradeMap.get(row.productId) ?? { count: 0, caseInterest: 0 }
+    existing.count += 1
+    existing.caseInterest += row.caseInterest ?? 0
+    tradeMap.set(row.productId, existing)
+    const w = decayWeight(new Date(row.createdAt), DECAY_TRADE)
+    weightedTradeMap.set(row.productId, (weightedTradeMap.get(row.productId) ?? 0) + w)
   }
 
   // ── Per-product signals ────────────────────────────────────────────────
@@ -222,8 +260,16 @@ export async function buildDemandSnapshot(): Promise<DemandSnapshot> {
     const waitlistCount = waitlistMap.get(p.id) ?? 0
     const trade = tradeMap.get(p.id) ?? { count: 0, caseInterest: 0 }
 
-    // Trade interest is weighted 2× — B2B buyers signal higher volume potential
+    const weightedWaitlistScore = Math.round((weightedWaitlistMap.get(p.id) ?? 0) * 100) / 100
+    const weightedTradeScore    = Math.round((weightedTradeMap.get(p.id)    ?? 0) * 100) / 100
+    const weightedPurchaseScore = Math.round((weightedPurchaseMap.get(p.id) ?? 0) * 100) / 100
+
+    // Raw (for display/transparency)
     const demandIntensity = waitlistCount + (trade.count * 2) + purchaseCount
+    // Time-decayed (used by rule engine — stale signals fade)
+    const signalScore = Math.round(
+      (weightedWaitlistScore + weightedTradeScore * 2 + weightedPurchaseScore) * 100,
+    ) / 100
     const conversionProxy = purchaseCount / (waitlistCount + trade.count + 1)
     const interestGap = waitlistCount - recentPurchaseCount
     const velocityScore =
@@ -259,7 +305,11 @@ export async function buildDemandSnapshot(): Promise<DemandSnapshot> {
       waitlistCount,
       tradeInterestCount: trade.count,
       totalCaseInterest: trade.caseInterest,
+      weightedWaitlistScore,
+      weightedTradeScore,
+      weightedPurchaseScore,
       demandIntensity,
+      signalScore,
       conversionProxy,
       interestGap,
       velocityScore,

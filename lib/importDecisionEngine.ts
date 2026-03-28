@@ -36,6 +36,7 @@ export interface ImportRecommendation {
     purchaseCount?: number
     inventory?: number
     demandIntensity?: number
+    signalScore?: number
     totalCaseInterest?: number
   }
 }
@@ -63,7 +64,7 @@ export interface DecisionOutput {
 // Adjust as the platform grows.
 
 const THRESHOLD = {
-  HIGH_DEMAND_INTENSITY: 5,       // Rule A: allocation_increase
+  HIGH_DEMAND_INTENSITY: 5,       // Rule A: compared against signalScore (time-decayed intensity)
   HIGH_CONVERSION_PROXY: 0.5,     // Rule A: with high demand
   HIGH_WAITLIST_UNMET: 3,         // Rule B: unmet_demand
   HIGH_TRADE_INTEREST: 2,         // Rule C: trade_opportunity
@@ -93,25 +94,26 @@ function evaluateProduct(sig: ProductSignals): ImportRecommendation | null {
     productId, productName,
     purchaseCount, recentPurchaseCount, waitlistCount,
     tradeInterestCount, totalCaseInterest,
-    demandIntensity, conversionProxy,
+    demandIntensity, signalScore, conversionProxy,
     isLimitedAllocation, inventory,
     releaseStatus,
   } = sig
 
   // Rule A — High Demand Expansion
-  // Only for wines that are currently purchasable (not upcoming or sold out)
+  // Uses signalScore (time-decayed) — stale hype does not trigger allocation decisions.
+  // Only for wines that are currently purchasable (AVAILABLE or ALLOCATED).
   if (
     (releaseStatus === 'AVAILABLE' || releaseStatus === 'ALLOCATED') &&
-    demandIntensity >= THRESHOLD.HIGH_DEMAND_INTENSITY &&
+    signalScore >= THRESHOLD.HIGH_DEMAND_INTENSITY &&
     conversionProxy >= THRESHOLD.HIGH_CONVERSION_PROXY
   ) {
     return {
       type: 'allocation_increase',
       target: productName,
       targetId: productId,
-      reason: `High demand intensity (${demandIntensity}) with strong conversion — increase allocation`,
+      reason: `Signal score ${signalScore} with strong conversion — recent demand supports allocation increase`,
       confidence: 'high',
-      signals: { waitlistCount, purchaseCount, demandIntensity },
+      signals: { waitlistCount, purchaseCount, demandIntensity, signalScore },
     }
   }
 
