@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { buildDemandSnapshot } from '@/lib/demandInsights'
+import { deriveRecommendations, filterByType } from '@/lib/importDecisionEngine'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,153 +13,136 @@ export async function GET() {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+    const snapshot = await buildDemandSnapshot()
+    const { recommendations, regionTrends, styleTrends } = deriveRecommendations(snapshot)
 
-    // Run all queries in parallel
-    const [
-      waitlistCounts,
-      tradeInterestCounts,
-      recentOrderItems,
-      liveProducts,
-    ] = await Promise.all([
-      // Waitlist signups per product
-      (prisma as any).waitlist.groupBy({
-        by: ['productId'],
-        _count: { id: true },
-        orderBy: { _count: { id: 'desc' } },
-        take: 20,
-      }),
+    const products = snapshot.products
 
-      // Trade interest per product
-      (prisma as any).tradeInterest.groupBy({
-        by: ['productId'],
-        _count: { id: true },
-        _sum: { caseInterest: true },
-        orderBy: { _count: { id: 'desc' } },
-        take: 20,
-      }),
-
-      // Order line items in last 30 days
-      prisma.orderItem.findMany({
-        where: { order: { createdAt: { gte: thirtyDaysAgo } } },
-        select: { productId: true, quantity: true, unitPrice: true },
-      }),
-
-      // All live products for context
-      prisma.product.findMany({
-        where: { status: 'APPROVED', contentStatus: 'LIVE' },
-        select: {
-          id: true,
-          name: true,
-          region: true,
-          isLimitedAllocation: true,
-          retailPriceCents: true,
-          inventory: true,
-          company: { select: { name: true } },
-        },
-      }),
-    ])
-
-    // Build lookup maps
-    const productMap = new Map(liveProducts.map((p: any) => [p.id, p]))
-
-    // Order volume per product (last 30 days)
-    const orderVolume = new Map<string, { units: number; revenue: number }>()
-    for (const item of recentOrderItems) {
-      const existing = orderVolume.get(item.productId) ?? { units: 0, revenue: 0 }
-      orderVolume.set(item.productId, {
-        units: existing.units + item.quantity,
-        revenue: existing.revenue + item.unitPrice * item.quantity,
-      })
-    }
-
-    // ── High demand: products with most waitlist signups ──────────────
-    const highDemand = waitlistCounts
-      .map((row: any) => ({
-        productId: row.productId,
-        productName: productMap.get(row.productId)?.name ?? 'Unknown',
-        company: productMap.get(row.productId)?.company?.name ?? '',
-        waitlistSignups: row._count.id,
-        recentOrders: orderVolume.get(row.productId)?.units ?? 0,
+    // ── High demand: top products by demand intensity ─────────────────
+    const highDemand = [...products]
+      .filter((p) => p.waitlistCount > 0)
+      .sort((a, b) => b.demandIntensity - a.demandIntensity)
+      .slice(0, 10)
+      .map((p) => ({
+        productId: p.productId,
+        productName: p.productName,
+        company: p.company,
+        waitlistSignups: p.waitlistCount,
+        recentOrders: p.recentPurchaseCount,
       }))
-      .slice(0, 10)
 
-    // ── Allocation pressure: limited-allocation products with demand ───
-    const allocationPressure = waitlistCounts
-      .filter((row: any) => productMap.get(row.productId)?.isLimitedAllocation)
-      .map((row: any) => {
-        const p = productMap.get(row.productId)
-        return {
-          productId: row.productId,
-          productName: p?.name ?? 'Unknown',
-          company: p?.company?.name ?? '',
-          waitlistSignups: row._count.id,
-          currentInventory: p?.inventory ?? 0,
-          pressureScore: row._count.id / Math.max(1, p?.inventory ?? 1),
-        }
-      })
-      .sort((a: any, b: any) => b.pressureScore - a.pressureScore)
-      .slice(0, 10)
-
-    // ── Trade signals: products with B2B interest ─────────────────────
-    const tradeSignals = tradeInterestCounts
-      .map((row: any) => ({
-        productId: row.productId,
-        productName: productMap.get(row.productId)?.name ?? 'Unknown',
-        company: productMap.get(row.productId)?.company?.name ?? '',
-        tradeInquiries: row._count.id,
-        totalCaseInterest: row._sum?.caseInterest ?? 0,
+    // ── Allocation pressure: limited-allocation with waitlist ──────────
+    const allocationPressure = [...products]
+      .filter((p) => p.isLimitedAllocation && p.waitlistCount > 0)
+      .map((p) => ({
+        productId: p.productId,
+        productName: p.productName,
+        company: p.company,
+        waitlistSignups: p.waitlistCount,
+        currentInventory: p.inventory,
+        pressureScore: Math.round((p.waitlistCount / Math.max(1, p.inventory)) * 100) / 100,
       }))
+      .sort((a, b) => b.pressureScore - a.pressureScore)
       .slice(0, 10)
+
+    // ── Trade signals: top products by trade inquiry ───────────────────
+    const tradeSignals = [...products]
+      .filter((p) => p.tradeInterestCount > 0)
+      .sort((a, b) => b.tradeInterestCount - a.tradeInterestCount)
+      .slice(0, 10)
+      .map((p) => ({
+        productId: p.productId,
+        productName: p.productName,
+        company: p.company,
+        tradeInquiries: p.tradeInterestCount,
+        totalCaseInterest: p.totalCaseInterest,
+      }))
 
     // ── Low conversion: live products with no recent orders ───────────
-    const lowConversion = liveProducts
-      .filter((p: any) => !orderVolume.has(p.id))
-      .map((p: any) => ({
-        productId: p.id,
-        productName: p.name,
-        company: p.company?.name ?? '',
+    const lowConversion = products
+      .filter((p) => p.contentStatus === 'LIVE' && p.recentPurchaseCount === 0)
+      .slice(0, 10)
+      .map((p) => ({
+        productId: p.productId,
+        productName: p.productName,
+        company: p.company,
         region: p.region ?? '',
         retailPriceCents: p.retailPriceCents,
-        daysSinceListed: null, // could compute from createdAt if needed
+        daysSinceListed: null,
       }))
+
+    // ── Upcoming release interest: non-live with waitlist ─────────────
+    const upcomingReleaseInterest = products
+      .filter((p) => p.contentStatus !== 'LIVE' && p.waitlistCount > 0)
+      .sort((a, b) => b.waitlistCount - a.waitlistCount)
       .slice(0, 10)
-
-    // ── Upcoming release interest: non-live products with waitlist ─────
-    const nonLiveProductIds = waitlistCounts
-      .map((row: any) => row.productId)
-      .filter((id: string) => !productMap.has(id))
-
-    const upcomingProducts = nonLiveProductIds.length > 0
-      ? await prisma.product.findMany({
-          where: { id: { in: nonLiveProductIds } },
-          select: {
-            id: true,
-            name: true,
-            contentStatus: true,
-            company: { select: { name: true } },
-          },
-        })
-      : []
-
-    const upcomingInterest = upcomingProducts.map((p: any) => {
-      const wl = waitlistCounts.find((row: any) => row.productId === p.id)
-      return {
-        productId: p.id,
-        productName: p.name,
-        company: p.company?.name ?? '',
+      .map((p) => ({
+        productId: p.productId,
+        productName: p.productName,
+        company: p.company,
         contentStatus: p.contentStatus,
-        waitlistSignups: wl?._count?.id ?? 0,
-      }
-    }).sort((a: any, b: any) => b.waitlistSignups - a.waitlistSignups)
+        waitlistSignups: p.waitlistCount,
+      }))
+
+    // ── Phase 4 additions ─────────────────────────────────────────────
+
+    // Unmet demand: high interest but no recent conversions
+    const unmetDemand = filterByType(recommendations, 'unmet_demand').map((r) => ({
+      productId: r.targetId,
+      productName: r.target,
+      reason: r.reason,
+      confidence: r.confidence,
+      waitlistSignups: r.signals.waitlistCount ?? 0,
+      inventory: r.signals.inventory ?? 0,
+    }))
+
+    // Pricing signals: interest present but conversion friction
+    const pricingSignals = filterByType(recommendations, 'pricing_review').map((r) => ({
+      productId: r.targetId,
+      productName: r.target,
+      reason: r.reason,
+      confidence: r.confidence,
+      waitlistSignups: r.signals.waitlistCount ?? 0,
+      purchaseCount: r.signals.purchaseCount ?? 0,
+    }))
+
+    // Allocation recommendations: combine allocation_increase + allocation_pressure
+    const allocationRecommendations = [
+      ...filterByType(recommendations, 'allocation_increase'),
+      ...filterByType(recommendations, 'allocation_pressure'),
+    ].map((r) => ({
+      productId: r.targetId,
+      productName: r.target,
+      type: r.type,
+      reason: r.reason,
+      confidence: r.confidence,
+    }))
+
+    // Trade opportunity signals
+    const tradeOpportunitySignals = filterByType(recommendations, 'trade_opportunity').map((r) => ({
+      productId: r.targetId,
+      productName: r.target,
+      reason: r.reason,
+      confidence: r.confidence,
+      tradeInquiries: r.signals.tradeInterestCount ?? 0,
+      totalCaseInterest: r.signals.totalCaseInterest ?? 0,
+    }))
 
     return NextResponse.json({
-      generatedAt: new Date().toISOString(),
+      generatedAt: snapshot.generatedAt,
+      // ── Existing signals (shape preserved) ──
       highDemand,
       allocationPressure,
       tradeSignals,
       lowConversion,
-      upcomingReleaseInterest: upcomingInterest,
+      upcomingReleaseInterest,
+      // ── Phase 4 additions ──
+      unmetDemand,
+      pricingSignals,
+      allocationRecommendations,
+      tradeOpportunitySignals,
+      regionTrends,
+      styleTrends,
     })
   } catch (error) {
     console.error('[Admin Insights]', error)
