@@ -95,12 +95,13 @@ function evaluateProduct(sig: ProductSignals): ImportRecommendation | null {
     tradeInterestCount, totalCaseInterest,
     demandIntensity, conversionProxy,
     isLimitedAllocation, inventory,
-    contentStatus,
+    releaseStatus,
   } = sig
 
   // Rule A — High Demand Expansion
-  // High combined interest AND evidence of conversion → scale supply
+  // Only for wines that are currently purchasable (not upcoming or sold out)
   if (
+    (releaseStatus === 'AVAILABLE' || releaseStatus === 'ALLOCATED') &&
     demandIntensity >= THRESHOLD.HIGH_DEMAND_INTENSITY &&
     conversionProxy >= THRESHOLD.HIGH_CONVERSION_PROXY
   ) {
@@ -115,13 +116,22 @@ function evaluateProduct(sig: ProductSignals): ImportRecommendation | null {
   }
 
   // Rule B — Unmet Demand
-  // Strong interest signals but zero recent purchases → supply or timing issue
-  if (waitlistCount >= THRESHOLD.HIGH_WAITLIST_UNMET && recentPurchaseCount === 0) {
+  // Meaningful waitlist interest but zero recent purchases.
+  // Valid for AVAILABLE (supply gap) and UPCOMING (release timing) — both are actionable.
+  // Skip SOLD_OUT (expected) and ALLOCATED (handled by Rule E).
+  if (
+    releaseStatus !== 'SOLD_OUT' &&
+    waitlistCount >= THRESHOLD.HIGH_WAITLIST_UNMET &&
+    recentPurchaseCount === 0
+  ) {
+    const isTiming = releaseStatus === 'UPCOMING'
     return {
       type: 'unmet_demand',
       target: productName,
       targetId: productId,
-      reason: `${waitlistCount} waitlist sign-ups but no recent purchases — supply gap or release timing`,
+      reason: isTiming
+        ? `${waitlistCount} waitlist sign-ups on a pre-release wine — accelerate availability or confirm release date`
+        : `${waitlistCount} waitlist sign-ups but no recent purchases — supply gap or positioning issue`,
       confidence: waitlistCount >= 5 ? 'high' : 'medium',
       signals: { waitlistCount, purchaseCount, inventory },
     }
@@ -143,8 +153,9 @@ function evaluateProduct(sig: ProductSignals): ImportRecommendation | null {
   }
 
   // Rule D — Pricing Friction
-  // Interest present but conversion is low even relative to small signals
+  // Only meaningful for AVAILABLE wines — UPCOMING wines haven't had a chance to convert
   if (
+    releaseStatus === 'AVAILABLE' &&
     waitlistCount >= THRESHOLD.WAITLIST_PRICING_FRICTION &&
     conversionProxy < THRESHOLD.LOW_CONVERSION_PROXY &&
     purchaseCount < 2
@@ -160,8 +171,11 @@ function evaluateProduct(sig: ProductSignals): ImportRecommendation | null {
   }
 
   // Rule E — Allocation Pressure
-  // Limited-allocation wine with meaningful accumulated demand
-  if (isLimitedAllocation && waitlistCount >= THRESHOLD.ALLOCATION_PRESSURE_WAITLIST) {
+  // Only for ALLOCATED wines — SOLD_OUT is a different signal, UPCOMING hasn't launched
+  if (
+    releaseStatus === 'ALLOCATED' &&
+    waitlistCount >= THRESHOLD.ALLOCATION_PRESSURE_WAITLIST
+  ) {
     return {
       type: 'allocation_pressure',
       target: productName,
@@ -173,9 +187,9 @@ function evaluateProduct(sig: ProductSignals): ImportRecommendation | null {
   }
 
   // Rule F — Low Visibility Opportunity
-  // LIVE wine with zero demand signals — candidate for featuring / promotion
+  // Only for AVAILABLE wines — SOLD_OUT and UPCOMING have different remedies
   if (
-    contentStatus === 'LIVE' &&
+    releaseStatus === 'AVAILABLE' &&
     demandIntensity === 0 &&
     purchaseCount === 0 &&
     waitlistCount === 0

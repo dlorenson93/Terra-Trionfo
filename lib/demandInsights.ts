@@ -13,12 +13,23 @@ import { REGIONS } from './regions'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+/**
+ * Derived release availability, computed from contentStatus + inventory.
+ * UPCOMING  — not yet live (DRAFT | IN_REVIEW | READY)
+ * AVAILABLE  — live with stock
+ * ALLOCATED  — live, limited allocation, stock > 0
+ * SOLD_OUT   — live but inventory exhausted
+ */
+export type DerivedReleaseStatus = 'UPCOMING' | 'AVAILABLE' | 'ALLOCATED' | 'SOLD_OUT'
+
 export interface ProductSignals {
   productId: string
   productName: string
   company: string
   region: string | null
   contentStatus: string // DRAFT | IN_REVIEW | READY | LIVE
+  /** Derived from contentStatus + inventory + isLimitedAllocation */
+  releaseStatus: DerivedReleaseStatus
   grapeVarietals: string[]
   wineStyle: string | null
   retailPriceCents: number
@@ -33,7 +44,12 @@ export interface ProductSignals {
   totalCaseInterest: number   // sum of caseInterest from trade inquiries
 
   // Derived signals
-  /** waitlistCount + tradeInterestCount + purchaseCount */
+  /**
+   * Weighted demand intensity:
+   *   waitlistCount + (tradeInterestCount × 2) + purchaseCount
+   * Trade interest is weighted 2× — B2B buyers move higher volume than
+   * individual consumers and represent stronger commercial signal quality.
+   */
   demandIntensity: number
   /** purchaseCount / (waitlistCount + tradeInterestCount + 1) — conversion proxy without view data */
   conversionProxy: number
@@ -206,7 +222,8 @@ export async function buildDemandSnapshot(): Promise<DemandSnapshot> {
     const waitlistCount = waitlistMap.get(p.id) ?? 0
     const trade = tradeMap.get(p.id) ?? { count: 0, caseInterest: 0 }
 
-    const demandIntensity = waitlistCount + trade.count + purchaseCount
+    // Trade interest is weighted 2× — B2B buyers signal higher volume potential
+    const demandIntensity = waitlistCount + (trade.count * 2) + purchaseCount
     const conversionProxy = purchaseCount / (waitlistCount + trade.count + 1)
     const interestGap = waitlistCount - recentPurchaseCount
     const velocityScore =
@@ -216,12 +233,22 @@ export async function buildDemandSnapshot(): Promise<DemandSnapshot> {
           ? 100
           : 0
 
+    const releaseStatus: DerivedReleaseStatus =
+      p.contentStatus !== 'LIVE'
+        ? 'UPCOMING'
+        : p.inventory === 0
+          ? 'SOLD_OUT'
+          : p.isLimitedAllocation
+            ? 'ALLOCATED'
+            : 'AVAILABLE'
+
     return {
       productId: p.id,
       productName: p.name,
       company: p.company?.name ?? '',
       region: p.region ?? null,
       contentStatus: p.contentStatus,
+      releaseStatus,
       grapeVarietals: p.grapeVarietals ?? [],
       wineStyle: p.wineStyle ?? null,
       retailPriceCents: p.retailPriceCents,
