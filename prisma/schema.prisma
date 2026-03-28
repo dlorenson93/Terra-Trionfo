@@ -223,6 +223,8 @@ model Product {
   company         Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
   orderItems      OrderItem[]
   restaurantWines RestaurantWine[]
+  waitlists       Waitlist[]
+  tradeInterests  TradeInterest[]
 
   @@map("products")
 }
@@ -412,4 +414,39 @@ model RestaurantWine {
 
   @@unique([restaurantId, productId])
   @@map("restaurant_wines")
+}
+
+// Consumer demand signal — who wants to be notified when a wine is available
+model Waitlist {
+  id        String   @id @default(cuid())
+  email     String
+  notes     String?
+  createdAt DateTime @default(now())
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([email])
+  @@map("waitlists")
+}
+
+// B2B trade interest — importers, restaurants, distributors
+model TradeInterest {
+  id          String   @id @default(cuid())
+  name        String
+  business    String
+  email       String
+  accountType String   // restaurant | retailer | distributor | other
+  region      String?
+  caseInterest Int?
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([email])
+  @@map("trade_interests")
 }

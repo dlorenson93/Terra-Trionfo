@@ -89,38 +89,68 @@ export async function GET(
       orderBy: { createdAt: 'desc' },
     })
 
-    // Related wines — same region (exclude this estate)
+    // Related wines — scored by grape overlap, style, price band, region
     const companyRegion = (product.company as any).region as string | null
-    const relatedByRegion = companyRegion
-      ? await prisma.product.findMany({
-          where: {
-            id: { not: product.id },
-            companyId: { not: product.companyId },
-            status: 'APPROVED',
-            contentStatus: 'LIVE',
-            company: {
-              status: 'APPROVED',
-              region: { contains: companyRegion, mode: 'insensitive' },
-            },
-          },
-          select: {
-            id: true,
-            name: true,
-            imageUrl: true,
-            category: true,
-            retailPriceCents: true,
-            vintage: true,
-            appellation: true,
-            grapeVarietals: true,
-            tastingNotesShort: true,
-            isFoundingWine: true,
-            isLimitedAllocation: true,
-            company: { select: { id: true, name: true, slug: true } },
-          },
-          take: 6,
-          orderBy: { createdAt: 'desc' },
-        })
-      : []
+    const productGrapes = Array.isArray(product.grapeVarietals)
+      ? (product.grapeVarietals as string[])
+      : product.grapeVarietals
+        ? [product.grapeVarietals as string]
+        : []
+    const priceLow = product.retailPriceCents ? Math.round(product.retailPriceCents * 0.6) : 0
+    const priceHigh = product.retailPriceCents ? Math.round(product.retailPriceCents * 1.4) : 99999999
+
+    const candidates = await prisma.product.findMany({
+      where: {
+        id: { not: product.id },
+        companyId: { not: product.companyId },
+        status: 'APPROVED',
+        contentStatus: 'LIVE',
+        company: { status: 'APPROVED' },
+      },
+      select: {
+        id: true,
+        name: true,
+        imageUrl: true,
+        category: true,
+        retailPriceCents: true,
+        vintage: true,
+        appellation: true,
+        grapeVarietals: true,
+        wineStyle: true,
+        tastingNotesShort: true,
+        isFoundingWine: true,
+        isLimitedAllocation: true,
+        company: { select: { id: true, name: true, slug: true, region: true } },
+      },
+    })
+
+    const relatedByRegion = candidates
+      .map((c) => {
+        let score = 0
+        const candidateRegion = (c.company as any)?.region as string | undefined
+        if (companyRegion && candidateRegion?.toLowerCase().includes(companyRegion.toLowerCase())) {
+          score += 2
+        }
+        if (product.wineStyle && c.wineStyle && product.wineStyle === c.wineStyle) {
+          score += 2
+        }
+        const candidateGrapes = Array.isArray(c.grapeVarietals)
+          ? (c.grapeVarietals as string[])
+          : c.grapeVarietals
+            ? [c.grapeVarietals as string]
+            : []
+        if (productGrapes.some((g) => candidateGrapes.some((cg) => cg.toLowerCase() === g.toLowerCase()))) {
+          score += 3
+        }
+        if (c.retailPriceCents && c.retailPriceCents >= priceLow && c.retailPriceCents <= priceHigh) {
+          score += 1
+        }
+        return { score, product: c }
+      })
+      .filter(({ score }) => score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 6)
+      .map(({ product: c }) => c)
 
     return NextResponse.json({ ...product, relatedByEstate, relatedByRegion })
   } catch (error) {
