@@ -242,6 +242,9 @@ export default function AdminDashboard() {
   // Resolution outcome state
   const [updatingResolutionId, setUpdatingResolutionId] = useState<string | null>(null)
   const [runningFollowupCheck, setRunningFollowupCheck] = useState(false)
+  // Effectiveness rollups state (Release Intel tab)
+  const [effectivenessRollups, setEffectivenessRollups] = useState<any>(null)
+  const [loadingRollups, setLoadingRollups] = useState(false)
 
   useEffect(() => {
     if (!session) {
@@ -259,6 +262,9 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (activeTab === 'release-intelligence' && !releaseIntelligence && !loadingIntelligence) {
       fetchReleaseIntelligence()
+    }
+    if (activeTab === 'release-intelligence' && !effectivenessRollups && !loadingRollups) {
+      fetchEffectivenessRollups()
     }
   }, [activeTab])
 
@@ -312,6 +318,20 @@ export default function AdminDashboard() {
       console.error('Error fetching release intelligence:', error)
     } finally {
       setLoadingIntelligence(false)
+    }
+  }
+
+  const fetchEffectivenessRollups = async () => {
+    setLoadingRollups(true)
+    try {
+      const res = await fetch('/api/admin/effectiveness-rollups')
+      if (res.ok) {
+        setEffectivenessRollups(await res.json())
+      }
+    } catch (error) {
+      console.error('Error fetching effectiveness rollups:', error)
+    } finally {
+      setLoadingRollups(false)
     }
   }
 
@@ -2688,6 +2708,249 @@ export default function AdminDashboard() {
                       <p className="text-[9px] text-olive-400 mt-2">
                         + {unmeasured} actioned with no effectiveness measurement — run the follow-up check to derive scores
                       </p>
+                    )}
+                  </div>
+                )
+              })()}
+
+              {/* Effectiveness Insights — portfolio rollups from measured products */}
+              {(() => {
+                if (loadingRollups) {
+                  return (
+                    <div className="bg-white border border-olive-200 p-4 flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-olive-500 border-t-transparent rounded-full animate-spin" />
+                      <span className="text-[10px] text-olive-400">Computing effectiveness rollups…</span>
+                    </div>
+                  )
+                }
+                if (!effectivenessRollups) return null
+                const { rollups, learningSignals, biasWeights } = effectivenessRollups
+                const ps = rollups.portfolioSummary
+                return (
+                  <div className="bg-white border border-olive-200 p-4 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[10px] font-medium text-olive-400 uppercase tracking-wider">
+                        Effectiveness Insights · {ps.totalMeasured} measured product{ps.totalMeasured !== 1 ? 's' : ''}
+                      </p>
+                      <button
+                        onClick={fetchEffectivenessRollups}
+                        disabled={loadingRollups}
+                        className="text-[9px] px-2 py-0.5 bg-olive-100 text-olive-700 hover:bg-olive-200 disabled:opacity-50 transition-colors"
+                      >
+                        {loadingRollups ? 'Computing…' : '⟳ Refresh'}
+                      </button>
+                    </div>
+
+                    {ps.totalMeasured === 0 ? (
+                      <p className="text-[10px] text-olive-400">No measured products yet. Run the follow-up check after actions have been taken.</p>
+                    ) : (
+                      <>
+                        {/* Portfolio summary tiles */}
+                        <div className="grid grid-cols-4 gap-3">
+                          {([
+                            { label: 'Measured',   value: ps.totalMeasured,                                        color: 'border-olive-200 bg-parchment-50 text-olive-800' },
+                            { label: '✓ Positive', value: `${ps.positiveRate}%`,                                   color: 'border-emerald-200 bg-emerald-50 text-emerald-800' },
+                            { label: '✗ Negative', value: `${ps.negativeRate}%`,                                   color: 'border-red-200 bg-red-50 text-red-800' },
+                            { label: 'Avg Δ',      value: ps.avgDelta >= 0 ? `+${ps.avgDelta}` : `${ps.avgDelta}`, color: ps.avgDelta >= 0 ? 'border-blue-200 bg-blue-50 text-blue-800' : 'border-amber-200 bg-amber-50 text-amber-800' },
+                          ] as Array<{ label: string; value: string | number; color: string }>).map(t => (
+                            <div key={t.label} className={`border ${t.color.split(' ').slice(0, 2).join(' ')} p-3 text-center`}>
+                              <p className={`text-2xl font-serif font-bold ${t.color.split(' ').slice(2).join(' ')}`}>{t.value}</p>
+                              <p className="text-[10px] font-medium text-olive-500 uppercase tracking-wider mt-1">{t.label}</p>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Portfolio learning signals */}
+                        {learningSignals.portfolioInsights.length > 0 && (
+                          <div className="bg-parchment-50 border border-olive-100 p-3 space-y-1">
+                            <p className="text-[10px] font-medium text-olive-500 uppercase tracking-wider mb-2">Portfolio Learning</p>
+                            {learningSignals.portfolioInsights.map((insight: string, i: number) => (
+                              <p key={i} className="text-[10px] text-olive-700 leading-snug">{insight}</p>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Action type performance table */}
+                        {rollups.actionTypePerformance.length > 0 && (
+                          <div>
+                            <p className="text-[10px] font-medium text-olive-400 uppercase tracking-wider mb-2">Action Type Performance</p>
+                            <table className="w-full text-[9px]">
+                              <thead>
+                                <tr className="border-b border-olive-200">
+                                  <th className="text-left py-1 text-olive-400 font-medium uppercase tracking-wider">Action</th>
+                                  <th className="text-right py-1 text-olive-400 font-medium uppercase tracking-wider">n</th>
+                                  <th className="text-right py-1 text-olive-400 font-medium uppercase tracking-wider">✓%</th>
+                                  <th className="text-right py-1 text-olive-400 font-medium uppercase tracking-wider">✗%</th>
+                                  <th className="text-right py-1 text-olive-400 font-medium uppercase tracking-wider">Avg Δ</th>
+                                  <th className="text-right py-1 text-olive-400 font-medium uppercase tracking-wider">Bias</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-olive-100">
+                                {rollups.actionTypePerformance.map((r: any) => (
+                                  <tr key={r.key}>
+                                    <td className="py-1 text-olive-700">{r.label}</td>
+                                    <td className="py-1 text-right text-olive-500">{r.totalCount}</td>
+                                    <td className="py-1 text-right text-emerald-700 font-medium">{r.positiveRate}%</td>
+                                    <td className="py-1 text-right text-red-600">{r.negativeRate}%</td>
+                                    <td className={`py-1 text-right font-medium ${r.averageDelta >= 0 ? 'text-blue-700' : 'text-amber-700'}`}>
+                                      {r.averageDelta >= 0 ? `+${r.averageDelta}` : r.averageDelta}
+                                    </td>
+                                    <td className="py-1 text-right text-olive-400">
+                                      {biasWeights.actionType[r.key] != null
+                                        ? `×${(biasWeights.actionType[r.key] as number).toFixed(2)}`
+                                        : '—'}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+
+                        {/* Region + Style tables */}
+                        <div className="grid grid-cols-2 gap-4">
+                          {rollups.regionPerformance.length > 0 && (
+                            <div>
+                              <p className="text-[10px] font-medium text-olive-400 uppercase tracking-wider mb-2">Region</p>
+                              <table className="w-full text-[9px]">
+                                <thead>
+                                  <tr className="border-b border-olive-200">
+                                    <th className="text-left py-1 text-olive-400 font-medium uppercase tracking-wider">Region</th>
+                                    <th className="text-right py-1 text-olive-400 font-medium uppercase tracking-wider">n</th>
+                                    <th className="text-right py-1 text-olive-400 font-medium uppercase tracking-wider">✓%</th>
+                                    <th className="text-right py-1 text-olive-400 font-medium uppercase tracking-wider">Avg Δ</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-olive-100">
+                                  {rollups.regionPerformance.map((r: any) => (
+                                    <tr key={r.key}>
+                                      <td className="py-1 text-olive-700 truncate max-w-[80px]">{r.label}</td>
+                                      <td className="py-1 text-right text-olive-500">{r.totalCount}</td>
+                                      <td className="py-1 text-right text-emerald-700 font-medium">{r.positiveRate}%</td>
+                                      <td className={`py-1 text-right font-medium ${r.averageDelta >= 0 ? 'text-blue-700' : 'text-amber-700'}`}>
+                                        {r.averageDelta >= 0 ? `+${r.averageDelta}` : r.averageDelta}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                          {rollups.stylePerformance.length > 0 && (
+                            <div>
+                              <p className="text-[10px] font-medium text-olive-400 uppercase tracking-wider mb-2">Style</p>
+                              <table className="w-full text-[9px]">
+                                <thead>
+                                  <tr className="border-b border-olive-200">
+                                    <th className="text-left py-1 text-olive-400 font-medium uppercase tracking-wider">Style</th>
+                                    <th className="text-right py-1 text-olive-400 font-medium uppercase tracking-wider">n</th>
+                                    <th className="text-right py-1 text-olive-400 font-medium uppercase tracking-wider">✓%</th>
+                                    <th className="text-right py-1 text-olive-400 font-medium uppercase tracking-wider">Avg Δ</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-olive-100">
+                                  {rollups.stylePerformance.map((r: any) => (
+                                    <tr key={r.key}>
+                                      <td className="py-1 text-olive-700">{r.label}</td>
+                                      <td className="py-1 text-right text-olive-500">{r.totalCount}</td>
+                                      <td className="py-1 text-right text-emerald-700 font-medium">{r.positiveRate}%</td>
+                                      <td className={`py-1 text-right font-medium ${r.averageDelta >= 0 ? 'text-blue-700' : 'text-amber-700'}`}>
+                                        {r.averageDelta >= 0 ? `+${r.averageDelta}` : r.averageDelta}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Price tier */}
+                        {rollups.priceTierPerformance.length > 0 && (
+                          <div>
+                            <p className="text-[10px] font-medium text-olive-400 uppercase tracking-wider mb-2">Price Tier</p>
+                            <table className="w-full text-[9px]">
+                              <thead>
+                                <tr className="border-b border-olive-200">
+                                  <th className="text-left py-1 text-olive-400 font-medium uppercase tracking-wider">Tier</th>
+                                  <th className="text-right py-1 text-olive-400 font-medium uppercase tracking-wider">n</th>
+                                  <th className="text-right py-1 text-olive-400 font-medium uppercase tracking-wider">✓%</th>
+                                  <th className="text-right py-1 text-olive-400 font-medium uppercase tracking-wider">✗%</th>
+                                  <th className="text-right py-1 text-olive-400 font-medium uppercase tracking-wider">Avg Δ</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-olive-100">
+                                {rollups.priceTierPerformance.map((r: any) => (
+                                  <tr key={r.key}>
+                                    <td className="py-1 text-olive-700">{r.label}</td>
+                                    <td className="py-1 text-right text-olive-500">{r.totalCount}</td>
+                                    <td className="py-1 text-right text-emerald-700 font-medium">{r.positiveRate}%</td>
+                                    <td className="py-1 text-right text-red-600">{r.negativeRate}%</td>
+                                    <td className={`py-1 text-right font-medium ${r.averageDelta >= 0 ? 'text-blue-700' : 'text-amber-700'}`}>
+                                      {r.averageDelta >= 0 ? `+${r.averageDelta}` : r.averageDelta}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+
+                        {/* Best/worst signal highlights */}
+                        {(learningSignals.strongestActionType || learningSignals.strongestRegionResponse) && (
+                          <div className="grid grid-cols-2 gap-3">
+                            {learningSignals.strongestActionType && (
+                              <div className="bg-emerald-50 border border-emerald-200 p-3">
+                                <p className="text-[9px] font-medium text-emerald-600 uppercase tracking-wider mb-1">Strongest Action</p>
+                                <p className="text-[11px] font-semibold text-emerald-900">{learningSignals.strongestActionType.label}</p>
+                                <p className="text-[9px] text-emerald-700 mt-0.5">{learningSignals.strongestActionType.positiveRate}% positive · n={learningSignals.strongestActionType.sampleCount}</p>
+                              </div>
+                            )}
+                            {learningSignals.weakestActionType && (
+                              <div className="bg-amber-50 border border-amber-200 p-3">
+                                <p className="text-[9px] font-medium text-amber-600 uppercase tracking-wider mb-1">Weakest Action</p>
+                                <p className="text-[11px] font-semibold text-amber-900">{learningSignals.weakestActionType.label}</p>
+                                <p className="text-[9px] text-amber-700 mt-0.5">{learningSignals.weakestActionType.positiveRate}% positive · n={learningSignals.weakestActionType.sampleCount}</p>
+                              </div>
+                            )}
+                            {learningSignals.strongestRegionResponse && (
+                              <div className="bg-blue-50 border border-blue-200 p-3">
+                                <p className="text-[9px] font-medium text-blue-600 uppercase tracking-wider mb-1">Top Region</p>
+                                <p className="text-[11px] font-semibold text-blue-900">{learningSignals.strongestRegionResponse.label}</p>
+                                <p className="text-[9px] text-blue-700 mt-0.5">{learningSignals.strongestRegionResponse.positiveRate}% positive · n={learningSignals.strongestRegionResponse.sampleCount}</p>
+                              </div>
+                            )}
+                            {learningSignals.mostResponsiveStyle && (
+                              <div className="bg-violet-50 border border-violet-200 p-3">
+                                <p className="text-[9px] font-medium text-violet-600 uppercase tracking-wider mb-1">Top Style</p>
+                                <p className="text-[11px] font-semibold text-violet-900">{learningSignals.mostResponsiveStyle.label}</p>
+                                <p className="text-[9px] text-violet-700 mt-0.5">{learningSignals.mostResponsiveStyle.positiveRate}% positive · n={learningSignals.mostResponsiveStyle.sampleCount}</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Phase 10 bias weights */}
+                        {biasWeights.meta.biasApplied && (
+                          <div className="bg-olive-50 border border-olive-200 p-3">
+                            <p className="text-[9px] font-medium text-olive-500 uppercase tracking-wider mb-1">Phase 10 Bias Weights <span className="normal-case">(×confidence multipliers)</span></p>
+                            <div className="flex flex-wrap gap-2 mt-1">
+                              {(Object.entries(biasWeights.actionType) as Array<[string, number]>).map(([key, weight]) => (
+                                <span key={key} className={`text-[9px] px-1.5 py-0.5 border ${
+                                  weight > 1 ? 'bg-emerald-50 border-emerald-200 text-emerald-800' :
+                                  weight < 1 ? 'bg-amber-50 border-amber-200 text-amber-800' :
+                                  'bg-parchment-50 border-olive-200 text-olive-700'
+                                }`}>
+                                  {key.replace(/_/g, ' ')} ×{weight.toFixed(2)}
+                                </span>
+                              ))}
+                              <span className="text-[9px] px-1.5 py-0.5 border bg-blue-50 border-blue-200 text-blue-800">
+                                global ×{(biasWeights.globalModifier as number).toFixed(2)}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 )
