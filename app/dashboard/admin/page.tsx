@@ -45,6 +45,10 @@ interface Product {
   isFoundingWine: boolean
   isLimitedAllocation: boolean
   company: { name: string }
+  // Release intelligence state — written back by /api/admin/release-optimization
+  releaseMonitorStatus?: string | null
+  exposureTier?: string | null
+  lastRecommendationAt?: string | null
 }
 
 interface RestaurantWineAdmin {
@@ -1350,6 +1354,7 @@ export default function AdminDashboard() {
                       <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Inventory</th>
                       <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">DB Status</th>
                       <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Editorial</th>
+                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Intel</th>
                       <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
@@ -1394,6 +1399,38 @@ export default function AdminDashboard() {
                               </span>
                             ) : (
                               <span className="text-[10px] text-olive-300 italic">—</span>
+                            )}
+                          </td>
+                          <td className="py-3">
+                            {dbProduct?.releaseMonitorStatus ? (() => {
+                              const monitorColors: Record<string, string> = {
+                                HIGH_DEMAND:         'bg-emerald-50 text-emerald-800 border border-emerald-200',
+                                NEEDS_REVIEW:        'bg-amber-50 text-amber-800 border border-amber-200',
+                                ALLOCATION_PRESSURE: 'bg-red-50 text-red-700 border border-red-200',
+                                UPCOMING_INTEREST:   'bg-blue-50 text-blue-700 border border-blue-200',
+                                UNDERPERFORMING:     'bg-gray-50 text-gray-500 border border-gray-200',
+                                STABLE:              'bg-parchment-50 text-olive-500 border border-olive-200',
+                              }
+                              const tierColors: Record<string, string> = {
+                                PRIORITY: 'text-violet-700',
+                                LIMITED:  'text-amber-700',
+                                STANDARD: 'text-sky-600',
+                                LOW:      'text-gray-400',
+                              }
+                              return (
+                                <div className="flex flex-col gap-1">
+                                  <span className={`text-[9px] font-medium px-1.5 py-0.5 leading-tight ${monitorColors[dbProduct.releaseMonitorStatus] ?? 'bg-white text-olive-400 border border-olive-200'}`}>
+                                    {dbProduct.releaseMonitorStatus.replace(/_/g, ' ')}
+                                  </span>
+                                  {dbProduct.exposureTier && (
+                                    <span className={`text-[9px] font-semibold uppercase tracking-wider ${tierColors[dbProduct.exposureTier] ?? 'text-olive-400'}`}>
+                                      {dbProduct.exposureTier}
+                                    </span>
+                                  )}
+                                </div>
+                              )
+                            })() : (
+                              <span className="text-[9px] text-olive-300 italic">Not run</span>
                             )}
                           </td>
                           <td className="py-3">

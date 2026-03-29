@@ -3,7 +3,11 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { buildDemandSnapshot } from '@/lib/demandInsights'
-import { deriveReleaseOptimization } from '@/lib/releaseOptimizationEngine'
+import {
+  deriveReleaseOptimization,
+  deriveReleaseHealth,
+  deriveExposureTier,
+} from '@/lib/releaseOptimizationEngine'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,6 +17,10 @@ export const dynamic = 'force-dynamic'
  * Returns full release optimization analysis: per-product recommendations,
  * portfolio-level signal bias, allocation pressure list, and release monitor
  * status summary.
+ *
+ * After computing, persists releaseMonitorStatus, exposureTier, and
+ * lastRecommendationAt back to the DB for every analysed product so that
+ * the Products tab can display intelligence state without re-running the engine.
  *
  * ADMIN-ONLY — never expose to consumers or vendors.
  */
@@ -26,14 +34,22 @@ export async function GET() {
     const snapshot = await buildDemandSnapshot()
     const result   = deriveReleaseOptimization(snapshot)
 
-    // Persist lastRecommendationAt so freshness can be tracked on subsequent runs
-    const analysedIds = result.recommendations.map((r) => r.productId)
-    if (analysedIds.length > 0) {
-      await prisma.product.updateMany({
-        where: { id: { in: analysedIds } },
-        data:  { lastRecommendationAt: new Date() },
-      })
-    }
+    // Persist computed intelligence state for EVERY analysed product.
+    // We call the helpers directly on the snapshot so products that matched no
+    // recommendation rule still get their monitor status and exposure tier written.
+    const now = new Date()
+    await Promise.all(
+      snapshot.products.map((sig) =>
+        prisma.product.update({
+          where: { id: sig.productId },
+          data: {
+            releaseMonitorStatus:  deriveReleaseHealth(sig),
+            exposureTier:          deriveExposureTier(sig),
+            lastRecommendationAt:  now,
+          },
+        }),
+      ),
+    )
 
     return NextResponse.json({
       generatedAt: snapshot.generatedAt,
