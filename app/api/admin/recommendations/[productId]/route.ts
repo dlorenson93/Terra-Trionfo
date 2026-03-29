@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { deriveSignalScore } from '@/lib/deriveEffectivenessDelta'
 
 export const dynamic = 'force-dynamic'
 
@@ -125,16 +126,32 @@ export async function PATCH(
           data.lastRecommendationReviewedAt = now
         }
         data.lastRecommendationActionedAt = now
+        // Snapshot the signal state at moment of action for later comparison
+        data.preActionMonitorStatus  = product.releaseMonitorStatus ?? null
+        data.preActionExposureTier   = product.exposureTier         ?? null
+        data.preActionSignalScore    = deriveSignalScore(product.releaseMonitorStatus, product.exposureTier)
+        // Clear any stale effectiveness data from a previous cycle
+        data.postActionSignalScore       = null
+        data.effectivenessDelta          = null
+        data.effectivenessReason         = null
+        data.effectivenessLastComputedAt = null
         // Auto-seed resolution as UNRESOLVED when first actioned
         if (!product.recommendationResolutionStatus) {
           data.recommendationResolutionStatus = 'UNRESOLVED'
         }
       }
       if (recommendationStatus === 'OPEN') {
-        // Reopening clears both action timestamps and resolution
-        data.lastRecommendationActionedAt  = null
-        data.recommendationResolutionStatus = null
-        data.lastRecommendationResolvedAt   = null
+        // Reopening clears both action timestamps, resolution, and effectiveness
+        data.lastRecommendationActionedAt    = null
+        data.recommendationResolutionStatus  = null
+        data.lastRecommendationResolvedAt    = null
+        data.preActionMonitorStatus          = null
+        data.preActionExposureTier           = null
+        data.preActionSignalScore            = null
+        data.postActionSignalScore           = null
+        data.effectivenessDelta              = null
+        data.effectivenessReason             = null
+        data.effectivenessLastComputedAt     = null
       }
     }
 
@@ -163,6 +180,9 @@ export async function PATCH(
           lastRecommendationActionedAt:       true,
           recommendationResolutionStatus:     true,
           lastRecommendationResolvedAt:       true,
+          preActionSignalScore:               true,
+          effectivenessDelta:                 true,
+          effectivenessReason:                true,
         },
       }),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

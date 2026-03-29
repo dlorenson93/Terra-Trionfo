@@ -3,16 +3,18 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { deriveResolutionStatus } from '@/lib/deriveResolutionStatus'
+import { deriveSignalScore, deriveEffectivenessDelta } from '@/lib/deriveEffectivenessDelta'
 
 export const dynamic = 'force-dynamic'
 
 /**
  * POST /api/admin/recommendations/run-followup-check
  *
- * Scans all ACTIONED products and auto-derives their resolution status from
- * current signal data (releaseMonitorStatus, exposureTier, actionedAt).
- * Writes updates back to the DB in a batch and creates history rows for
- * products whose resolution status changes.
+ * Scans all ACTIONED products and:
+ *  1. Auto-derives resolution status (UNRESOLVED / IMPROVING / RESOLVED / REQUIRES_FOLLOW_UP)
+ *  2. Computes effectiveness delta by comparing pre-action signal snapshot to
+ *     current post-action signals (POSITIVE_SHIFT / NO_MEANINGFUL_CHANGE / etc.)
+ *  3. Writes both back to the product and creates an audit history row.
  *
  * ADMIN-ONLY.
  */
@@ -23,7 +25,7 @@ export async function POST() {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    // Fetch all ACTIONED products
+    // Fetch all ACTIONED products with pre-action snapshot fields
     const actionedProducts = await (prisma.product.findMany as Function)({
       where: { recommendationStatus: 'ACTIONED' },
       select: {
@@ -33,6 +35,11 @@ export async function POST() {
         exposureTier:                      true,
         lastRecommendationActionedAt:      true,
         recommendationResolutionStatus:    true,
+        // Pre-action snapshot captured when ACTIONED
+        preActionMonitorStatus:            true,
+        preActionExposureTier:             true,
+        preActionSignalScore:              true,
+        effectivenessDelta:                true,
       },
     }) as Array<{
       id:                             string
@@ -41,6 +48,10 @@ export async function POST() {
       exposureTier:                   string | null
       lastRecommendationActionedAt:   Date | null
       recommendationResolutionStatus: string | null
+      preActionMonitorStatus:         string | null
+      preActionExposureTier:          string | null
+      preActionSignalScore:           number | null
+      effectivenessDelta:             string | null
     }>
 
     const counts = {
@@ -52,23 +63,42 @@ export async function POST() {
     const now = new Date()
 
     for (const product of actionedProducts) {
-      const derived = deriveResolutionStatus({
+      // ── Resolution ──────────────────────────────────────────────────────────
+      const derivedResolution = deriveResolutionStatus({
         recommendationStatus:         product.recommendationStatus,
         lastRecommendationActionedAt: product.lastRecommendationActionedAt,
         releaseMonitorStatus:         product.releaseMonitorStatus,
         exposureTier:                 product.exposureTier,
       })
 
-      // Skip if unchanged
-      if (derived === product.recommendationResolutionStatus) {
+      // ── Effectiveness ────────────────────────────────────────────────────────
+      const effectiveness = deriveEffectivenessDelta({
+        preMonitorStatus:  product.preActionMonitorStatus,
+        preExposureTier:   product.preActionExposureTier,
+        postMonitorStatus: product.releaseMonitorStatus,
+        postExposureTier:  product.exposureTier,
+      })
+
+      const postSignalScore = deriveSignalScore(product.releaseMonitorStatus, product.exposureTier)
+
+      // Skip if both resolution and effectiveness are unchanged
+      const resolutionUnchanged    = derivedResolution === product.recommendationResolutionStatus
+      const effectivenessUnchanged = effectiveness.effectivenessDelta === product.effectivenessDelta
+
+      if (resolutionUnchanged && effectivenessUnchanged) {
         counts.unchanged++
         continue
       }
 
       const updateData: Record<string, unknown> = {
-        recommendationResolutionStatus: derived,
+        postActionSignalScore:           postSignalScore,
+        effectivenessDelta:              effectiveness.effectivenessDelta,
+        effectivenessReason:             effectiveness.effectivenessReason,
+        effectivenessLastComputedAt:     now,
+        recommendationResolutionStatus:  derivedResolution,
       }
-      if (derived === 'RESOLVED') {
+
+      if (derivedResolution === 'RESOLVED') {
         updateData.lastRecommendationResolvedAt = now
       } else {
         updateData.lastRecommendationResolvedAt = null
@@ -82,15 +112,19 @@ export async function POST() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (prisma as any).productRecommendationHistory.create({
           data: {
-            productId:               product.id,
+            productId:                product.id,
             // Workflow state carries forward unchanged
-            newStatus:               product.recommendationStatus,
-            releaseMonitorStatus:    product.releaseMonitorStatus ?? null,
-            exposureTier:            product.exposureTier         ?? null,
+            newStatus:                product.recommendationStatus,
+            releaseMonitorStatus:     product.releaseMonitorStatus ?? null,
+            exposureTier:             product.exposureTier         ?? null,
             previousResolutionStatus: product.recommendationResolutionStatus ?? null,
-            newResolutionStatus:      derived,
-            note:                    'Auto-derived by follow-up check',
-            changedByUserId:         session.user.id,
+            newResolutionStatus:      derivedResolution,
+            // Effectiveness snapshot on this audit row
+            preActionSignalScore:     product.preActionSignalScore  ?? null,
+            postActionSignalScore:    postSignalScore,
+            effectivenessDelta:       effectiveness.effectivenessDelta,
+            note:                     `Auto follow-up: ${effectiveness.effectivenessReason}`,
+            changedByUserId:          session.user.id,
           },
         }),
       ])
@@ -99,7 +133,7 @@ export async function POST() {
     }
 
     return NextResponse.json({
-      message:  `Follow-up check complete.`,
+      message: 'Follow-up check complete.',
       ...counts,
     })
   } catch (error) {

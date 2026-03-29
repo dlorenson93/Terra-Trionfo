@@ -40,6 +40,9 @@ export async function GET(
         exposureTier:            true,
         previousResolutionStatus: true,
         newResolutionStatus:     true,
+        preActionSignalScore:    true,
+        postActionSignalScore:   true,
+        effectivenessDelta:      true,
         createdAt:               true,
         changedBy: {
           select: { id: true, name: true, email: true },

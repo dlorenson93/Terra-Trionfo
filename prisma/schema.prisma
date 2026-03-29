@@ -134,6 +134,15 @@ enum RecommendationResolutionStatus {
   REQUIRES_FOLLOW_UP // Action taken but signals have not improved
 }
 
+// Recommendation effectiveness — compares pre-action vs post-action signal state
+// Answers: did the action actually move the needle?
+enum EffectivenessDelta {
+  POSITIVE_SHIFT        // Signal score improved meaningfully after action
+  NO_MEANINGFUL_CHANGE  // Score within noise threshold — action inconclusive
+  NEGATIVE_SHIFT        // Score declined after action — worth reviewing
+  MIXED_RESULT          // Some signals improved, others did not
+}
+
 model User {
   id             String    @id @default(cuid())
   name           String
@@ -284,6 +293,15 @@ model Product {
   recommendationResolutionStatus RecommendationResolutionStatus?
   lastRecommendationResolvedAt   DateTime?
 
+  // Recommendation effectiveness — pre/post signal comparison (written by follow-up check)
+  preActionMonitorStatus      ReleaseMonitorStatus? // signal state at moment of ACTIONED
+  preActionExposureTier       ExposureTier?         // tier at moment of ACTIONED
+  preActionSignalScore        Int?                  // 0–100 score at moment of ACTIONED
+  postActionSignalScore       Int?                  // 0–100 score at latest follow-up check
+  effectivenessDelta          EffectivenessDelta?   // derived comparison
+  effectivenessReason         String?               // human-readable explanation
+  effectivenessLastComputedAt DateTime?             // when delta was last derived
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -317,6 +335,11 @@ model ProductRecommendationHistory {
   // Resolution state snapshot — before/after when a resolution update was made
   previousResolutionStatus RecommendationResolutionStatus?
   newResolutionStatus      RecommendationResolutionStatus?
+
+  // Effectiveness snapshot — populated on follow-up check rows
+  preActionSignalScore  Int?
+  postActionSignalScore Int?
+  effectivenessDelta    EffectivenessDelta?
 
   // Who did it
   changedByUserId String

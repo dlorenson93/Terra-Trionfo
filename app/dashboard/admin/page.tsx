@@ -18,6 +18,12 @@ import {
   RESOLUTION_BADGE_CLASS,
   type RecommendationResolutionStatus,
 } from '@/lib/deriveResolutionStatus'
+import {
+  EFFECTIVENESS_LABEL,
+  EFFECTIVENESS_BADGE_CLASS,
+  EFFECTIVENESS_ICON,
+  type EffectivenessDelta,
+} from '@/lib/deriveEffectivenessDelta'
 
 interface Stats {
   totalVendors: number
@@ -69,6 +75,12 @@ interface Product {
   // Recommendation resolution
   recommendationResolutionStatus?: string | null
   lastRecommendationResolvedAt?: string | null
+  // Recommendation effectiveness
+  preActionSignalScore?: number | null
+  postActionSignalScore?: number | null
+  effectivenessDelta?: string | null
+  effectivenessReason?: string | null
+  effectivenessLastComputedAt?: string | null
 }
 
 interface RecommendationHistoryEvent {
@@ -82,6 +94,9 @@ interface RecommendationHistoryEvent {
   exposureTier:            string | null
   previousResolutionStatus: string | null
   newResolutionStatus:     string | null
+  preActionSignalScore:    number | null
+  postActionSignalScore:   number | null
+  effectivenessDelta:      string | null
   createdAt:               string
   changedBy:               { id: string; name: string; email: string }
 }
@@ -1693,7 +1708,12 @@ export default function AdminDashboard() {
                                           )}
                                         </div>
                                         {/* Row 4: resolution outcome (only when ACTIONED) */}
-                                        {recStatus === 'ACTIONED' && (
+                                        {recStatus === 'ACTIONED' && (() => {
+                                          const effDelta = dbProduct.effectivenessDelta as EffectivenessDelta | null | undefined
+                                          const preScore  = dbProduct.preActionSignalScore
+                                          const postScore = dbProduct.postActionSignalScore
+                                          const effReason = dbProduct.effectivenessReason
+                                          return (
                                           <div className="flex flex-col gap-1 pt-0.5 border-t border-olive-100">
                                             <p className="text-[8px] font-medium text-olive-400 uppercase tracking-wider">Outcome</p>
                                             {resolutionStatus ? (
@@ -1702,6 +1722,28 @@ export default function AdminDashboard() {
                                               </span>
                                             ) : (
                                               <span className="text-[9px] text-olive-300 italic">Not assessed</span>
+                                            )}
+                                            {/* Effectiveness delta */}
+                                            {effDelta ? (
+                                              <div className="flex flex-col gap-0.5">
+                                                <div className="flex items-center gap-1">
+                                                  <span className={`text-[9px] font-medium px-1.5 py-0.5 ${EFFECTIVENESS_BADGE_CLASS[effDelta] ?? 'bg-gray-50 text-gray-400 border border-gray-200'}`}>
+                                                    {EFFECTIVENESS_ICON[effDelta]} {EFFECTIVENESS_LABEL[effDelta]}
+                                                  </span>
+                                                  {preScore != null && postScore != null && (
+                                                    <span className="text-[8px] text-olive-400">
+                                                      {preScore} → {postScore} pts
+                                                    </span>
+                                                  )}
+                                                </div>
+                                                {effReason && (
+                                                  <p className="text-[8px] text-olive-400 italic leading-tight max-w-[200px]" title={effReason}>
+                                                    {effReason.length > 80 ? effReason.slice(0, 80) + '…' : effReason}
+                                                  </p>
+                                                )}
+                                              </div>
+                                            ) : (
+                                              <span className="text-[8px] text-olive-300 italic">Effectiveness not yet measured — run follow-up check</span>
                                             )}
                                             <div className="flex gap-1 flex-wrap">
                                               {resolutionStatus !== 'IMPROVING' && (
@@ -1733,7 +1775,8 @@ export default function AdminDashboard() {
                                               )}
                                             </div>
                                           </div>
-                                        )}
+                                          )
+                                        })()}
                                         {/* History toggle */}
                                         <button
                                           onClick={() => fetchRecommendationHistory(dbProduct.id)}
@@ -1782,6 +1825,16 @@ export default function AdminDashboard() {
                                                           {event.newResolutionStatus && (
                                                             <span className={`text-[8px] px-1 py-px ${RESOLUTION_BADGE_CLASS[event.newResolutionStatus as RecommendationResolutionStatus] ?? 'bg-gray-50 text-gray-400 border border-gray-100'}`}>
                                                               {RESOLUTION_LABEL[event.newResolutionStatus as RecommendationResolutionStatus]}
+                                                            </span>
+                                                          )}
+                                                          {event.effectivenessDelta && (
+                                                            <span className={`text-[8px] px-1 py-px font-medium ${EFFECTIVENESS_BADGE_CLASS[event.effectivenessDelta as EffectivenessDelta] ?? 'bg-gray-50 text-gray-400 border border-gray-100'}`}>
+                                                              {EFFECTIVENESS_ICON[event.effectivenessDelta as EffectivenessDelta]} {EFFECTIVENESS_LABEL[event.effectivenessDelta as EffectivenessDelta]}
+                                                            </span>
+                                                          )}
+                                                          {event.preActionSignalScore != null && event.postActionSignalScore != null && (
+                                                            <span className="text-[8px] text-olive-400">
+                                                              {event.preActionSignalScore}→{event.postActionSignalScore}pts
                                                             </span>
                                                           )}
                                                         </div>
@@ -2586,6 +2639,54 @@ export default function AdminDashboard() {
                     {unassessed > 0 && (
                       <p className="text-[9px] text-olive-400 mt-2">
                         + {unassessed} actioned with no outcome assessed — run the follow-up check or manually set in Products tab
+                      </p>
+                    )}
+                  </div>
+                )
+              })()}
+
+              {/* Recommendation Effectiveness — computed from actioned products that have a delta */}
+              {(() => {
+                const actioned = products.filter(p => p.status === 'APPROVED' && p.recommendationStatus === 'ACTIONED')
+                const effCounts: Record<EffectivenessDelta, number> = {
+                  POSITIVE_SHIFT: 0, NO_MEANINGFUL_CHANGE: 0, NEGATIVE_SHIFT: 0, MIXED_RESULT: 0,
+                }
+                let unmeasured = 0
+                for (const p of actioned) {
+                  const e = p.effectivenessDelta as EffectivenessDelta | null | undefined
+                  if (!e) unmeasured++
+                  else if (e in effCounts) effCounts[e]++
+                }
+                const measured = actioned.length - unmeasured
+                if (actioned.length === 0) return null
+                const tiles: Array<[EffectivenessDelta, string]> = [
+                  ['POSITIVE_SHIFT',       'border-emerald-200 bg-emerald-50 text-emerald-800'],
+                  ['MIXED_RESULT',         'border-amber-200 bg-amber-50 text-amber-800'],
+                  ['NO_MEANINGFUL_CHANGE', 'border-gray-200 bg-gray-50 text-gray-600'],
+                  ['NEGATIVE_SHIFT',       'border-red-200 bg-red-50 text-red-800'],
+                ]
+                return (
+                  <div className="bg-white border border-olive-200 p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-[10px] font-medium text-olive-400 uppercase tracking-wider">
+                        Recommendation Effectiveness · {measured} of {actioned.length} measured
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-4 gap-3">
+                      {tiles.map(([key, color]) => (
+                        <div key={key} className={`border ${color.split(' ').slice(0, 2).join(' ')} p-3 text-center`}>
+                          <p className={`text-2xl font-serif font-bold ${color.split(' ').slice(2).join(' ')}`}>
+                            {EFFECTIVENESS_ICON[key]} {effCounts[key]}
+                          </p>
+                          <p className="text-[10px] font-medium text-olive-500 uppercase tracking-wider mt-1">
+                            {EFFECTIVENESS_LABEL[key]}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                    {unmeasured > 0 && (
+                      <p className="text-[9px] text-olive-400 mt-2">
+                        + {unmeasured} actioned with no effectiveness measurement — run the follow-up check to derive scores
                       </p>
                     )}
                   </div>
