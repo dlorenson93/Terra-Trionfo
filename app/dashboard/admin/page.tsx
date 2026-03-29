@@ -121,7 +121,7 @@ export default function AdminDashboard() {
   const [products, setProducts] = useState<Product[]>([])
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
-  const [activeTab, setActiveTab] = useState<'overview' | 'companies' | 'products' | 'restaurants' | 'fulfillment' | 'portfolio-pricing' | 'customers'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'companies' | 'products' | 'restaurants' | 'fulfillment' | 'portfolio-pricing' | 'customers' | 'release-intelligence'>('overview')
   const [fulfillmentSubTab, setFulfillmentSubTab] = useState<'zones' | 'routes' | 'schedules'>('zones')
 
   // Inline product edit state
@@ -173,6 +173,10 @@ export default function AdminDashboard() {
   const [syncingPriceId, setSyncingPriceId] = useState<string | null>(null)
   const [syncingAllPrices, setSyncingAllPrices] = useState(false)
 
+  // Release intelligence state
+  const [releaseIntelligence, setReleaseIntelligence] = useState<any>(null)
+  const [loadingIntelligence, setLoadingIntelligence] = useState(false)
+
   useEffect(() => {
     if (!session) {
       router.push('/auth/signin')
@@ -184,6 +188,13 @@ export default function AdminDashboard() {
     }
     fetchData()
   }, [session])
+
+  // Lazy-load release intelligence only when the tab is first opened
+  useEffect(() => {
+    if (activeTab === 'release-intelligence' && !releaseIntelligence && !loadingIntelligence) {
+      fetchReleaseIntelligence()
+    }
+  }, [activeTab])
 
   const fetchData = async () => {
     setIsLoading(true)
@@ -221,6 +232,20 @@ export default function AdminDashboard() {
       console.error('Error fetching data:', error)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const fetchReleaseIntelligence = async () => {
+    setLoadingIntelligence(true)
+    try {
+      const res = await fetch('/api/admin/release-optimization')
+      if (res.ok) {
+        setReleaseIntelligence(await res.json())
+      }
+    } catch (error) {
+      console.error('Error fetching release intelligence:', error)
+    } finally {
+      setLoadingIntelligence(false)
     }
   }
 
@@ -791,16 +816,17 @@ export default function AdminDashboard() {
           <div className="max-w-7xl mx-auto px-6">
             <nav className="flex items-center overflow-x-auto">
               {([
-                { key: 'overview',          label: 'Overview' },
-                { key: 'companies',         label: 'Companies',  badge: stats?.pendingCompanies  },
-                { key: 'products',          label: 'Products',   badge: stats?.pendingProducts   },
-                { key: 'customers',         label: 'Customers' },
+                { key: 'overview',               label: 'Overview' },
+                { key: 'companies',              label: 'Companies',  badge: stats?.pendingCompanies  },
+                { key: 'products',               label: 'Products',   badge: stats?.pendingProducts   },
+                { key: 'customers',              label: 'Customers' },
                 'divider',
-                { key: 'restaurants',       label: 'Restaurants' },
+                { key: 'restaurants',            label: 'Restaurants' },
                 'divider',
-                { key: 'portfolio-pricing', label: 'Pricing' },
+                { key: 'portfolio-pricing',      label: 'Pricing' },
+                { key: 'release-intelligence',   label: 'Release Intel' },
                 'divider',
-                { key: 'fulfillment',       label: 'Fulfillment' },
+                { key: 'fulfillment',            label: 'Fulfillment' },
               ] as const).map((item, i) => {
                 if (item === 'divider') {
                   return <div key={`sep-${i}`} className="w-px h-5 bg-olive-200 mx-2 flex-shrink-0" />
@@ -1993,6 +2019,299 @@ export default function AdminDashboard() {
                   </tfoot>
                 </table>
               </div>
+            </div>
+          )}
+
+          {/* Release Intelligence Tab */}
+          {activeTab === 'release-intelligence' && (
+            <div className="space-y-6">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-amber-600 mb-1">Internal Use Only · Admin-only intelligence</p>
+                  <h2 className="text-2xl font-serif font-bold text-olive-900 mb-1">Release Intelligence</h2>
+                  <p className="text-sm text-olive-500">Time-decayed demand signals → release timing, allocation, and catalog exposure recommendations.</p>
+                </div>
+                <button
+                  onClick={() => { setReleaseIntelligence(null); fetchReleaseIntelligence() }}
+                  disabled={loadingIntelligence}
+                  className="shrink-0 text-sm px-4 py-2 bg-olive-700 text-parchment-100 hover:bg-olive-800 disabled:opacity-50 transition-colors"
+                >
+                  {loadingIntelligence ? 'Refreshing…' : '↻ Refresh'}
+                </button>
+              </div>
+
+              {loadingIntelligence && (
+                <div className="flex items-center justify-center py-20">
+                  <div className="text-center">
+                    <div className="w-6 h-6 border-2 border-olive-700 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                    <p className="text-sm text-olive-400">Analysing demand signals…</p>
+                  </div>
+                </div>
+              )}
+
+              {!loadingIntelligence && releaseIntelligence && (() => {
+                const ri = releaseIntelligence
+                const s  = ri.summary
+
+                const monitorBadge = (status: string) => {
+                  const map: Record<string, string> = {
+                    HIGH_DEMAND:         'bg-emerald-100 text-emerald-800 border border-emerald-200',
+                    NEEDS_REVIEW:        'bg-amber-100 text-amber-800 border border-amber-200',
+                    ALLOCATION_PRESSURE: 'bg-red-100 text-red-800 border border-red-200',
+                    UPCOMING_INTEREST:   'bg-blue-100 text-blue-800 border border-blue-200',
+                    UNDERPERFORMING:     'bg-gray-100 text-gray-600 border border-gray-200',
+                    STABLE:              'bg-parchment-100 text-olive-600 border border-olive-200',
+                  }
+                  return map[status] ?? 'bg-white text-olive-500 border border-olive-200'
+                }
+
+                const exposureBadge = (tier: string) => {
+                  const map: Record<string, string> = {
+                    PRIORITY: 'bg-violet-100 text-violet-800 border border-violet-200',
+                    LIMITED:  'bg-amber-100 text-amber-800 border border-amber-200',
+                    STANDARD: 'bg-sky-50 text-sky-700 border border-sky-200',
+                    LOW:      'bg-gray-50 text-gray-500 border border-gray-200',
+                  }
+                  return map[tier] ?? 'bg-white text-olive-500 border border-olive-200'
+                }
+
+                const confidenceBadge = (c: string) => {
+                  if (c === 'high')   return 'text-emerald-700 font-semibold'
+                  if (c === 'medium') return 'text-amber-700'
+                  return 'text-gray-400'
+                }
+
+                return (
+                  <>
+                    {/* Summary cards */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                      {[
+                        { label: 'High Demand',         value: s.highDemandCount,         color: 'border-emerald-300 bg-emerald-50' },
+                        { label: 'Needs Review',         value: s.needsReviewCount,         color: 'border-amber-300 bg-amber-50' },
+                        { label: 'Alloc. Pressure',      value: s.allocationPressureCount,  color: 'border-red-300 bg-red-50' },
+                        { label: 'Upcoming Interest',    value: s.upcomingInterestCount,    color: 'border-blue-300 bg-blue-50' },
+                        { label: 'Underperforming',      value: s.underperformingCount,     color: 'border-gray-300 bg-gray-50' },
+                        { label: 'Stable',               value: s.stableCount,              color: 'border-olive-200 bg-parchment-50' },
+                      ].map((card) => (
+                        <div key={card.label} className={`border ${card.color} p-4`}>
+                          <p className="text-[10px] font-medium text-olive-500 uppercase tracking-wider mb-1">{card.label}</p>
+                          <p className="text-3xl font-serif font-bold text-olive-900">{card.value}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Signal bias */}
+                    {ri.signalBias && (
+                      <div className="bg-white border border-olive-200 p-5">
+                        <h3 className="text-sm font-semibold text-olive-900 mb-3">Portfolio Signal Bias</h3>
+                        <div className="flex items-center gap-4 flex-wrap">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-medium uppercase tracking-wider text-olive-400">Trade</span>
+                            <span className="text-xl font-serif font-bold text-olive-900">
+                              {Math.round(ri.signalBias.tradeRatio * 100)}%
+                            </span>
+                            <span className="text-xs text-olive-400">(weight: {ri.signalBias.totalTradeWeight.toFixed(2)})</span>
+                          </div>
+                          <div className="w-px h-5 bg-olive-200" />
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-medium uppercase tracking-wider text-olive-400">Consumer</span>
+                            <span className="text-xl font-serif font-bold text-olive-900">
+                              {Math.round(ri.signalBias.consumerRatio * 100)}%
+                            </span>
+                            <span className="text-xs text-olive-400">(weight: {ri.signalBias.totalConsumerWeight.toFixed(2)})</span>
+                          </div>
+                          <div className="w-px h-5 bg-olive-200" />
+                          <div>
+                            <span className="text-[10px] font-medium uppercase tracking-wider text-olive-400 mr-1">Dominant</span>
+                            <span className={`text-sm font-medium ${
+                              ri.signalBias.dominantChannel === 'trade'    ? 'text-violet-700' :
+                              ri.signalBias.dominantChannel === 'consumer' ? 'text-sky-700' :
+                              'text-olive-500'
+                            }`}>
+                              {ri.signalBias.dominantChannel === 'balanced' ? 'Balanced' : ri.signalBias.dominantChannel.charAt(0).toUpperCase() + ri.signalBias.dominantChannel.slice(1) + '-led'}
+                            </span>
+                          </div>
+                        </div>
+                        {/* Visual bar */}
+                        <div className="mt-3 h-2 bg-parchment-100 border border-olive-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-violet-400 transition-all"
+                            style={{ width: `${Math.round(ri.signalBias.tradeRatio * 100)}%` }}
+                          />
+                        </div>
+                        <div className="flex justify-between mt-1 text-[9px] text-olive-300 uppercase tracking-wider">
+                          <span>Trade</span>
+                          <span>Consumer</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Release acceleration candidates */}
+                    {ri.releaseAccelerationCandidates?.length > 0 && (
+                      <div className="bg-white border border-blue-200 p-5">
+                        <h3 className="text-sm font-semibold text-blue-900 mb-3">
+                          Release Acceleration Candidates
+                          <span className="ml-2 text-[10px] font-normal text-blue-400 uppercase tracking-wider">Pre-release wines ready to go live</span>
+                        </h3>
+                        <div className="space-y-2">
+                          {ri.releaseAccelerationCandidates.map((r: any) => (
+                            <div key={r.productId} className="flex items-start gap-3 py-2 border-b border-blue-50 last:border-0">
+                              <span className={`mt-0.5 text-[10px] font-semibold uppercase tracking-wider ${confidenceBadge(r.confidence)}`}>
+                                {r.confidence}
+                              </span>
+                              <div>
+                                <p className="text-sm font-medium text-olive-900">{r.wineName}</p>
+                                <p className="text-xs text-olive-500 mt-0.5">{r.reason}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Allocation pressure */}
+                    {ri.allocationPressureList?.length > 0 && (
+                      <div className="bg-white border border-olive-200 p-5">
+                        <h3 className="text-sm font-semibold text-olive-900 mb-3">Allocation Pressure</h3>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-xs">
+                            <thead>
+                              <tr className="border-b border-olive-200 text-left">
+                                <th className="pb-2 text-[10px] font-medium text-olive-400 uppercase tracking-wider">Wine</th>
+                                <th className="pb-2 px-3 text-[10px] font-medium text-olive-400 uppercase tracking-wider">Inventory</th>
+                                <th className="pb-2 px-3 text-[10px] font-medium text-olive-400 uppercase tracking-wider">Waitlist</th>
+                                <th className="pb-2 px-3 text-[10px] font-medium text-olive-400 uppercase tracking-wider">Wks Supply</th>
+                                <th className="pb-2 px-3 text-[10px] font-medium text-olive-400 uppercase tracking-wider">Pressure</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {ri.allocationPressureList.map((m: any) => (
+                                <tr key={m.productId} className="border-b border-parchment-100 last:border-0">
+                                  <td className="py-2 pr-3 text-olive-800 font-medium">{m.wineName}</td>
+                                  <td className="py-2 px-3 text-olive-600 tabular-nums">{m.inventory}</td>
+                                  <td className="py-2 px-3 text-olive-600 tabular-nums">{m.waitlistCount}</td>
+                                  <td className="py-2 px-3 tabular-nums">
+                                    {m.weeksOfSupply === 99 ? '∞' : m.weeksOfSupply}
+                                  </td>
+                                  <td className="py-2 px-3">
+                                    <span className={`text-[10px] font-semibold uppercase ${
+                                      m.pressureLevel === 'critical' ? 'text-red-700' :
+                                      m.pressureLevel === 'high'     ? 'text-orange-600' :
+                                      'text-amber-600'
+                                    }`}>
+                                      {m.pressureLevel}
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* All recommendations */}
+                    {ri.recommendations?.length > 0 && (
+                      <div className="bg-white border border-olive-200 p-5">
+                        <h3 className="text-sm font-semibold text-olive-900 mb-3">
+                          All Recommendations
+                          <span className="ml-2 text-[10px] font-normal text-olive-400 uppercase tracking-wider">{ri.recommendations.length} wines analysed</span>
+                        </h3>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-xs">
+                            <thead>
+                              <tr className="border-b border-olive-200 text-left">
+                                <th className="pb-2 text-[10px] font-medium text-olive-400 uppercase tracking-wider pr-4">Wine</th>
+                                <th className="pb-2 px-3 text-[10px] font-medium text-olive-400 uppercase tracking-wider">Type</th>
+                                <th className="pb-2 px-3 text-[10px] font-medium text-olive-400 uppercase tracking-wider">Confidence</th>
+                                <th className="pb-2 px-3 text-[10px] font-medium text-olive-400 uppercase tracking-wider">Monitor</th>
+                                <th className="pb-2 px-3 text-[10px] font-medium text-olive-400 uppercase tracking-wider">Exposure</th>
+                                <th className="pb-2 pl-3 text-[10px] font-medium text-olive-400 uppercase tracking-wider">Reason</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {ri.recommendations.map((r: any) => (
+                                <tr key={r.productId} className="border-b border-parchment-100 last:border-0 hover:bg-parchment-50 transition-colors">
+                                  <td className="py-2.5 pr-4">
+                                    <p className="font-medium text-olive-900">{r.wineName}</p>
+                                    <p className="text-[10px] text-olive-400 mt-0.5">{r.releaseStatus}</p>
+                                  </td>
+                                  <td className="py-2.5 px-3">
+                                    <span className="text-[10px] font-medium text-olive-700 whitespace-nowrap">
+                                      {r.type.replace(/_/g, ' ')}
+                                    </span>
+                                  </td>
+                                  <td className="py-2.5 px-3">
+                                    <span className={`text-[10px] font-semibold uppercase ${confidenceBadge(r.confidence)}`}>
+                                      {r.confidence}
+                                    </span>
+                                  </td>
+                                  <td className="py-2.5 px-3">
+                                    <span className={`text-[10px] font-medium px-1.5 py-0.5 ${monitorBadge(r.monitorStatus)}`}>
+                                      {r.monitorStatus.replace(/_/g, ' ')}
+                                    </span>
+                                  </td>
+                                  <td className="py-2.5 px-3">
+                                    <span className={`text-[10px] font-medium px-1.5 py-0.5 ${exposureBadge(r.exposureTier)}`}>
+                                      {r.exposureTier}
+                                    </span>
+                                  </td>
+                                  <td className="py-2.5 pl-3 text-olive-500 max-w-xs leading-snug">{r.reason}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Underperforming wines */}
+                    {ri.underperformingWines?.length > 0 && (
+                      <div className="bg-white border border-gray-200 p-5">
+                        <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                          Underperforming
+                          <span className="ml-2 text-[10px] font-normal text-gray-400 uppercase tracking-wider">Live wines with no demand signals</span>
+                        </h3>
+                        <div className="space-y-2">
+                          {ri.underperformingWines.map((r: any) => (
+                            <div key={r.productId} className="flex items-start gap-3 py-2 border-b border-gray-50 last:border-0">
+                              <span className={`mt-0.5 text-[10px] px-1.5 py-0.5 ${exposureBadge(r.exposureTier)}`}>
+                                {r.exposureTier}
+                              </span>
+                              <div>
+                                <p className="text-sm font-medium text-olive-800">{r.wineName}</p>
+                                <p className="text-xs text-olive-400 mt-0.5">{r.reason}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {ri.recommendations?.length === 0 && (
+                      <div className="bg-white border border-olive-200 p-10 text-center">
+                        <p className="text-sm text-olive-400">No products with demand signals yet — intelligence will populate as waitlists, orders, and trade inquiries are recorded.</p>
+                      </div>
+                    )}
+
+                    <p className="text-[10px] text-olive-300 text-right">
+                      Generated {new Date(ri.generatedAt).toLocaleString()} · {s.totalAnalysed} products analysed
+                    </p>
+                  </>
+                )
+              })()}
+
+              {!loadingIntelligence && !releaseIntelligence && (
+                <div className="bg-white border border-olive-200 p-10 text-center">
+                  <p className="text-sm text-olive-400 mb-4">Release intelligence not yet loaded.</p>
+                  <button
+                    onClick={fetchReleaseIntelligence}
+                    className="text-sm px-5 py-2 bg-olive-700 text-parchment-100 hover:bg-olive-800 transition-colors"
+                  >
+                    Load Intelligence
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

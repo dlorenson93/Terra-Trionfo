@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { buildDemandSnapshot } from '@/lib/demandInsights'
 import { deriveRecommendations, filterByType } from '@/lib/importDecisionEngine'
+import { deriveReleaseOptimization } from '@/lib/releaseOptimizationEngine'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,6 +16,7 @@ export async function GET() {
 
     const snapshot = await buildDemandSnapshot()
     const { recommendations, regionTrends, styleTrends } = deriveRecommendations(snapshot)
+    const releaseOpt = deriveReleaseOptimization(snapshot)
 
     const products = snapshot.products
 
@@ -143,6 +145,30 @@ export async function GET() {
       tradeOpportunitySignals,
       regionTrends,
       styleTrends,
+      // ── Phase 9 additions — release intelligence (non-breaking) ──
+      releaseOptimizationSummary:       releaseOpt.summary,
+      tradeVsConsumerBias:              releaseOpt.signalBias,
+      releaseAccelerationCandidates:    releaseOpt.releaseAccelerationCandidates.map((r) => ({
+        productId:     r.productId,
+        productName:   r.wineName,
+        confidence:    r.confidence,
+        reason:        r.reason,
+        monitorStatus: r.monitorStatus,
+      })),
+      underperformingWines:             releaseOpt.underperformingWines.map((r) => ({
+        productId:     r.productId,
+        productName:   r.wineName,
+        reason:        r.reason,
+        monitorStatus: r.monitorStatus,
+        exposureTier:  r.exposureTier,
+      })),
+      releaseStageHealth:               releaseOpt.recommendations.map((r) => ({
+        productId:     r.productId,
+        wineName:      r.wineName,
+        monitorStatus: r.monitorStatus,
+        exposureTier:  r.exposureTier,
+        type:          r.type,
+      })),
     })
   } catch (error) {
     console.error('[Admin Insights]', error)

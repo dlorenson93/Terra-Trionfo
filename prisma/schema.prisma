@@ -86,6 +86,24 @@ enum AgeVerificationStatus {
   INELIGIBLE   // under 21
 }
 
+// Release intelligence — catalogued exposure tier for admin prioritisation
+enum ExposureTier {
+  LOW       // No active demand signals; de-prioritise in catalog
+  STANDARD  // Typical listing with some signals
+  PRIORITY  // Strong signals; surface prominently
+  LIMITED   // Limited allocation in high demand
+}
+
+// Release intelligence — computed monitor state for a product
+enum ReleaseMonitorStatus {
+  STABLE              // Healthy, no action required
+  NEEDS_REVIEW        // Mixed signals, human review recommended
+  HIGH_DEMAND         // Strong time-decayed signal score
+  UNDERPERFORMING     // Live with no demand signals
+  ALLOCATION_PRESSURE // Waitlist > available inventory
+  UPCOMING_INTEREST   // Pre-release wine with early sign-ups
+}
+
 model User {
   id             String    @id @default(cuid())
   name           String
@@ -214,6 +232,15 @@ model Product {
 
   inventory Int     @default(0)
   status    ProductStatus @default(PENDING)
+
+  // Release intelligence metadata — populated by admin review or optimization engine
+  releaseActivatedAt       DateTime?
+  releaseLastReviewedAt    DateTime?
+  allocationLastAdjustedAt DateTime?
+  releasePriority          Int?
+  releaseMonitorStatus     ReleaseMonitorStatus?
+  exposureTier             ExposureTier?
+  lastRecommendationAt     DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
