@@ -109,6 +109,7 @@ interface Customer {
 export default function AdminDashboard() {
   const { data: session } = useSession()
   const router = useRouter()
+  const [isLoading, setIsLoading] = useState(true)
   const [stats, setStats] = useState<Stats | null>(null)
   const [companies, setCompanies] = useState<Company[]>([])
   const [products, setProducts] = useState<Product[]>([])
@@ -116,6 +117,14 @@ export default function AdminDashboard() {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [activeTab, setActiveTab] = useState<'overview' | 'companies' | 'products' | 'restaurants' | 'fulfillment' | 'portfolio-pricing' | 'customers'>('overview')
   const [fulfillmentSubTab, setFulfillmentSubTab] = useState<'zones' | 'routes' | 'schedules'>('zones')
+
+  // Inline product edit state (replaces prompt() dialogs)
+  const [editingProduct, setEditingProduct] = useState<{
+    id: string
+    commerceModel: string
+    listingOwner: string
+    retailPriceDollars: string
+  } | null>(null)
 
   // Fulfillment ops state
   const [deliveryZones, setDeliveryZones] = useState<DeliveryZone[]>([])
@@ -145,6 +154,7 @@ export default function AdminDashboard() {
   }, [session])
 
   const fetchData = async () => {
+    setIsLoading(true)
     try {
       const [statsRes, companiesRes, productsRes, restaurantsRes, zonesRes, routesRes, schedulesRes, pickupLocsRes, customersRes] = await Promise.all([
         fetch('/api/admin/stats'),
@@ -177,6 +187,8 @@ export default function AdminDashboard() {
       setCustomers(Array.isArray(customersData) ? customersData : [])
     } catch (error) {
       console.error('Error fetching data:', error)
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -232,18 +244,30 @@ export default function AdminDashboard() {
     }
   }
 
-  const editProduct = async (prod: Product) => {
-    const commerceModel = prompt('Commerce model (MARKETPLACE/WHOLESALE/HYBRID)', prod.commerceModel)
-    const listingOwner = prompt('Listing owner (VENDOR/TERRA)', prod.listingOwner)
-    const priceStr = prompt('Retail price (dollars)', (prod.retailPriceCents / 100).toFixed(2))
-    if (!commerceModel || !listingOwner || !priceStr) return
-    const retailPriceCents = Math.round(parseFloat(priceStr) * 100)
+  const editProduct = (prod: Product) => {
+    setEditingProduct({
+      id: prod.id,
+      commerceModel: prod.commerceModel,
+      listingOwner: prod.listingOwner,
+      retailPriceDollars: (prod.retailPriceCents / 100).toFixed(2),
+    })
+  }
+
+  const saveProductEdit = async () => {
+    if (!editingProduct) return
+    const retailPriceCents = Math.round(parseFloat(editingProduct.retailPriceDollars) * 100)
+    if (isNaN(retailPriceCents) || retailPriceCents <= 0) return
     try {
-      await fetch(`/api/products/${prod.id}`, {
+      await fetch(`/api/products/${editingProduct.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ commerceModel, listingOwner, retailPriceCents }),
+        body: JSON.stringify({
+          commerceModel: editingProduct.commerceModel,
+          listingOwner: editingProduct.listingOwner,
+          retailPriceCents,
+        }),
       })
+      setEditingProduct(null)
       fetchData()
     } catch (error) {
       console.error('Error editing product:', error)
@@ -476,222 +500,222 @@ export default function AdminDashboard() {
   }
 
   // render
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-grow bg-parchment-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-7 h-7 border-2 border-olive-700 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+            <p className="text-sm text-olive-500">Loading dashboard…</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-parchment-50">
       <Header />
 
-      <main className="flex-grow bg-parchment-50">
-        <div className="bg-gradient-to-br from-parchment-100 to-parchment-200 py-12 px-4">
-          <div className="max-w-7xl mx-auto">
-            <h1 className="text-4xl font-serif font-bold text-olive-900 mb-2">
-              Admin Dashboard
-            </h1>
-            <p className="text-olive-700">Manage vendors, products, and orders</p>
+      <main className="flex-grow">
+        {/* Page header */}
+        <div className="bg-olive-900 px-6 py-7">
+          <div className="max-w-7xl mx-auto flex items-start justify-between gap-4">
+            <div>
+              <p className="text-[10px] font-medium tracking-[0.18em] uppercase text-olive-400 mb-1">Terra Trionfo</p>
+              <h1 className="text-2xl font-serif font-bold text-parchment-100">Operations Dashboard</h1>
+            </div>
+            {stats && (stats.pendingCompanies > 0 || stats.pendingProducts > 0) && (
+              <div className="flex gap-2 pt-1">
+                {stats.pendingCompanies > 0 && (
+                  <button
+                    onClick={() => setActiveTab('companies')}
+                    className="text-xs px-3 py-1.5 bg-amber-500/15 text-amber-300 border border-amber-500/30 hover:bg-amber-500/25 transition-colors"
+                  >
+                    {stats.pendingCompanies} {stats.pendingCompanies === 1 ? 'company' : 'companies'} pending
+                  </button>
+                )}
+                {stats.pendingProducts > 0 && (
+                  <button
+                    onClick={() => setActiveTab('products')}
+                    className="text-xs px-3 py-1.5 bg-amber-500/15 text-amber-300 border border-amber-500/30 hover:bg-amber-500/25 transition-colors"
+                  >
+                    {stats.pendingProducts} {stats.pendingProducts === 1 ? 'product' : 'products'} pending
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          {/* Tabs */}
-          <div className="mb-8 border-b border-olive-200">
-            {/* Consumer Marketplace Operations */}
-            <div className="flex items-center gap-1 mb-0">
-              <span className="text-[9px] font-medium tracking-[0.14em] uppercase text-olive-400 px-1 pb-1">Consumer Marketplace</span>
-              <div className="flex gap-1">
-                {[
-                  { key: 'overview', label: 'Overview' },
-                  { key: 'companies', label: 'Companies' },
-                  { key: 'products', label: 'Products' },
-                  { key: 'customers', label: 'Customers' },
-                ].map((tab) => (
+        {/* Sticky navigation */}
+        <div className="bg-white border-b border-olive-200 sticky top-0 z-10 shadow-sm">
+          <div className="max-w-7xl mx-auto px-6">
+            <nav className="flex items-center overflow-x-auto">
+              {([
+                { key: 'overview',          label: 'Overview' },
+                { key: 'companies',         label: 'Companies',  badge: stats?.pendingCompanies  },
+                { key: 'products',          label: 'Products',   badge: stats?.pendingProducts   },
+                { key: 'customers',         label: 'Customers' },
+                'divider',
+                { key: 'restaurants',       label: 'Restaurants' },
+                'divider',
+                { key: 'portfolio-pricing', label: 'Pricing' },
+                'divider',
+                { key: 'fulfillment',       label: 'Fulfillment' },
+              ] as const).map((item, i) => {
+                if (item === 'divider') {
+                  return <div key={`sep-${i}`} className="w-px h-5 bg-olive-200 mx-2 flex-shrink-0" />
+                }
+                const tab = item as { key: string; label: string; badge?: number }
+                return (
                   <button
                     key={tab.key}
                     onClick={() => setActiveTab(tab.key as any)}
-                    className={`px-6 py-3 font-medium transition-colors ${
+                    className={`relative flex items-center gap-1.5 px-4 py-[14px] text-sm font-medium whitespace-nowrap transition-colors border-b-2 flex-shrink-0 ${
                       activeTab === tab.key
-                        ? 'text-olive-900 border-b-2 border-olive-700'
-                        : 'text-olive-600 hover:text-olive-800'
+                        ? 'text-olive-900 border-olive-800'
+                        : 'text-olive-500 border-transparent hover:text-olive-800'
                     }`}
                   >
                     {tab.label}
+                    {tab.badge != null && tab.badge > 0 && (
+                      <span className="text-[9px] font-bold bg-amber-500 text-white rounded-full w-4 h-4 flex items-center justify-center leading-none">
+                        {tab.badge}
+                      </span>
+                    )}
                   </button>
-                ))}
+                )
+              })}
+            </nav>
+          </div>
+        </div>
+
+        {/* Product edit modal */}
+        {editingProduct && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+            <div className="bg-white w-full max-w-md mx-4 shadow-2xl">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-olive-200">
+                <h2 className="text-base font-serif font-bold text-olive-900">Edit Product</h2>
+                <button onClick={() => setEditingProduct(null)} className="text-olive-400 hover:text-olive-800 text-lg leading-none transition-colors">✕</button>
               </div>
-              {/* Divider */}
-              <div className="w-px h-6 bg-olive-300 mx-2 self-center" />
-              <span className="text-[9px] font-medium tracking-[0.14em] uppercase text-olive-400 px-1 pb-1">Trade Distribution</span>
-              <div className="flex gap-1">
-                {[
-                  { key: 'restaurants', label: 'Restaurants' },
-                ].map((tab) => (
-                  <button
-                    key={tab.key}
-                    onClick={() => setActiveTab(tab.key as any)}
-                    className={`px-6 py-3 font-medium transition-colors ${
-                      activeTab === tab.key
-                        ? 'text-olive-900 border-b-2 border-olive-700'
-                        : 'text-olive-600 hover:text-olive-800'
-                    }`}
+              <div className="px-6 py-5 space-y-4">
+                <div>
+                  <label className="label">Retail Price (USD)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    className="input-field"
+                    value={editingProduct.retailPriceDollars}
+                    onChange={(e) => setEditingProduct((p) => p ? { ...p, retailPriceDollars: e.target.value } : null)}
+                  />
+                </div>
+                <div>
+                  <label className="label">Commerce Model</label>
+                  <select
+                    className="input-field"
+                    value={editingProduct.commerceModel}
+                    onChange={(e) => setEditingProduct((p) => p ? { ...p, commerceModel: e.target.value } : null)}
                   >
-                    {tab.label}
-                  </button>
-                ))}
+                    <option value="MARKETPLACE">Marketplace</option>
+                    <option value="WHOLESALE">Wholesale</option>
+                    <option value="HYBRID">Hybrid</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="label">Listing Owner</label>
+                  <select
+                    className="input-field"
+                    value={editingProduct.listingOwner}
+                    onChange={(e) => setEditingProduct((p) => p ? { ...p, listingOwner: e.target.value } : null)}
+                  >
+                    <option value="VENDOR">Vendor</option>
+                    <option value="TERRA">Terra</option>
+                  </select>
+                </div>
               </div>
-              {/* Divider */}
-              <div className="w-px h-6 bg-olive-300 mx-2 self-center" />
-              <span className="text-[9px] font-medium tracking-[0.14em] uppercase text-olive-400 px-1 pb-1">Importer Economics</span>
-              <div className="flex gap-1">
-                <button
-                  onClick={() => setActiveTab('portfolio-pricing')}
-                  className={`px-6 py-3 font-medium transition-colors ${
-                    activeTab === 'portfolio-pricing'
-                      ? 'text-olive-900 border-b-2 border-olive-700'
-                      : 'text-olive-600 hover:text-olive-800'
-                  }`}
-                >
-                  Portfolio Pricing
+              <div className="flex gap-3 px-6 py-4 border-t border-olive-200 bg-parchment-50">
+                <button onClick={saveProductEdit} className="flex-1 py-2.5 bg-olive-800 text-parchment-100 text-sm font-medium hover:bg-olive-900 transition-colors">
+                  Save Changes
                 </button>
-              </div>
-              {/* Divider */}
-              <div className="w-px h-6 bg-olive-300 mx-2 self-center" />
-              <span className="text-[9px] font-medium tracking-[0.14em] uppercase text-olive-400 px-1 pb-1">Fulfillment Ops</span>
-              <div className="flex gap-1">
-                <button
-                  onClick={() => setActiveTab('fulfillment')}
-                  className={`px-6 py-3 font-medium transition-colors ${
-                    activeTab === 'fulfillment'
-                      ? 'text-olive-900 border-b-2 border-olive-700'
-                      : 'text-olive-600 hover:text-olive-800'
-                  }`}
-                >
-                  Fulfillment
+                <button onClick={() => setEditingProduct(null)} className="px-5 py-2.5 border border-olive-300 text-olive-700 text-sm hover:bg-parchment-100 transition-colors">
+                  Cancel
                 </button>
               </div>
             </div>
           </div>
+        )}
+
+        <div className="max-w-7xl mx-auto px-6 py-8">
 
           {/* Overview Tab */}
           {activeTab === 'overview' && stats && (
             <div>
-              {/* Stats Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div className="card p-6">
-                  <h3 className="text-sm font-medium text-olive-600 mb-2">
-                    Total Vendors
-                  </h3>
-                  <p className="text-3xl font-bold text-olive-900">
-                    {stats.totalVendors}
-                  </p>
-                  {stats.pendingCompanies > 0 && (
-                    <p className="text-sm text-yellow-700 mt-2">
-                      {stats.pendingCompanies} pending approval
-                    </p>
-                  )}
-                </div>
-
-                <div className="card p-6">
-                  <h3 className="text-sm font-medium text-olive-600 mb-2">
-                    Total Products
-                  </h3>
-                  <p className="text-3xl font-bold text-olive-900">
-                    {stats.totalProducts}
-                  </p>
-                  {stats.pendingProducts > 0 && (
-                    <p className="text-sm text-yellow-700 mt-2">
-                      {stats.pendingProducts} pending approval
-                    </p>
-                  )}
-                </div>
-
-                <div className="card p-6">
-                  <h3 className="text-sm font-medium text-olive-600 mb-2">
-                    Total Orders
-                  </h3>
-                  <p className="text-3xl font-bold text-olive-900">
-                    {stats.totalOrders}
-                  </p>
-                </div>
-
-                <div className="card p-6">
-                  <h3 className="text-sm font-medium text-olive-600 mb-2">
-                    Total Revenue
-                  </h3>
-                  <p className="text-3xl font-bold text-olive-900">
-                    ${stats.totalRevenue.toFixed(2)}
-                  </p>
-                </div>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                {[
+                  { label: 'Vendors',  value: stats.totalVendors,              alert: stats.pendingCompanies > 0 ? `${stats.pendingCompanies} pending` : null },
+                  { label: 'Products', value: stats.totalProducts,             alert: stats.pendingProducts  > 0 ? `${stats.pendingProducts} pending`  : null },
+                  { label: 'Orders',   value: stats.totalOrders,               alert: null },
+                  { label: 'Revenue',  value: `$${stats.totalRevenue.toFixed(2)}`, alert: null },
+                ].map((stat) => (
+                  <div key={stat.label} className="bg-white border border-olive-200 p-5">
+                    <p className="text-xs font-medium text-olive-500 uppercase tracking-wider mb-2">{stat.label}</p>
+                    <p className="text-3xl font-serif font-bold text-olive-900">{stat.value}</p>
+                    {stat.alert && <p className="text-xs text-amber-600 mt-1.5">{stat.alert}</p>}
+                  </div>
+                ))}
               </div>
-
-              {/* Recent Orders */}
-              <div className="card p-6">
-                <h2 className="text-xl font-serif font-bold text-olive-900 mb-4">
-                  Recent Orders
-                </h2>
+              <div className="bg-white border border-olive-200 p-6">
+                <h2 className="text-base font-semibold text-olive-900 mb-4">Recent Orders</h2>
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
                       <tr className="text-left border-b border-olive-200">
-                        <th className="pb-3 text-sm font-medium text-olive-700">
-                          Order ID
-                        </th>
-                        <th className="pb-3 text-sm font-medium text-olive-700">
-                          Customer
-                        </th>
-                        <th className="pb-3 text-sm font-medium text-olive-700">
-                          Total
-                        </th>
-                        <th className="pb-3 text-sm font-medium text-olive-700">
-                          Status
-                        </th>
-                        <th className="pb-3 text-sm font-medium text-olive-700">
-                          Date
-                        </th>
+                        <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Order ID</th>
+                        <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Customer</th>
+                        <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Total</th>
+                        <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Status</th>
+                        <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Date</th>
                       </tr>
                     </thead>
                     <tbody>
                       {Array.isArray(stats.recentOrders) ? stats.recentOrders.map((order) => (
-                        <tr key={order.id} className="border-b border-olive-100">
-                          <td className="py-3 text-sm text-olive-800">
-                            {order.id.slice(0, 8)}
-                          </td>
-                          <td className="py-3 text-sm text-olive-800">
-                            {order.user.name}
-                          </td>
-                          <td className="py-3 text-sm text-olive-800">
-                            ${order.total.toFixed(2)}
-                          </td>
-                          <td className="py-3">
-                            <span className={`badge badge-${order.status.toLowerCase()}`}>
-                              {order.status}
-                            </span>
-                          </td>
-                          <td className="py-3 text-sm text-olive-600">
-                            {new Date(order.createdAt).toLocaleDateString()}
-                          </td>
+                        <tr key={order.id} className="border-b border-olive-100 last:border-0">
+                          <td className="py-3 text-sm font-mono text-olive-500">{order.id.slice(0, 8)}</td>
+                          <td className="py-3 text-sm text-olive-800">{order.user.name}</td>
+                          <td className="py-3 text-sm font-medium text-olive-900">${order.total.toFixed(2)}</td>
+                          <td className="py-3"><span className={`badge badge-${order.status.toLowerCase()}`}>{order.status}</span></td>
+                          <td className="py-3 text-sm text-olive-500">{new Date(order.createdAt).toLocaleDateString()}</td>
                         </tr>
                       )) : null}
                     </tbody>
                   </table>
+                  {(!stats.recentOrders || stats.recentOrders.length === 0) && (
+                    <p className="text-sm text-olive-400 text-center py-8">No orders yet.</p>
+                  )}
                 </div>
               </div>
             </div>
           )}
-
           {/* Customers Tab */}
           {activeTab === 'customers' && (
-            <div className="card p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-serif font-bold text-olive-900">Consumer Accounts</h2>
-                <p className="text-sm text-olive-500">{customers.length} registered consumer{customers.length !== 1 ? 's' : ''}</p>
+            <div className="bg-white border border-olive-200 p-6">
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-base font-semibold text-olive-900">Consumer Accounts</h2>
+                <p className="text-sm text-olive-400">{customers.length} registered</p>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="text-left border-b border-olive-200">
-                      <th className="pb-3 text-sm font-medium text-olive-700">Name / Email</th>
-                      <th className="pb-3 text-sm font-medium text-olive-700">Phone</th>
-                      <th className="pb-3 text-sm font-medium text-olive-700">Age Verification</th>
-                      <th className="pb-3 text-sm font-medium text-olive-700">Verified At</th>
-                      <th className="pb-3 text-sm font-medium text-olive-700">Joined</th>
+                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Name / Email</th>
+                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Phone</th>
+                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Age Verification</th>
+                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Verified At</th>
+                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Joined</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -702,7 +726,7 @@ export default function AdminDashboard() {
                         </td>
                       </tr>
                     ) : customers.map((c) => (
-                      <tr key={c.id} className="border-b border-olive-100">
+                      <tr key={c.id} className="border-b border-olive-100 last:border-0">
                         <td className="py-3">
                           <p className="text-sm font-medium text-olive-900">
                             {c.firstName || c.lastName
@@ -747,26 +771,26 @@ export default function AdminDashboard() {
 
           {/* Companies Tab */}
           {activeTab === 'companies' && (
-            <div className="card p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-serif font-bold text-olive-900">Manage Companies</h2>
-                <p className="text-sm text-olive-500">Content status controls public producer visibility</p>
+            <div className="bg-white border border-olive-200 p-6">
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-base font-semibold text-olive-900">Manage Companies</h2>
+                <p className="text-sm text-olive-400">Content status controls public producer visibility</p>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="text-left border-b border-olive-200">
-                      <th className="pb-3 text-sm font-medium text-olive-700">Company Name</th>
-                      <th className="pb-3 text-sm font-medium text-olive-700">Owner</th>
-                      <th className="pb-3 text-sm font-medium text-olive-700">Email</th>
-                      <th className="pb-3 text-sm font-medium text-olive-700">Status</th>
-                      <th className="pb-3 text-sm font-medium text-olive-700">Editorial State</th>
-                      <th className="pb-3 text-sm font-medium text-olive-700">Actions</th>
+                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Company</th>
+                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Owner</th>
+                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Email</th>
+                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Status</th>
+                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Editorial</th>
+                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {Array.isArray(companies) ? companies.map((company) => (
-                      <tr key={company.id} className="border-b border-olive-100">
+                      <tr key={company.id} className="border-b border-olive-100 last:border-0">
                         <td className="py-3 text-sm font-medium text-olive-900">
                           <div className="flex items-center gap-2">
                             {company.name}
@@ -825,27 +849,27 @@ export default function AdminDashboard() {
 
           {/* Products Tab */}
           {activeTab === 'products' && (
-            <div className="card p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-serif font-bold text-olive-900">Manage Products</h2>
-                <p className="text-sm text-olive-500">Content status controls public visibility</p>
+            <div className="bg-white border border-olive-200 p-6">
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-base font-semibold text-olive-900">Manage Products</h2>
+                <p className="text-sm text-olive-400">Content status controls public visibility</p>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="text-left border-b border-olive-200">
-                      <th className="pb-3 text-sm font-medium text-olive-700">Product Name</th>
-                      <th className="pb-3 text-sm font-medium text-olive-700">Company</th>
-                      <th className="pb-3 text-sm font-medium text-olive-700">Category</th>
-                      <th className="pb-3 text-sm font-medium text-olive-700">Retail</th>
-                      <th className="pb-3 text-sm font-medium text-olive-700">Status</th>
-                      <th className="pb-3 text-sm font-medium text-olive-700">Content</th>
-                      <th className="pb-3 text-sm font-medium text-olive-700">Actions</th>
+                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Product</th>
+                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Company</th>
+                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Category</th>
+                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Retail</th>
+                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Status</th>
+                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Content</th>
+                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {Array.isArray(products) ? products.map((product) => (
-                      <tr key={product.id} className="border-b border-olive-100">
+                      <tr key={product.id} className="border-b border-olive-100 last:border-0">
                         <td className="py-3 text-sm font-medium text-olive-900">{product.name}</td>
                         <td className="py-3 text-sm text-olive-800">{product.company.name}</td>
                         <td className="py-3 text-sm text-olive-600">{product.category}</td>
@@ -892,11 +916,9 @@ export default function AdminDashboard() {
           {/* Restaurants Tab */}
           {activeTab === 'restaurants' && (
             <div className="space-y-6">
-
-              {/* Create new restaurant */}
-              <div className="card p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-serif font-bold text-olive-900">Restaurant Partners</h2>
+              <div className="bg-white border border-olive-200 p-6">
+                <div className="flex items-center justify-between mb-5">
+                  <h2 className="text-base font-semibold text-olive-900">Restaurant Partners</h2>
                   <button
                     onClick={() => setShowNewRestaurantForm(!showNewRestaurantForm)}
                     className="text-sm px-4 py-2 bg-olive-700 text-parchment-100 hover:bg-olive-800 transition-colors"
@@ -1020,12 +1042,12 @@ export default function AdminDashboard() {
                   <table className="w-full">
                     <thead>
                       <tr className="text-left border-b border-olive-200">
-                        <th className="pb-3 text-sm font-medium text-olive-700">Name</th>
-                        <th className="pb-3 text-sm font-medium text-olive-700">Location</th>
-                        <th className="pb-3 text-sm font-medium text-olive-700">Wines</th>
-                        <th className="pb-3 text-sm font-medium text-olive-700">Status</th>
-                        <th className="pb-3 text-sm font-medium text-olive-700">Editorial</th>
-                        <th className="pb-3 text-sm font-medium text-olive-700">Actions</th>
+                        <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Name</th>
+                        <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Location</th>
+                        <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Wines</th>
+                        <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Status</th>
+                        <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Editorial</th>
+                        <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1119,7 +1141,7 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {/* Fulfillment Operations Tab */}
+          {/* Fulfillment Tab */}
           {activeTab === 'fulfillment' && (
             <div className="space-y-6">
               {/* Sub-tab bar */}
@@ -1145,18 +1167,20 @@ export default function AdminDashboard() {
 
               {/* Delivery Zones sub-tab */}
               {fulfillmentSubTab === 'zones' && (
-                <div className="card p-6">
-                  <h2 className="text-xl font-serif font-bold text-olive-900 mb-1">Delivery Zones</h2>
-                  <p className="text-sm text-olive-500 mb-6">Enable or disable delivery zones and update their descriptions.</p>
+                <div className="bg-white border border-olive-200 p-6">
+                  <div className="flex items-center justify-between mb-5">
+                    <h2 className="text-base font-semibold text-olive-900">Delivery Zones</h2>
+                    <p className="text-sm text-olive-400">Enable or disable zones to control checkout availability</p>
+                  </div>
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead>
                         <tr className="text-left border-b border-olive-200">
-                          <th className="pb-3 text-sm font-medium text-olive-700">Zone Name</th>
-                          <th className="pb-3 text-sm font-medium text-olive-700">Code</th>
-                          <th className="pb-3 text-sm font-medium text-olive-700">Description</th>
-                          <th className="pb-3 text-sm font-medium text-olive-700">Status</th>
-                          <th className="pb-3 text-sm font-medium text-olive-700">Actions</th>
+                          <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Zone Name</th>
+                          <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Code</th>
+                          <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Description</th>
+                          <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Status</th>
+                          <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1191,18 +1215,20 @@ export default function AdminDashboard() {
 
               {/* Delivery Routes sub-tab */}
               {fulfillmentSubTab === 'routes' && (
-                <div className="card p-6 space-y-6">
+                <div className="bg-white border border-olive-200 p-6 space-y-6">
                   <div>
-                    <h2 className="text-xl font-serif font-bold text-olive-900 mb-1">Delivery Routes</h2>
-                    <p className="text-sm text-olive-500 mb-6">Assign delivery days to zones. The checkout will enforce these routes.</p>
+                    <div className="flex items-center justify-between mb-5">
+                      <h2 className="text-base font-semibold text-olive-900">Delivery Routes</h2>
+                      <p className="text-sm text-olive-400">Assign delivery days to zones</p>
+                    </div>
                     <div className="overflow-x-auto">
                       <table className="w-full">
                         <thead>
                           <tr className="text-left border-b border-olive-200">
-                            <th className="pb-3 text-sm font-medium text-olive-700">Zone</th>
-                            <th className="pb-3 text-sm font-medium text-olive-700">Delivery Day</th>
-                            <th className="pb-3 text-sm font-medium text-olive-700">Status</th>
-                            <th className="pb-3 text-sm font-medium text-olive-700">Actions</th>
+                            <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Zone</th>
+                            <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Delivery Day</th>
+                            <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Status</th>
+                            <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Actions</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1271,18 +1297,20 @@ export default function AdminDashboard() {
 
               {/* Pickup Schedules sub-tab */}
               {fulfillmentSubTab === 'schedules' && (
-                <div className="card p-6 space-y-6">
+                <div className="bg-white border border-olive-200 p-6 space-y-6">
                   <div>
-                    <h2 className="text-xl font-serif font-bold text-olive-900 mb-1">Pickup Schedules</h2>
-                    <p className="text-sm text-olive-500 mb-6">Configure which days each pickup location is available for order collection.</p>
+                    <div className="flex items-center justify-between mb-5">
+                      <h2 className="text-base font-semibold text-olive-900">Pickup Schedules</h2>
+                      <p className="text-sm text-olive-400">Configure pickup days per location</p>
+                    </div>
                     <div className="overflow-x-auto">
                       <table className="w-full">
                         <thead>
                           <tr className="text-left border-b border-olive-200">
-                            <th className="pb-3 text-sm font-medium text-olive-700">Location</th>
-                            <th className="pb-3 text-sm font-medium text-olive-700">Pickup Day</th>
-                            <th className="pb-3 text-sm font-medium text-olive-700">Status</th>
-                            <th className="pb-3 text-sm font-medium text-olive-700">Actions</th>
+                            <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Location</th>
+                            <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Pickup Day</th>
+                            <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Status</th>
+                            <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Actions</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1351,7 +1379,7 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {/* ── Portfolio Pricing Tab (INTERNAL ONLY) ───────────────────────── */}
+          {/* Portfolio Pricing Tab */}
           {activeTab === 'portfolio-pricing' && (
             <div className="space-y-6">
               <div>
