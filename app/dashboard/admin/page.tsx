@@ -370,7 +370,8 @@ export default function AdminDashboard() {
 
   const importWine = async (wine: (typeof WINES)[0]) => {
     const producer = PRODUCERS.find((p) => p.id === wine.producerId)
-    const isFoundingWine = producer?.collection === 'classical' ? true : false(wine.id)
+    const isFoundingWine = producer?.collection === 'classical' ? true : false
+    setImportingWineId(wine.id)
     try {
       const res = await fetch('/api/admin/products/import', {
         method: 'POST',
