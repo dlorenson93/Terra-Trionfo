@@ -72,12 +72,12 @@ export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions)
 
-    if (!session || session.user.role !== 'VENDOR') {
+    if (!session || (session.user.role !== 'VENDOR' && session.user.role !== 'ADMIN')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const body = await request.json()
-    const { name, contactEmail, phone, address, description } = body
+    const { name, contactEmail, phone, address, description, region, country, website, bio } = body
 
     if (!name || !contactEmail) {
       return NextResponse.json(
@@ -86,15 +86,26 @@ export async function POST(request: Request) {
       )
     }
 
+    const companyData: any = {
+      name,
+      contactEmail,
+      phone,
+      address,
+      description,
+      region,
+      country,
+      website,
+      bio,
+      ownerId: session.user.id,
+    }
+
+    // Admins can pre-approve companies they create directly
+    if (session.user.role === 'ADMIN') {
+      companyData.status = body.status ?? 'APPROVED'
+    }
+
     const company = await prisma.company.create({
-      data: {
-        name,
-        contactEmail,
-        phone,
-        address,
-        description,
-        ownerId: session.user.id,
-      },
+      data: companyData,
       include: {
         owner: {
           select: {

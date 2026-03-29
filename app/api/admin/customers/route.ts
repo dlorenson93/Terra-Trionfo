@@ -12,7 +12,10 @@ export async function GET() {
   }
 
   const users = await prisma.user.findMany({
-    where: { role: 'CONSUMER' },
+    where: {
+      role: 'CONSUMER',
+      NOT: { email: { endsWith: '@example.com' } },
+    },
     orderBy: { createdAt: 'desc' },
     select: {
       id: true,

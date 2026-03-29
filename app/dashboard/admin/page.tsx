@@ -27,6 +27,7 @@ interface Company {
   isFoundingProducer: boolean
   owner: { name: string }
   createdAt: string
+  _count?: { products: number }
 }
 
 interface Product {
@@ -148,6 +149,12 @@ export default function AdminDashboard() {
   })
   const [assignWinePanel, setAssignWinePanel] = useState<{ restaurantId: string; restaurantName: string } | null>(null)
   const [wineAssignForm, setWineAssignForm] = useState({ productId: '', servingType: 'BOTTLE_LIST', notes: '' })
+
+  // Company management state
+  const [showNewCompanyForm, setShowNewCompanyForm] = useState(false)
+  const [newCompanyForm, setNewCompanyForm] = useState({
+    name: '', contactEmail: '', region: '', country: 'Italy', phone: '', website: '', bio: '', description: '',
+  })
 
   useEffect(() => {
     if (!session) {
@@ -328,6 +335,46 @@ export default function AdminDashboard() {
       fetchData()
     } catch (error) {
       console.error('Error updating founding status:', error)
+    }
+  }
+
+  const createCompany = async () => {
+    const { name, contactEmail } = newCompanyForm
+    if (!name.trim() || !contactEmail.trim()) {
+      alert('Name and contact email are required')
+      return
+    }
+    try {
+      const res = await fetch('/api/companies', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...newCompanyForm, status: 'APPROVED' }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        alert(err.error || 'Failed to create company')
+        return
+      }
+      setShowNewCompanyForm(false)
+      setNewCompanyForm({ name: '', contactEmail: '', region: '', country: 'Italy', phone: '', website: '', bio: '', description: '' })
+      fetchData()
+    } catch (error) {
+      console.error('Error creating company:', error)
+    }
+  }
+
+  const deleteCompany = async (companyId: string, companyName: string) => {
+    if (!confirm(`Delete "${companyName}"? This cannot be undone.`)) return
+    try {
+      const res = await fetch(`/api/companies/${companyId}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const err = await res.json()
+        alert(err.error || 'Failed to delete company')
+        return
+      }
+      fetchData()
+    } catch (error) {
+      console.error('Error deleting company:', error)
     }
   }
 
@@ -884,81 +931,163 @@ export default function AdminDashboard() {
 
           {/* Companies Tab */}
           {activeTab === 'companies' && (
-            <div className="bg-white border border-olive-200 p-6">
-              <div className="flex items-center justify-between mb-5">
-                <h2 className="text-base font-semibold text-olive-900">Manage Companies</h2>
-                <p className="text-sm text-olive-400">Content status controls public producer visibility</p>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="text-left border-b border-olive-200">
-                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Company</th>
-                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Owner</th>
-                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Email</th>
-                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Status</th>
-                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Editorial</th>
-                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {Array.isArray(companies) ? companies.map((company) => (
-                      <tr key={company.id} className="border-b border-olive-100 last:border-0">
-                        <td className="py-3 text-sm font-medium text-olive-900">
-                          <div className="flex items-center gap-2">
-                            {company.name}
-                            {company.isFoundingProducer && (
-                              <span className="text-[9px] font-medium text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 uppercase tracking-wider">Founding</span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="py-3 text-sm text-olive-800">{company.owner.name}</td>
-                        <td className="py-3 text-sm text-olive-600">{company.contactEmail}</td>
-                        <td className="py-3">
-                          <span className={`badge badge-${company.status.toLowerCase()}`}>{company.status}</span>
-                        </td>
-                        <td className="py-3">
-                          <span className={`text-[10px] font-medium px-2 py-0.5 ${contentStatusStyle(company.contentStatus ?? 'DRAFT')}`}>
-                            {contentStatusLabel(company.contentStatus ?? 'DRAFT')}
-                          </span>
-                        </td>
-                        <td className="py-3">
-                          <div className="flex gap-1 flex-wrap">
-                            {company.status === 'PENDING' && (
-                              <>
-                                <button onClick={() => updateCompanyStatus(company.id, 'APPROVED')} className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded hover:bg-green-200">Approve</button>
-                                <button onClick={() => updateCompanyStatus(company.id, 'REJECTED')} className="text-xs px-2 py-1 bg-red-100 text-red-800 rounded hover:bg-red-200">Reject</button>
-                              </>
-                            )}
-                            {company.status === 'APPROVED' && (
-                              <button onClick={() => updateCompanyStatus(company.id, 'REJECTED')} className="text-xs px-2 py-1 bg-red-50 text-red-700 rounded hover:bg-red-100">Revoke</button>
-                            )}
-                            {company.contentStatus !== 'LIVE' && (
-                              <>
-                                {company.contentStatus === 'DRAFT' && <button onClick={() => updateCompanyContentStatus(company.id, 'IN_REVIEW')} className="text-xs px-2 py-1 bg-amber-100 text-amber-800 rounded hover:bg-amber-200">Mark Under Review</button>}
-                                {company.contentStatus === 'IN_REVIEW' && <button onClick={() => updateCompanyContentStatus(company.id, 'READY')} className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200">Mark Intro Pending</button>}
-                                {(company.contentStatus === 'READY' || company.contentStatus === 'IN_REVIEW') && <button onClick={() => updateCompanyContentStatus(company.id, 'LIVE')} className="text-xs px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700">Introduce Publicly</button>}
-                              </>
-                            )}
-                            {company.contentStatus === 'LIVE' && (
-                              <button onClick={() => updateCompanyContentStatus(company.id, 'READY')} className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200">Withdraw</button>
-                            )}
-                            <button
-                              onClick={() => updateCompanyFoundingStatus(company.id, !company.isFoundingProducer)}
-                              className={`text-xs px-2 py-1 rounded hover:opacity-80 transition-opacity ${
-                                company.isFoundingProducer
-                                  ? 'bg-amber-100 text-amber-800'
-                                  : 'bg-gray-100 text-gray-600'
-                              }`}
-                            >
-                              {company.isFoundingProducer ? '★ Founding' : '☆ Set Founding'}
-                            </button>
-                          </div>
-                        </td>
+            <div className="space-y-6">
+              {/* Add Company panel */}
+              <div className="bg-white border border-olive-200 p-6">
+                <div className="flex items-center justify-between mb-5">
+                  <div>
+                    <h2 className="text-base font-semibold text-olive-900">Producer Companies</h2>
+                    <p className="text-sm text-olive-400 mt-0.5">
+                      {companies.length} {companies.length === 1 ? 'company' : 'companies'} · Content status controls public producer visibility
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowNewCompanyForm(!showNewCompanyForm)}
+                    className="text-sm px-4 py-2 bg-olive-700 text-parchment-100 hover:bg-olive-800 transition-colors"
+                  >
+                    {showNewCompanyForm ? 'Cancel' : '+ Add Company'}
+                  </button>
+                </div>
+
+                {showNewCompanyForm && (
+                  <div className="border border-olive-200 bg-parchment-50 p-5 mb-6">
+                    <h3 className="text-sm font-semibold text-olive-900 mb-4">New Producer Company</h3>
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="label">Producer Name *</label>
+                        <input className="input-field" placeholder="e.g. Stroppiana" value={newCompanyForm.name}
+                          onChange={(e) => setNewCompanyForm((f) => ({ ...f, name: e.target.value }))} />
+                      </div>
+                      <div>
+                        <label className="label">Contact Email *</label>
+                        <input className="input-field" type="email" placeholder="contact@producer.com" value={newCompanyForm.contactEmail}
+                          onChange={(e) => setNewCompanyForm((f) => ({ ...f, contactEmail: e.target.value }))} />
+                      </div>
+                      <div>
+                        <label className="label">Region</label>
+                        <input className="input-field" placeholder="e.g. Piemonte, Tuscany" value={newCompanyForm.region}
+                          onChange={(e) => setNewCompanyForm((f) => ({ ...f, region: e.target.value }))} />
+                      </div>
+                      <div>
+                        <label className="label">Country</label>
+                        <input className="input-field" value={newCompanyForm.country}
+                          onChange={(e) => setNewCompanyForm((f) => ({ ...f, country: e.target.value }))} />
+                      </div>
+                      <div>
+                        <label className="label">Phone</label>
+                        <input className="input-field" placeholder="+39 …" value={newCompanyForm.phone}
+                          onChange={(e) => setNewCompanyForm((f) => ({ ...f, phone: e.target.value }))} />
+                      </div>
+                      <div>
+                        <label className="label">Website</label>
+                        <input className="input-field" placeholder="https://" value={newCompanyForm.website}
+                          onChange={(e) => setNewCompanyForm((f) => ({ ...f, website: e.target.value }))} />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="label">Short Bio</label>
+                        <textarea className="input-field" rows={2} placeholder="Brief producer description…" value={newCompanyForm.bio}
+                          onChange={(e) => setNewCompanyForm((f) => ({ ...f, bio: e.target.value }))} />
+                      </div>
+                    </div>
+                    <div className="flex gap-3 mt-4">
+                      <button onClick={createCompany} className="text-sm px-5 py-2 bg-olive-700 text-parchment-100 hover:bg-olive-800 transition-colors">
+                        Create Company
+                      </button>
+                      <button onClick={() => setShowNewCompanyForm(false)} className="text-sm px-4 py-2 border border-olive-300 text-olive-700 hover:bg-parchment-100 transition-colors">
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="text-left border-b border-olive-200">
+                        <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Company</th>
+                        <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Owner</th>
+                        <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Email</th>
+                        <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Products</th>
+                        <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Status</th>
+                        <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Editorial</th>
+                        <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Actions</th>
                       </tr>
-                    )) : null}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {companies.length === 0 && (
+                        <tr>
+                          <td colSpan={7} className="py-8 text-center text-sm text-olive-400">No companies yet. Add one above.</td>
+                        </tr>
+                      )}
+                      {Array.isArray(companies) ? companies.map((company) => (
+                        <tr key={company.id} className="border-b border-olive-100 last:border-0">
+                          <td className="py-3 text-sm font-medium text-olive-900">
+                            <div className="flex items-center gap-2">
+                              {company.name}
+                              {company.isFoundingProducer && (
+                                <span className="text-[9px] font-medium text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 uppercase tracking-wider">Founding</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="py-3 text-sm text-olive-800">{company.owner.name}</td>
+                          <td className="py-3 text-sm text-olive-600">{company.contactEmail}</td>
+                          <td className="py-3 text-sm text-olive-500 tabular-nums">{company._count?.products ?? 0}</td>
+                          <td className="py-3">
+                            <span className={`badge badge-${company.status.toLowerCase()}`}>{company.status}</span>
+                          </td>
+                          <td className="py-3">
+                            <span className={`text-[10px] font-medium px-2 py-0.5 ${contentStatusStyle(company.contentStatus ?? 'DRAFT')}`}>
+                              {contentStatusLabel(company.contentStatus ?? 'DRAFT')}
+                            </span>
+                          </td>
+                          <td className="py-3">
+                            <div className="flex gap-1 flex-wrap">
+                              {company.status === 'PENDING' && (
+                                <>
+                                  <button onClick={() => updateCompanyStatus(company.id, 'APPROVED')} className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded hover:bg-green-200">Approve</button>
+                                  <button onClick={() => updateCompanyStatus(company.id, 'REJECTED')} className="text-xs px-2 py-1 bg-red-100 text-red-800 rounded hover:bg-red-200">Reject</button>
+                                </>
+                              )}
+                              {company.status === 'APPROVED' && (
+                                <button onClick={() => updateCompanyStatus(company.id, 'REJECTED')} className="text-xs px-2 py-1 bg-red-50 text-red-700 rounded hover:bg-red-100">Revoke</button>
+                              )}
+                              {company.status === 'REJECTED' && (
+                                <button onClick={() => updateCompanyStatus(company.id, 'APPROVED')} className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded hover:bg-green-200">Re-approve</button>
+                              )}
+                              {company.contentStatus !== 'LIVE' && (
+                                <>
+                                  {company.contentStatus === 'DRAFT' && <button onClick={() => updateCompanyContentStatus(company.id, 'IN_REVIEW')} className="text-xs px-2 py-1 bg-amber-100 text-amber-800 rounded hover:bg-amber-200">Mark Under Review</button>}
+                                  {company.contentStatus === 'IN_REVIEW' && <button onClick={() => updateCompanyContentStatus(company.id, 'READY')} className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200">Mark Intro Pending</button>}
+                                  {(company.contentStatus === 'READY' || company.contentStatus === 'IN_REVIEW') && <button onClick={() => updateCompanyContentStatus(company.id, 'LIVE')} className="text-xs px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700">Introduce Publicly</button>}
+                                </>
+                              )}
+                              {company.contentStatus === 'LIVE' && (
+                                <button onClick={() => updateCompanyContentStatus(company.id, 'READY')} className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200">Withdraw</button>
+                              )}
+                              <button
+                                onClick={() => updateCompanyFoundingStatus(company.id, !company.isFoundingProducer)}
+                                className={`text-xs px-2 py-1 rounded hover:opacity-80 transition-opacity ${
+                                  company.isFoundingProducer
+                                    ? 'bg-amber-100 text-amber-800'
+                                    : 'bg-gray-100 text-gray-600'
+                                }`}
+                              >
+                                {company.isFoundingProducer ? '★ Founding' : '☆ Set Founding'}
+                              </button>
+                              <button
+                                onClick={() => deleteCompany(company.id, company.name)}
+                                className="text-xs px-2 py-1 bg-red-50 text-red-600 border border-red-200 rounded hover:bg-red-100"
+                                title={company._count?.products ? `${company._count.products} products must be removed first` : 'Delete company'}
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      )) : null}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
@@ -967,8 +1096,12 @@ export default function AdminDashboard() {
           {activeTab === 'products' && (
             <div className="bg-white border border-olive-200 p-6">
               <div className="flex items-center justify-between mb-5">
-                <h2 className="text-base font-semibold text-olive-900">Manage Products</h2>
-                <p className="text-sm text-olive-400">Content status controls public visibility</p>
+                <div>
+                  <h2 className="text-base font-semibold text-olive-900">Wine Products</h2>
+                  <p className="text-sm text-olive-400 mt-0.5">
+                    {products.filter((p) => p.category === 'WINE').length} wines · Content status controls public visibility
+                  </p>
+                </div>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
@@ -976,7 +1109,7 @@ export default function AdminDashboard() {
                     <tr className="text-left border-b border-olive-200">
                       <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Product</th>
                       <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Company</th>
-                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Category</th>
+                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Inventory</th>
                       <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Retail</th>
                       <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Status</th>
                       <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Content</th>
@@ -984,11 +1117,22 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {Array.isArray(products) ? products.map((product) => (
+                    {products.filter((p) => p.category === 'WINE').length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="py-8 text-center text-sm text-olive-400">No wine products yet.</td>
+                      </tr>
+                    ) : products.filter((p) => p.category === 'WINE').map((product) => (
                       <tr key={product.id} className="border-b border-olive-100 last:border-0">
-                        <td className="py-3 text-sm font-medium text-olive-900">{product.name}</td>
+                        <td className="py-3 text-sm font-medium text-olive-900">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {product.name}
+                            {product.isFeatured && <span className="text-[9px] font-medium text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 uppercase tracking-wider">Featured</span>}
+                            {product.isLimitedAllocation && <span className="text-[9px] font-medium text-purple-700 bg-purple-50 border border-purple-200 px-1.5 py-0.5 uppercase tracking-wider">Limited</span>}
+                            {product.isFoundingWine && <span className="text-[9px] font-medium text-olive-700 bg-olive-50 border border-olive-200 px-1.5 py-0.5 uppercase tracking-wider">Founding</span>}
+                          </div>
+                        </td>
                         <td className="py-3 text-sm text-olive-800">{product.company.name}</td>
-                        <td className="py-3 text-sm text-olive-600">{product.category}</td>
+                        <td className="py-3 text-sm text-olive-600 tabular-nums">{product.inventory}</td>
                         <td className="py-3 text-sm text-olive-800">${(product.retailPriceCents / 100).toFixed(2)}</td>
                         <td className="py-3">
                           <span className={`badge badge-${product.status.toLowerCase()}`}>{product.status}</span>
@@ -1009,6 +1153,9 @@ export default function AdminDashboard() {
                             {product.status === 'APPROVED' && (
                               <button onClick={() => updateProductStatus(product.id, 'REJECTED')} className="text-xs px-2 py-1 bg-red-50 text-red-700 rounded hover:bg-red-100">Revoke</button>
                             )}
+                            {product.status === 'REJECTED' && (
+                              <button onClick={() => updateProductStatus(product.id, 'APPROVED')} className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded hover:bg-green-200">Re-approve</button>
+                            )}
                             {product.contentStatus !== 'LIVE' && (
                               <>
                                 {product.contentStatus === 'DRAFT' && <button onClick={() => updateContentStatus(product.id, 'IN_REVIEW')} className="text-xs px-2 py-1 bg-amber-100 text-amber-800 rounded hover:bg-amber-200">Mark Under Review</button>}
@@ -1023,12 +1170,9 @@ export default function AdminDashboard() {
                           </div>
                         </td>
                       </tr>
-                    )) : null}
+                    ))}
                   </tbody>
                 </table>
-                {products.length === 0 && (
-                  <p className="text-center text-olive-600 py-8">No products</p>
-                )}
               </div>
             </div>
           )}

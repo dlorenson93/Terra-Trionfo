@@ -115,3 +115,37 @@ export async function PATCH(
     )
   }
 }
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session || session.user.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    const company = await prisma.company.findUnique({
+      where: { id: params.id },
+      include: { _count: { select: { products: true } } },
+    })
+
+    if (!company) {
+      return NextResponse.json({ error: 'Company not found' }, { status: 404 })
+    }
+
+    if (company._count.products > 0) {
+      return NextResponse.json(
+        { error: `Cannot delete: company has ${company._count.products} product(s). Remove all products first.` },
+        { status: 409 }
+      )
+    }
+
+    await prisma.company.delete({ where: { id: params.id } })
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Delete company error:', error)
+    return NextResponse.json({ error: 'Failed to delete company' }, { status: 500 })
+  }
+}
