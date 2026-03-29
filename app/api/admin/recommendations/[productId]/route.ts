@@ -8,12 +8,8 @@ export const dynamic = 'force-dynamic'
 /**
  * PATCH /api/admin/recommendations/[productId]
  *
- * Records a workflow action against the current recommendation for a product.
- * Accepts: recommendationStatus, recommendationActionType, recommendationNotes.
- *
- * - REVIEWED   → stamps lastRecommendationReviewedAt
- * - ACTIONED   → stamps lastRecommendationActionedAt (and reviewedAt if not set)
- * - DISMISSED  → clears action type, stamps reviewedAt
+ * Records a workflow action against the current recommendation for a product
+ * and writes an audit row to ProductRecommendationHistory.
  *
  * ADMIN-ONLY.
  */
@@ -29,11 +25,26 @@ export async function PATCH(
 
     const { productId } = params
 
-    const product = await prisma.product.findUnique({
+    // Fetch current state for diff + audit snapshot
+    const product = await (prisma.product.findUnique as Function)({
       where:  { id: productId },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      select: { id: true, lastRecommendationReviewedAt: true } as any,
-    }) as { id: string; lastRecommendationReviewedAt: Date | null } | null
+      select: {
+        id:                           true,
+        releaseMonitorStatus:         true,
+        exposureTier:                 true,
+        recommendationStatus:         true,
+        recommendationActionType:     true,
+        lastRecommendationReviewedAt: true,
+      },
+    }) as {
+      id: string
+      releaseMonitorStatus:         string | null
+      exposureTier:                 string | null
+      recommendationStatus:         string | null
+      recommendationActionType:     string | null
+      lastRecommendationReviewedAt: Date | null
+    } | null
+
     if (!product) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 })
     }
@@ -46,7 +57,7 @@ export async function PATCH(
 
     const { recommendationStatus, recommendationActionType, recommendationNotes } = body
 
-    const VALID_STATUSES   = ['OPEN', 'REVIEWED', 'ACTIONED', 'DISMISSED'] as const
+    const VALID_STATUSES = ['OPEN', 'REVIEWED', 'ACTIONED', 'DISMISSED'] as const
     const VALID_ACTION_TYPES = [
       'NONE', 'ACCELERATE_RELEASE', 'HOLD_RELEASE', 'INCREASE_ALLOCATION',
       'REDUCE_EXPOSURE', 'INCREASE_MERCHANDISING', 'MAINTAIN', 'DISMISSED',
@@ -77,32 +88,45 @@ export async function PATCH(
     }
 
     if (recommendationStatus === 'ACTIONED') {
-      // Stamp reviewed if it hasn't been yet
       if (!product.lastRecommendationReviewedAt) {
         data.lastRecommendationReviewedAt = now
       }
       data.lastRecommendationActionedAt = now
     }
 
-    // Reopening resets the actioned timestamp
     if (recommendationStatus === 'OPEN') {
       data.lastRecommendationActionedAt = null
     }
 
-    const updated = await prisma.product.update({
-      where: { id: productId },
+    // Write product update + audit history row in one transaction
+    const [updated] = await prisma.$transaction([
+      (prisma.product.update as Function)({
+        where: { id: productId },
+        data,
+        select: {
+          id:                            true,
+          recommendationStatus:          true,
+          recommendationActionType:      true,
+          recommendationNotes:           true,
+          lastRecommendationReviewedAt:  true,
+          lastRecommendationActionedAt:  true,
+        },
+      }),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      data: data as any,
-      select: {
-        id:                            true,
-        recommendationStatus:          true,
-        recommendationActionType:      true,
-        recommendationNotes:           true,
-        lastRecommendationReviewedAt:  true,
-        lastRecommendationActionedAt:  true,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any,
-    })
+      (prisma as any).productRecommendationHistory.create({
+        data: {
+          productId,
+          previousStatus:      product.recommendationStatus    ?? null,
+          newStatus:           recommendationStatus,
+          previousActionType:  product.recommendationActionType ?? null,
+          newActionType:       recommendationActionType         ?? null,
+          note:                recommendationNotes              ?? null,
+          releaseMonitorStatus: product.releaseMonitorStatus   ?? null,
+          exposureTier:         product.exposureTier           ?? null,
+          changedByUserId:      session.user.id,
+        },
+      }),
+    ])
 
     return NextResponse.json(updated)
   } catch (error) {

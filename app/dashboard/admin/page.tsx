@@ -63,6 +63,19 @@ interface Product {
   lastRecommendationActionedAt?: string | null
 }
 
+interface RecommendationHistoryEvent {
+  id:                  string
+  previousStatus:      string | null
+  newStatus:           string
+  previousActionType:  string | null
+  newActionType:       string | null
+  note:                string | null
+  releaseMonitorStatus: string | null
+  exposureTier:         string | null
+  createdAt:           string
+  changedBy:           { id: string; name: string; email: string }
+}
+
 interface RestaurantWineAdmin {
   id: string
   servingType: string
@@ -197,6 +210,10 @@ export default function AdminDashboard() {
   const [runningAllIntel, setRunningAllIntel] = useState(false)
   // Recommendation workflow action state
   const [updatingRecId, setUpdatingRecId] = useState<string | null>(null)
+  // Recommendation history state — keyed by productId
+  const [recHistory, setRecHistory] = useState<Record<string, RecommendationHistoryEvent[]>>({})
+  const [loadingHistoryId, setLoadingHistoryId] = useState<string | null>(null)
+  const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!session) {
@@ -308,11 +325,36 @@ export default function AdminDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ recommendationStatus, ...opts }),
       })
+      // Invalidate history cache so next expand re-fetches
+      setRecHistory(prev => { const n = { ...prev }; delete n[productId]; return n })
       fetchData()
     } catch (error) {
       console.error('Error updating recommendation:', error)
     } finally {
       setUpdatingRecId(null)
+    }
+  }
+
+  const fetchRecommendationHistory = async (productId: string) => {
+    // Toggle off if already expanded
+    if (expandedHistoryId === productId) {
+      setExpandedHistoryId(null)
+      return
+    }
+    setExpandedHistoryId(productId)
+    // Only fetch if not already cached
+    if (recHistory[productId]) return
+    setLoadingHistoryId(productId)
+    try {
+      const res = await fetch(`/api/admin/recommendations/${productId}/history`)
+      if (res.ok) {
+        const data = await res.json()
+        setRecHistory(prev => ({ ...prev, [productId]: data }))
+      }
+    } catch (error) {
+      console.error('Error fetching recommendation history:', error)
+    } finally {
+      setLoadingHistoryId(null)
     }
   }
 
@@ -1602,6 +1644,68 @@ export default function AdminDashboard() {
                                             </button>
                                           )}
                                         </div>
+                                        {/* History toggle */}
+                                        <button
+                                          onClick={() => fetchRecommendationHistory(dbProduct.id)}
+                                          className="text-[9px] text-olive-400 hover:text-olive-600 underline underline-offset-2 transition-colors self-start"
+                                        >
+                                          {expandedHistoryId === dbProduct.id ? '▲ Hide history' : '▼ View history'}
+                                        </button>
+                                        {/* History panel */}
+                                        {expandedHistoryId === dbProduct.id && (
+                                          <div className="mt-1 border-t border-olive-100 pt-1.5">
+                                            {loadingHistoryId === dbProduct.id ? (
+                                              <p className="text-[9px] text-olive-300 italic">Loading…</p>
+                                            ) : !recHistory[dbProduct.id] || recHistory[dbProduct.id].length === 0 ? (
+                                              <p className="text-[9px] text-olive-300 italic">No history yet</p>
+                                            ) : (
+                                              <ol className="space-y-1.5">
+                                                {recHistory[dbProduct.id].map((event) => {
+                                                  const statusColors: Record<string, string> = {
+                                                    OPEN:      'text-sky-700',
+                                                    REVIEWED:  'text-violet-700',
+                                                    ACTIONED:  'text-emerald-700',
+                                                    DISMISSED: 'text-gray-500',
+                                                  }
+                                                  const ts = new Date(event.createdAt)
+                                                  const dateStr = ts.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' })
+                                                  const timeStr = ts.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+                                                  return (
+                                                    <li key={event.id} className="flex gap-1.5">
+                                                      <div className="w-1 shrink-0 mt-0.5 self-stretch bg-olive-100 rounded-full" />
+                                                      <div className="min-w-0">
+                                                        <div className="flex items-center gap-1 flex-wrap">
+                                                          {event.previousStatus && (
+                                                            <span className={`text-[8px] font-medium line-through text-gray-400`}>
+                                                              {event.previousStatus}
+                                                            </span>
+                                                          )}
+                                                          {event.previousStatus && <span className="text-[8px] text-gray-300">→</span>}
+                                                          <span className={`text-[8px] font-semibold uppercase ${statusColors[event.newStatus] ?? 'text-olive-600'}`}>
+                                                            {event.newStatus}
+                                                          </span>
+                                                          {event.newActionType && event.newActionType !== 'NONE' && (
+                                                            <span className="text-[8px] text-olive-400">
+                                                              · {event.newActionType.replace(/_/g, ' ')}
+                                                            </span>
+                                                          )}
+                                                        </div>
+                                                        {event.note && (
+                                                          <p className="text-[8px] text-olive-500 italic mt-0.5 truncate max-w-[160px]" title={event.note}>
+                                                            "{event.note}"
+                                                          </p>
+                                                        )}
+                                                        <p className="text-[8px] text-olive-300 mt-0.5">
+                                                          {event.changedBy.name} · {dateStr} {timeStr}
+                                                        </p>
+                                                      </div>
+                                                    </li>
+                                                  )
+                                                })}
+                                              </ol>
+                                            )}
+                                          </div>
+                                        )}
                                       </div>
                                     )}
                                   </div>

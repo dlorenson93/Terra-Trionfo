@@ -147,6 +147,7 @@ model User {
   companies Company[]
   orders    Order[]
   addresses CustomerAddress[]
+  recommendationActions ProductRecommendationHistory[]
 
   @@map("users")
 }
@@ -279,8 +280,40 @@ model Product {
   restaurantWines RestaurantWine[]
   waitlists       Waitlist[]
   tradeInterests  TradeInterest[]
+  recommendationHistory ProductRecommendationHistory[]
 
   @@map("products")
+}
+
+// Audit trail for recommendation workflow transitions
+model ProductRecommendationHistory {
+  id        String @id @default(cuid())
+
+  // Snapshot of what changed
+  previousStatus     RecommendationStatus?
+  newStatus          RecommendationStatus
+  previousActionType RecommendationActionType?
+  newActionType      RecommendationActionType?
+  note               String?
+
+  // Context snapshot — what the engine said at the moment of the action
+  releaseMonitorStatus ReleaseMonitorStatus?
+  exposureTier         ExposureTier?
+
+  // Who did it
+  changedByUserId String
+  changedBy       User   @relation(fields: [changedByUserId], references: [id])
+
+  // When
+  createdAt DateTime @default(now())
+
+  // Foreign key
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([createdAt])
+  @@map("product_recommendation_history")
 }
 
 model Order {
