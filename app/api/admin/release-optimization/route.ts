@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
 import { buildDemandSnapshot } from '@/lib/demandInsights'
 import { deriveReleaseOptimization } from '@/lib/releaseOptimizationEngine'
 
@@ -24,6 +25,15 @@ export async function GET() {
 
     const snapshot = await buildDemandSnapshot()
     const result   = deriveReleaseOptimization(snapshot)
+
+    // Persist lastRecommendationAt so freshness can be tracked on subsequent runs
+    const analysedIds = result.recommendations.map((r) => r.productId)
+    if (analysedIds.length > 0) {
+      await prisma.product.updateMany({
+        where: { id: { in: analysedIds } },
+        data:  { lastRecommendationAt: new Date() },
+      })
+    }
 
     return NextResponse.json({
       generatedAt: snapshot.generatedAt,

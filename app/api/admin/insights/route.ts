@@ -163,11 +163,13 @@ export async function GET() {
         exposureTier:  r.exposureTier,
       })),
       releaseStageHealth:               releaseOpt.recommendations.map((r) => ({
-        productId:     r.productId,
-        wineName:      r.wineName,
-        monitorStatus: r.monitorStatus,
-        exposureTier:  r.exposureTier,
-        type:          r.type,
+        productId:      r.productId,
+        wineName:       r.wineName,
+        monitorStatus:  r.monitorStatus,
+        exposureTier:   r.exposureTier,
+        type:           r.type,
+        freshness:      r.freshness,
+        dominantDriver: r.dominantDriver,
       })),
     })
   } catch (error) {

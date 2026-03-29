@@ -2223,42 +2223,76 @@ export default function AdminDashboard() {
                               <tr className="border-b border-olive-200 text-left">
                                 <th className="pb-2 text-[10px] font-medium text-olive-400 uppercase tracking-wider pr-4">Wine</th>
                                 <th className="pb-2 px-3 text-[10px] font-medium text-olive-400 uppercase tracking-wider">Type</th>
+                                <th className="pb-2 px-3 text-[10px] font-medium text-olive-400 uppercase tracking-wider">Driver</th>
                                 <th className="pb-2 px-3 text-[10px] font-medium text-olive-400 uppercase tracking-wider">Confidence</th>
+                                <th className="pb-2 px-3 text-[10px] font-medium text-olive-400 uppercase tracking-wider">Freshness</th>
                                 <th className="pb-2 px-3 text-[10px] font-medium text-olive-400 uppercase tracking-wider">Monitor</th>
                                 <th className="pb-2 px-3 text-[10px] font-medium text-olive-400 uppercase tracking-wider">Exposure</th>
                                 <th className="pb-2 pl-3 text-[10px] font-medium text-olive-400 uppercase tracking-wider">Reason</th>
                               </tr>
                             </thead>
                             <tbody>
-                              {ri.recommendations.map((r: any) => (
-                                <tr key={r.productId} className="border-b border-parchment-100 last:border-0 hover:bg-parchment-50 transition-colors">
-                                  <td className="py-2.5 pr-4">
-                                    <p className="font-medium text-olive-900">{r.wineName}</p>
-                                    <p className="text-[10px] text-olive-400 mt-0.5">{r.releaseStatus}</p>
-                                  </td>
-                                  <td className="py-2.5 px-3">
-                                    <span className="text-[10px] font-medium text-olive-700 whitespace-nowrap">
-                                      {r.type.replace(/_/g, ' ')}
-                                    </span>
-                                  </td>
-                                  <td className="py-2.5 px-3">
-                                    <span className={`text-[10px] font-semibold uppercase ${confidenceBadge(r.confidence)}`}>
-                                      {r.confidence}
-                                    </span>
-                                  </td>
-                                  <td className="py-2.5 px-3">
-                                    <span className={`text-[10px] font-medium px-1.5 py-0.5 ${monitorBadge(r.monitorStatus)}`}>
-                                      {r.monitorStatus.replace(/_/g, ' ')}
-                                    </span>
-                                  </td>
-                                  <td className="py-2.5 px-3">
-                                    <span className={`text-[10px] font-medium px-1.5 py-0.5 ${exposureBadge(r.exposureTier)}`}>
-                                      {r.exposureTier}
-                                    </span>
-                                  </td>
-                                  <td className="py-2.5 pl-3 text-olive-500 max-w-xs leading-snug">{r.reason}</td>
-                                </tr>
-                              ))}
+                              {ri.recommendations.map((r: any) => {
+                                const freshnessBadge = (f: string) => {
+                                  if (f === 'fresh')          return 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                  if (f === 'needs_refresh')  return 'bg-amber-50 text-amber-700 border border-amber-200'
+                                  if (f === 'stale')          return 'bg-red-50 text-red-600 border border-red-200'
+                                  return 'bg-gray-50 text-gray-500 border border-gray-200' // never_analyzed
+                                }
+                                const freshnessLabel = (f: string) => {
+                                  if (f === 'fresh')         return 'Fresh'
+                                  if (f === 'needs_refresh') return 'Needs Refresh'
+                                  if (f === 'stale')         return 'Stale'
+                                  return 'Never Run'
+                                }
+                                const driverBadge = (d: string) => {
+                                  if (d === 'trade')    return 'text-violet-700'
+                                  if (d === 'consumer') return 'text-sky-700'
+                                  return 'text-olive-400'
+                                }
+                                return (
+                                  <tr key={r.productId} className="border-b border-parchment-100 last:border-0 hover:bg-parchment-50 transition-colors">
+                                    <td className="py-2.5 pr-4">
+                                      <p className="font-medium text-olive-900">{r.wineName}</p>
+                                      <p className="text-[10px] text-olive-400 mt-0.5">{r.releaseStatus}</p>
+                                    </td>
+                                    <td className="py-2.5 px-3">
+                                      <span className="text-[10px] font-medium text-olive-700 whitespace-nowrap">
+                                        {r.type.replace(/_/g, ' ')}
+                                      </span>
+                                    </td>
+                                    <td className="py-2.5 px-3">
+                                      <span className={`text-[10px] font-semibold uppercase ${driverBadge(r.dominantDriver)}`}>
+                                        {r.dominantDriver}
+                                      </span>
+                                    </td>
+                                    <td className="py-2.5 px-3">
+                                      <span className={`text-[10px] font-semibold uppercase ${confidenceBadge(r.confidence)}`}>
+                                        {r.confidence}
+                                      </span>
+                                      {r.confidenceReason && (
+                                        <p className="text-[9px] text-olive-400 mt-0.5 leading-snug max-w-[160px]">{r.confidenceReason}</p>
+                                      )}
+                                    </td>
+                                    <td className="py-2.5 px-3">
+                                      <span className={`text-[10px] font-medium px-1.5 py-0.5 whitespace-nowrap ${freshnessBadge(r.freshness)}`}>
+                                        {freshnessLabel(r.freshness)}
+                                      </span>
+                                    </td>
+                                    <td className="py-2.5 px-3">
+                                      <span className={`text-[10px] font-medium px-1.5 py-0.5 ${monitorBadge(r.monitorStatus)}`}>
+                                        {r.monitorStatus.replace(/_/g, ' ')}
+                                      </span>
+                                    </td>
+                                    <td className="py-2.5 px-3">
+                                      <span className={`text-[10px] font-medium px-1.5 py-0.5 ${exposureBadge(r.exposureTier)}`}>
+                                        {r.exposureTier}
+                                      </span>
+                                    </td>
+                                    <td className="py-2.5 pl-3 text-olive-500 max-w-xs leading-snug">{r.reason}</td>
+                                  </tr>
+                                )
+                              })}
                             </tbody>
                           </table>
                         </div>

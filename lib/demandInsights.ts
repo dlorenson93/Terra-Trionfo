@@ -70,6 +70,8 @@ export interface ProductSignals {
   interestGap: number
   /** (recentPurchaseCount / max(1, purchaseCount)) × 100 — purchase velocity trending */
   velocityScore: number
+  /** Timestamp of the last time this product was included in a recommendation run; null = never */
+  lastRecommendationAt: Date | null
 }
 
 export interface RegionAggregate {
@@ -187,6 +189,7 @@ export async function buildDemandSnapshot(): Promise<DemandSnapshot> {
         retailPriceCents: true,
         isLimitedAllocation: true,
         inventory: true,
+        lastRecommendationAt: true,
         company: { select: { name: true } },
       },
     }),
@@ -313,6 +316,7 @@ export async function buildDemandSnapshot(): Promise<DemandSnapshot> {
       conversionProxy,
       interestGap,
       velocityScore,
+      lastRecommendationAt: p.lastRecommendationAt ?? null,
     }
   })
 

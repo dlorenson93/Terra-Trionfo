@@ -30,6 +30,9 @@ export type ReleaseRecommendationType =
   | 'trade_led_interest'
   | 'consumer_led_interest'
 
+/** Freshness of a recommendation relative to when the engine last ran for this product */
+export type RecommendationFreshness = 'fresh' | 'needs_refresh' | 'stale' | 'never_analyzed'
+
 export type ExposureTier = 'LOW' | 'STANDARD' | 'PRIORITY' | 'LIMITED'
 
 export type ReleaseMonitorStatus =
@@ -47,9 +50,15 @@ export interface ReleaseRecommendation {
   releaseStatus: string
   type: ReleaseRecommendationType
   confidence: 'high' | 'medium' | 'low'
+  /** Human-readable explanation of why this confidence level was assigned */
+  confidenceReason: string
   reason: string
   monitorStatus: ReleaseMonitorStatus
   exposureTier: ExposureTier
+  /** Whether the intelligence for this product is current or acting on stale data */
+  freshness: RecommendationFreshness
+  /** Primary demand channel driving signals for this product */
+  dominantDriver: 'consumer' | 'trade' | 'balanced'
   signals: {
     signalScore?: number
     waitlistCount?: number
@@ -108,7 +117,17 @@ export interface ReleaseOptimizationOutput {
   underperformingWines: ReleaseRecommendation[]
 }
 
+// ─── Constants ──────────────────────────────────────────────────────────────
+
+const MS_PER_DAY = 86_400_000
+
 // ─── Thresholds ───────────────────────────────────────────────────────────────
+
+const FRESHNESS_THRESHOLDS = {
+  FRESH_DAYS:          7,   // within 7 days of last run → fresh
+  NEEDS_REFRESH_DAYS: 14,   // 7–14 days → degrading signal window
+  // > 14 days → stale; admin should re-run before acting
+} as const
 
 const THRESHOLDS = {
   // accelerate_release: pre-release wine has meaningful waitlist + signal momentum
@@ -157,6 +176,35 @@ const TYPE_PRIORITY: Record<ReleaseRecommendationType, number> = {
 const CONFIDENCE_PRIORITY: Record<string, number> = { high: 0, medium: 1, low: 2 }
 
 // ─── Helpers — exported for use as DB write helpers ───────────────────────────
+
+/**
+ * Freshness of the last recommendation run for a product.
+ * null = never analysed; >14 days = stale; 7–14 = needs_refresh; ≤7 = fresh.
+ */
+export function deriveFreshness(lastRecommendationAt: Date | null): RecommendationFreshness {
+  if (!lastRecommendationAt) return 'never_analyzed'
+  const daysSince = (Date.now() - lastRecommendationAt.getTime()) / MS_PER_DAY
+  if (daysSince <= FRESHNESS_THRESHOLDS.FRESH_DAYS) return 'fresh'
+  if (daysSince <= FRESHNESS_THRESHOLDS.NEEDS_REFRESH_DAYS) return 'needs_refresh'
+  return 'stale'
+}
+
+/**
+ * Primary demand channel driving signals for a single product.
+ * Trade half-life is 60 days; consumer 30 days — weights are already decay-adjusted.
+ */
+export function deriveProductDominantDriver(
+  sig: ProductSignals,
+): 'consumer' | 'trade' | 'balanced' {
+  const tradeWeight    = sig.weightedTradeScore
+  const consumerWeight = sig.weightedWaitlistScore + sig.weightedPurchaseScore
+  const total = tradeWeight + consumerWeight
+  if (total === 0) return 'balanced'
+  const tradeRatio = tradeWeight / total
+  if (tradeRatio >= THRESHOLDS.TRADE_DOMINANT_RATIO)    return 'trade'
+  if (tradeRatio <= 1 - THRESHOLDS.CONSUMER_DOMINANT_RATIO) return 'consumer'
+  return 'balanced'
+}
 
 /**
  * Classify product into a ReleaseMonitorStatus based on demand signals
@@ -277,8 +325,10 @@ export function deriveAllocationPressure(sig: ProductSignals): AllocationPressur
 // ─── Per-product rule evaluator ───────────────────────────────────────────────
 
 function evaluateProduct(sig: ProductSignals): ReleaseRecommendation | null {
-  const monitorStatus = deriveReleaseHealth(sig)
-  const exposureTier  = deriveExposureTier(sig)
+  const monitorStatus   = deriveReleaseHealth(sig)
+  const exposureTier    = deriveExposureTier(sig)
+  const freshness       = deriveFreshness(sig.lastRecommendationAt)
+  const dominantDriver  = deriveProductDominantDriver(sig)
 
   const base = {
     productId:     sig.productId,
@@ -286,6 +336,8 @@ function evaluateProduct(sig: ProductSignals): ReleaseRecommendation | null {
     releaseStatus: sig.releaseStatus,
     monitorStatus,
     exposureTier,
+    freshness,
+    dominantDriver,
   }
 
   const productTradeTotal = sig.weightedTradeScore
@@ -300,10 +352,14 @@ function evaluateProduct(sig: ProductSignals): ReleaseRecommendation | null {
     sig.waitlistCount >= THRESHOLDS.ACCELERATE_WAITLIST &&
     sig.signalScore >= THRESHOLDS.ACCELERATE_SIGNAL_SCORE
   ) {
+    const isHigh = sig.signalScore >= 3.0
     return {
       ...base,
       type: 'accelerate_release',
-      confidence: sig.signalScore >= 3.0 ? 'high' : 'medium',
+      confidence: isHigh ? 'high' : 'medium',
+      confidenceReason: isHigh
+        ? `Signal score ${sig.signalScore} well above threshold with ${sig.waitlistCount} verified sign-ups — strong pre-release momentum`
+        : `Signal score ${sig.signalScore} is above activation threshold but still building — moderate confidence to move to LIVE`,
       reason: `${sig.waitlistCount} early sign-ups with signal score ${sig.signalScore} — consumer interest is ready; consider moving to LIVE`,
       signals: { signalScore: sig.signalScore, waitlistCount: sig.waitlistCount },
     }
@@ -316,10 +372,14 @@ function evaluateProduct(sig: ProductSignals): ReleaseRecommendation | null {
     sig.waitlistCount <= 1 &&
     sig.purchaseCount < 2
   ) {
+    const isHigh = sig.tradeInterestCount >= 4
     return {
       ...base,
       type: 'trade_led_interest',
-      confidence: sig.tradeInterestCount >= 4 ? 'high' : 'medium',
+      confidence: isHigh ? 'high' : 'medium',
+      confidenceReason: isHigh
+        ? `${sig.tradeInterestCount} B2B inquiries strongly suggests on-premise fit; trade signals account for ≈${Math.round(tradeRatio * 100)}% of weighted demand`
+        : `${sig.tradeInterestCount} trade inquiries present but below high-confidence threshold — follow-up needed to confirm placement intent`,
       reason: `${sig.tradeInterestCount} trade inquiries vs minimal consumer demand — prioritise B2B outreach and on-premise placement`,
       signals: {
         tradeInterestCount: sig.tradeInterestCount,
@@ -337,10 +397,14 @@ function evaluateProduct(sig: ProductSignals): ReleaseRecommendation | null {
     sig.tradeInterestCount === 0 &&
     sig.recentPurchaseCount > 0
   ) {
+    const isHigh = sig.signalScore >= 2.0
     return {
       ...base,
       type: 'consumer_led_interest',
-      confidence: sig.signalScore >= 2.0 ? 'high' : 'medium',
+      confidence: isHigh ? 'high' : 'medium',
+      confidenceReason: isHigh
+        ? `Signal score ${sig.signalScore} driven by ${sig.waitlistCount} waitlist entries + ${sig.recentPurchaseCount} recent purchases — consistent 30-day velocity`
+        : `Early consumer traction with ${sig.recentPurchaseCount} recent purchases but signal score ${sig.signalScore} is still accumulating`,
       reason: `${sig.waitlistCount} consumer sign-ups and ${sig.recentPurchaseCount} recent purchases with no trade interest — strong D2C channel signal`,
       signals: {
         waitlistCount:      sig.waitlistCount,
@@ -362,6 +426,7 @@ function evaluateProduct(sig: ProductSignals): ReleaseRecommendation | null {
       ...base,
       type: 'increase_allocation',
       confidence: 'high',
+      confidenceReason: `Signal score ${sig.signalScore} ≥ ${THRESHOLDS.HIGH_DEMAND_SIGNAL} threshold with only ${sig.inventory} units remaining — demand is outpacing available supply`,
       reason: `Signal score ${sig.signalScore} with only ${sig.inventory} units remaining — request additional allocation from producer`,
       signals: {
         signalScore:  sig.signalScore,
@@ -384,6 +449,7 @@ function evaluateProduct(sig: ProductSignals): ReleaseRecommendation | null {
       ...base,
       type: 'increase_merchandising',
       confidence: 'medium',
+      confidenceReason: `Interest exists (${sig.waitlistCount} waitlist) but conversion proxy is ${Math.round(sig.conversionProxy * 100)}% — below ${Math.round(THRESHOLDS.MERCH_MAX_CONVERSION_PROXY * 100)}% threshold; suggesting editorial issue, not demand deficit`,
       reason: `${sig.waitlistCount} interested but conversion proxy is ${Math.round(sig.conversionProxy * 100)}% — increase editorial coverage or feature placement`,
       signals: {
         signalScore:      sig.signalScore,
@@ -405,6 +471,7 @@ function evaluateProduct(sig: ProductSignals): ReleaseRecommendation | null {
       ...base,
       type: 'reduce_exposure',
       confidence: 'low',
+      confidenceReason: `Zero demand signals across all channels with ${sig.inventory} units in inventory — low confidence as this could reflect newness rather than genuine underperformance`,
       reason: `No demand signals with ${sig.inventory} units in inventory — consider reducing catalog prominence or running a targeted promotion`,
       signals: {
         signalScore: sig.signalScore,
@@ -420,6 +487,7 @@ function evaluateProduct(sig: ProductSignals): ReleaseRecommendation | null {
       ...base,
       type: 'maintain',
       confidence: 'low',
+      confidenceReason: `Signal score ${sig.signalScore} is positive but no rule threshold is exceeded — monitor trends before acting`,
       reason: `Demand signals present and release health is stable`,
       signals: { signalScore: sig.signalScore },
     }
@@ -432,6 +500,7 @@ function evaluateProduct(sig: ProductSignals): ReleaseRecommendation | null {
       ...base,
       type: 'hold_release',
       confidence: 'low',
+      confidenceReason: `No pre-release signals generated yet — insufficient data to support a higher confidence recommendation`,
       reason: `Pre-release wine with minimal interest signals — complete content and await market timing`,
       signals: {
         signalScore:  sig.signalScore,
