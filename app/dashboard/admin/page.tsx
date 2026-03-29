@@ -249,6 +249,9 @@ export default function AdminDashboard() {
   const [biasGovernance, setBiasGovernance] = useState<any>(null)
   const [loadingGovernance, setLoadingGovernance] = useState(false)
   const [updatingGovernance, setUpdatingGovernance] = useState(false)
+  // Calibration rollups state (Release Intel tab)
+  const [calibrationRollups, setCalibrationRollups] = useState<any>(null)
+  const [loadingCalibration, setLoadingCalibration] = useState(false)
 
   useEffect(() => {
     if (!session) {
@@ -272,6 +275,9 @@ export default function AdminDashboard() {
     }
     if (activeTab === 'release-intelligence' && !biasGovernance && !loadingGovernance) {
       fetchBiasGovernance()
+    }
+    if (activeTab === 'release-intelligence' && !calibrationRollups && !loadingCalibration) {
+      fetchCalibrationRollups()
     }
   }, [activeTab])
 
@@ -345,6 +351,21 @@ export default function AdminDashboard() {
     }
   }
 
+  const fetchCalibrationRollups = async () => {
+    setLoadingCalibration(true)
+    try {
+      const res = await fetch('/api/admin/calibration-rollups')
+      if (res.ok) {
+        const data = await res.json()
+        setCalibrationRollups(data)
+      }
+    } catch (error) {
+      console.error('Error fetching calibration rollups:', error)
+    } finally {
+      setLoadingCalibration(false)
+    }
+  }
+
   const fetchBiasGovernance = async () => {
     setLoadingGovernance(true)
     try {
@@ -406,10 +427,31 @@ export default function AdminDashboard() {
   ) => {
     setUpdatingRecId(productId)
     try {
+      // When actioning, snapshot the current bias-adjusted confidence from
+      // release-intelligence data so calibration can compare outcomes later
+      let confidenceSnapshot: {
+        baseConfidenceScore?: number
+        adjustedConfidenceScore?: number
+        biasApplied?: boolean
+        biasMultiplier?: number
+      } = {}
+      if (recommendationStatus === 'ACTIONED' && releaseIntelligence?.recommendations) {
+        const matchRec = (releaseIntelligence.recommendations as any[]).find(
+          (r) => r.productId === productId,
+        )
+        if (matchRec) {
+          confidenceSnapshot = {
+            baseConfidenceScore:     matchRec.baseConfidenceScore,
+            adjustedConfidenceScore: matchRec.adjustedConfidenceScore,
+            biasApplied:             matchRec.biasApplied,
+            biasMultiplier:          matchRec.biasMultiplier,
+          }
+        }
+      }
       await fetch(`/api/admin/recommendations/${productId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recommendationStatus, ...opts }),
+        body: JSON.stringify({ recommendationStatus, ...opts, ...confidenceSnapshot }),
       })
       // Invalidate history cache so next expand re-fetches
       setRecHistory(prev => { const n = { ...prev }; delete n[productId]; return n })
@@ -3195,6 +3237,133 @@ export default function AdminDashboard() {
                             </div>
                           </div>
                         )}
+                      </>
+                    )}
+                  </div>
+                )
+              })()}
+
+              {/* Calibration Monitoring — confidence accuracy + bias quality check */}
+              {(() => {
+                if (loadingCalibration) {
+                  return (
+                    <div className="bg-white border border-olive-200 p-4 flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-olive-500 border-t-transparent rounded-full animate-spin" />
+                      <span className="text-[10px] text-olive-400">Computing calibration…</span>
+                    </div>
+                  )
+                }
+                if (!calibrationRollups) return null
+                const cal = calibrationRollups.calibration
+                const hasBiasData = cal.biasCalibration.withBias.total > 0
+
+                return (
+                  <div className="bg-white border border-olive-200 p-4 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[10px] font-medium text-olive-400 uppercase tracking-wider">
+                        Calibration Monitoring
+                        <span className="ml-2 normal-case font-normal text-olive-300">
+                          · {cal.totalPoints} snapshot{cal.totalPoints !== 1 ? 's' : ''}{cal.pendingCount > 0 ? ` · ${cal.pendingCount} pending outcome` : ''}
+                        </span>
+                      </p>
+                      <button
+                        onClick={fetchCalibrationRollups}
+                        disabled={loadingCalibration}
+                        className="text-[9px] px-2 py-0.5 bg-olive-100 text-olive-700 hover:bg-olive-200 disabled:opacity-50 transition-colors"
+                      >
+                        {loadingCalibration ? 'Computing…' : '⟳ Refresh'}
+                      </button>
+                    </div>
+
+                    {cal.totalPoints === 0 ? (
+                      <p className="text-[10px] text-olive-400">
+                        No calibration data yet. Confidence snapshots are captured automatically when recommendations are actioned.
+                      </p>
+                    ) : (
+                      <>
+                        {/* Confidence accuracy per tier */}
+                        {cal.pointsWithOutcome > 0 && (
+                          <div>
+                            <p className="text-[9px] font-medium text-olive-400 uppercase tracking-wider mb-2">Confidence Accuracy</p>
+                            <table className="w-full text-[10px]">
+                              <thead>
+                                <tr className="border-b border-parchment-200">
+                                  <th className="text-left py-1 pr-3 text-olive-400 font-normal">Tier</th>
+                                  <th className="text-right py-1 px-2 text-olive-400 font-normal">n</th>
+                                  <th className="text-right py-1 px-2 text-emerald-600 font-normal">Positive</th>
+                                  <th className="text-right py-1 px-2 text-amber-600 font-normal">Mixed</th>
+                                  <th className="text-right py-1 px-2 text-red-600 font-normal">Negative</th>
+                                  <th className="text-right py-1 pl-2 text-olive-400 font-normal">Pending</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {cal.confidenceBuckets.map((b: any) => (
+                                  <tr key={b.bucket} className="border-b border-parchment-100 last:border-0">
+                                    <td className="py-1.5 pr-3">
+                                      <span className={`text-[9px] font-semibold uppercase px-1 py-0.5 ${
+                                        b.bucket === 'high'   ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                                        b.bucket === 'medium' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                                                                'bg-gray-50 text-gray-500 border border-gray-200'
+                                      }`}>{b.bucket}</span>
+                                    </td>
+                                    <td className="py-1.5 px-2 text-right text-olive-500">{b.totalOutcome}</td>
+                                    <td className="py-1.5 px-2 text-right font-medium text-emerald-700">{b.totalOutcome > 0 ? `${b.positiveRate}%` : '—'}</td>
+                                    <td className="py-1.5 px-2 text-right text-amber-600">{b.totalOutcome > 0 ? `${b.mixedRate}%` : '—'}</td>
+                                    <td className="py-1.5 px-2 text-right text-red-600">{b.totalOutcome > 0 ? `${b.negativeRate}%` : '—'}</td>
+                                    <td className="py-1.5 pl-2 text-right text-olive-300">{b.pendingCount > 0 ? b.pendingCount : '—'}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+
+                        {/* Bias quality check */}
+                        <div>
+                          <p className="text-[9px] font-medium text-olive-400 uppercase tracking-wider mb-2">Bias Quality Check</p>
+                          {!hasBiasData ? (
+                            <p className="text-[10px] text-olive-300 italic">
+                              No bias-applied recommendations have outcomes yet. Enable bias and action recommendations to begin calibration.
+                            </p>
+                          ) : (
+                            <div className="flex gap-3 flex-wrap">
+                              <div className="flex-1 min-w-[120px] bg-violet-50 border border-violet-200 p-3">
+                                <p className="text-[9px] font-medium text-violet-500 uppercase tracking-wider mb-1">Bias-Applied</p>
+                                <p className="text-lg font-bold text-violet-800">{cal.biasCalibration.withBias.positiveRate}%</p>
+                                <p className="text-[9px] text-violet-500 mt-0.5">positive · n={cal.biasCalibration.withBias.total}</p>
+                              </div>
+                              <div className="flex-1 min-w-[120px] bg-parchment-50 border border-olive-200 p-3">
+                                <p className="text-[9px] font-medium text-olive-500 uppercase tracking-wider mb-1">Unbiased</p>
+                                <p className="text-lg font-bold text-olive-800">{cal.biasCalibration.withoutBias.positiveRate}%</p>
+                                <p className="text-[9px] text-olive-400 mt-0.5">positive · n={cal.biasCalibration.withoutBias.total}</p>
+                              </div>
+                              <div className={`flex-1 min-w-[120px] p-3 border ${
+                                cal.biasCalibration.advantage > 0  ? 'bg-emerald-50 border-emerald-200' :
+                                cal.biasCalibration.advantage < 0  ? 'bg-red-50 border-red-200' :
+                                                                       'bg-gray-50 border-gray-200'
+                              }`}>
+                                <p className={`text-[9px] font-medium uppercase tracking-wider mb-1 ${
+                                  cal.biasCalibration.advantage > 0  ? 'text-emerald-600' :
+                                  cal.biasCalibration.advantage < 0  ? 'text-red-600' : 'text-gray-500'
+                                }`}>Bias Advantage</p>
+                                <p className={`text-lg font-bold ${
+                                  cal.biasCalibration.advantage > 0  ? 'text-emerald-800' :
+                                  cal.biasCalibration.advantage < 0  ? 'text-red-800' : 'text-gray-700'
+                                }`}>
+                                  {cal.biasCalibration.advantage > 0 ? '+' : ''}{cal.biasCalibration.advantage}pp
+                                </p>
+                                <p className={`text-[9px] mt-0.5 ${
+                                  cal.biasCalibration.advantage > 0  ? 'text-emerald-600' :
+                                  cal.biasCalibration.advantage < 0  ? 'text-red-600' : 'text-gray-400'
+                                }`}>
+                                  {cal.biasCalibration.advantage > 0  ? 'bias is improving quality' :
+                                   cal.biasCalibration.advantage < 0  ? 'review governance settings' :
+                                                                          'no measurable difference'}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </>
                     )}
                   </div>

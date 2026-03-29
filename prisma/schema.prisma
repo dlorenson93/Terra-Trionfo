@@ -356,6 +356,13 @@ model ProductRecommendationHistory {
   postActionSignalScore Int?
   effectivenessDelta    EffectivenessDelta?
 
+  // Confidence snapshot — captured at ACTIONED time for calibration tracking
+  // Enables: "when we said high confidence, were we right more often?"
+  baseConfidenceScore     Int?     // 0–100 numeric confidence before any bias adjustment
+  adjustedConfidenceScore Int?     // 0–100 numeric confidence after bias adjustment (may equal base)
+  biasApplied             Boolean? // whether a bias multiplier was applied at generation time
+  biasMultiplier          Float?   // effective multiplier used (1.0 = no adjustment)
+
   // Who did it
   changedByUserId String
   changedBy       User   @relation(fields: [changedByUserId], references: [id])

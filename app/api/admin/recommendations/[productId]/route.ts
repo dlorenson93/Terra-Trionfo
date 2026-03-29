@@ -59,6 +59,11 @@ export async function PATCH(
       recommendationActionType?:       string | null
       recommendationNotes?:            string | null
       recommendationResolutionStatus?: string | null
+      // Confidence snapshot — forwarded by client from release-optimization data for calibration
+      baseConfidenceScore?:            number | null
+      adjustedConfidenceScore?:        number | null
+      biasApplied?:                    boolean | null
+      biasMultiplier?:                 number | null
     }
 
     const {
@@ -66,6 +71,10 @@ export async function PATCH(
       recommendationActionType,
       recommendationNotes,
       recommendationResolutionStatus,
+      baseConfidenceScore,
+      adjustedConfidenceScore,
+      biasApplied,
+      biasMultiplier,
     } = body
 
     const VALID_STATUSES = ['OPEN', 'REVIEWED', 'ACTIONED', 'DISMISSED'] as const
@@ -198,6 +207,11 @@ export async function PATCH(
           exposureTier:              product.exposureTier         ?? null,
           previousResolutionStatus:  updatingResolution ? (product.recommendationResolutionStatus ?? null) : undefined,
           newResolutionStatus:       updatingResolution ? (recommendationResolutionStatus ?? null)         : undefined,
+          // Confidence snapshot — only populated on ACTIONED rows where client forwarded bias data
+          baseConfidenceScore:       recommendationStatus === 'ACTIONED' ? (baseConfidenceScore     ?? null) : undefined,
+          adjustedConfidenceScore:   recommendationStatus === 'ACTIONED' ? (adjustedConfidenceScore ?? null) : undefined,
+          biasApplied:               recommendationStatus === 'ACTIONED' ? (biasApplied             ?? null) : undefined,
+          biasMultiplier:            recommendationStatus === 'ACTIONED' ? (biasMultiplier           ?? null) : undefined,
           changedByUserId:           session.user.id,
         },
       }),
