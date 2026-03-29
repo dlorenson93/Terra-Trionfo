@@ -1,7 +1,7 @@
 /**
  * recommendationBiasEngine.ts
  *
- * Phase 10 foundation — lightweight confidence-weight adjustment layer.
+ * Phase 9.6 / Phase 10 foundation — lightweight confidence-weight adjustment layer.
  *
  * This module takes the bias hints derived from historical effectiveness data
  * and produces per-action-type weight multipliers that the recommendation
@@ -12,14 +12,14 @@
  * - Does NOT introduce probabilistic ML — purely deterministic
  * - Maximum multiplier is ×1.30; minimum is ×0.75 (non-destructive guardrails)
  * - If insufficient data exists, returns neutral multiplier (×1.00)
+ * - Bias application is gated by isBiasSafeToApply() from deriveBiasDataSufficiency
  * - This module is pure — no DB access, no side effects
- * - Phase 10 integration: import and call from the recommendation generation
- *   route to apply multipliers before returning confidence scores
  *
  * Never expose to client components.
  */
 
 import type { LearningSignals } from './deriveLearningSignals'
+import { isBiasSafeToApply }    from './deriveBiasDataSufficiency'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -154,17 +154,49 @@ export function deriveRecommendationBias(
   }
 }
 
-// ── Usage guide (Phase 10 integration) ────────────────────────────────────────
+// ── Safe application export ────────────────────────────────────────────────────
+
+/**
+ * Apply bias weights to a base confidence value (0–100).
+ *
+ * This is the ONLY function that should be used to apply bias to a confidence
+ * score. It internally calls isBiasSafeToApply() as the safety gate.
+ *
+ * Returns the original confidence unchanged if bias is not safe to apply.
+ * Clamps result to [0, 100].
+ *
+ * @param baseConfidence  Original confidence score (0–100)
+ * @param actionType      The action type key to look up in weights
+ * @param weights         BiasWeights produced by deriveRecommendationBias()
+ * @param governance      { biasEnabled, biasMode } from BiasGovernance DB row
+ * @param totalMeasured   Number of products with measured effectiveness data
+ */
+export function applyBiasToConfidence(
+  baseConfidence: number,
+  actionType:     string,
+  weights:        BiasWeights,
+  governance:     { biasEnabled: boolean; biasMode: string },
+  totalMeasured:  number,
+): number {
+  if (!isBiasSafeToApply(totalMeasured, governance.biasEnabled, governance.biasMode)) {
+    return baseConfidence
+  }
+  const multiplier = (weights.actionType[actionType] ?? 1.0) * weights.globalModifier
+  return Math.min(100, Math.max(0, Math.round(baseConfidence * multiplier)))
+}
+
+// ── Phase 10 integration guide ────────────────────────────────────────────────
 //
 // In the recommendation generation route (e.g. /api/admin/intelligence/run/[productId]):
 //
-//   import { deriveRecommendationBias } from '@/lib/recommendationBiasEngine'
+//   import { deriveRecommendationBias, applyBiasToConfidence } from '@/lib/recommendationBiasEngine'
 //   import { deriveLearningSignals }    from '@/lib/deriveLearningSignals'
 //   import { computeEffectivenessRollups } from '@/lib/effectivenessRollups'
 //
 //   // 1. Fetch measured products (cached or live)
-//   // 2. const rollups   = computeEffectivenessRollups(measuredProducts)
-//   // 3. const signals   = deriveLearningSignals(rollups)
-//   // 4. const bias      = deriveRecommendationBias(signals, rollups.portfolioSummary.totalMeasured)
-//   // 5. const adjusted  = baseConfidence * (bias.actionType[actionType] ?? 1.0) * bias.globalModifier
+//   // 2. Fetch BiasGovernance singleton from DB
+//   // 3. const rollups        = computeEffectivenessRollups(measuredProducts)
+//   // 4. const signals        = deriveLearningSignals(rollups)
+//   // 5. const weights        = deriveRecommendationBias(signals, rollups.portfolioSummary.totalMeasured)
+//   // 6. const adjConfidence  = applyBiasToConfidence(baseConfidence, actionType, weights, governance, totalMeasured)
 //

@@ -143,6 +143,21 @@ enum EffectivenessDelta {
   MIXED_RESULT          // Some signals improved, others did not
 }
 
+// Bias governance — whether the learned bias weights have enough data to trust
+enum BiasDataSufficiencyStatus {
+  INSUFFICIENT  // < 3 measured outcomes — do not apply
+  MARGINAL      // 3–9 outcomes — observe only
+  SUFFICIENT    // 10–24 outcomes — can apply cautiously
+  STRONG        // 25+ outcomes — full confidence
+}
+
+// Bias governance — what the bias engine is currently allowed to do
+enum BiasMode {
+  OFF                  // Weights computed but never applied
+  OBSERVE_ONLY         // Weights monitored but not applied to recommendations
+  APPLY_TO_CONFIDENCE  // Weights applied to confidence scores at generation time
+}
+
 model User {
   id             String    @id @default(cuid())
   name           String
@@ -355,6 +370,23 @@ model ProductRecommendationHistory {
   @@index([productId])
   @@index([createdAt])
   @@map("product_recommendation_history")
+}
+
+// Singleton row controlling whether learned bias weights are applied
+// to future recommendation confidence scores.
+// Only one row ever exists (id = 'singleton').
+model BiasGovernance {
+  id                          String                     @id @default("singleton")
+  biasEnabled                 Boolean                    @default(false)
+  biasMode                    BiasMode                   @default(OBSERVE_ONLY)
+  biasDataSufficiencyStatus   BiasDataSufficiencyStatus?
+  biasLastAppliedAt           DateTime?
+  biasLastComputedAt          DateTime?
+  totalMeasuredAtLastCompute  Int?
+  updatedAt                   DateTime                   @updatedAt
+  updatedByUserId             String?
+
+  @@map("bias_governance")
 }
 
 model Order {

@@ -245,6 +245,10 @@ export default function AdminDashboard() {
   // Effectiveness rollups state (Release Intel tab)
   const [effectivenessRollups, setEffectivenessRollups] = useState<any>(null)
   const [loadingRollups, setLoadingRollups] = useState(false)
+  // Bias governance state (Release Intel tab)
+  const [biasGovernance, setBiasGovernance] = useState<any>(null)
+  const [loadingGovernance, setLoadingGovernance] = useState(false)
+  const [updatingGovernance, setUpdatingGovernance] = useState(false)
 
   useEffect(() => {
     if (!session) {
@@ -265,6 +269,9 @@ export default function AdminDashboard() {
     }
     if (activeTab === 'release-intelligence' && !effectivenessRollups && !loadingRollups) {
       fetchEffectivenessRollups()
+    }
+    if (activeTab === 'release-intelligence' && !biasGovernance && !loadingGovernance) {
+      fetchBiasGovernance()
     }
   }, [activeTab])
 
@@ -326,12 +333,43 @@ export default function AdminDashboard() {
     try {
       const res = await fetch('/api/admin/effectiveness-rollups')
       if (res.ok) {
-        setEffectivenessRollups(await res.json())
+        const data = await res.json()
+        setEffectivenessRollups(data)
+        // Governance is bundled in the rollups response — keep them in sync
+        if (data.governance) setBiasGovernance(data.governance)
       }
     } catch (error) {
       console.error('Error fetching effectiveness rollups:', error)
     } finally {
       setLoadingRollups(false)
+    }
+  }
+
+  const fetchBiasGovernance = async () => {
+    setLoadingGovernance(true)
+    try {
+      const res = await fetch('/api/admin/bias-governance')
+      if (res.ok) setBiasGovernance(await res.json())
+    } catch (error) {
+      console.error('Error fetching bias governance:', error)
+    } finally {
+      setLoadingGovernance(false)
+    }
+  }
+
+  const updateBiasGovernance = async (patch: { biasEnabled?: boolean; biasMode?: string }) => {
+    setUpdatingGovernance(true)
+    try {
+      const res = await fetch('/api/admin/bias-governance', {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(patch),
+      })
+      if (res.ok) setBiasGovernance(await res.json())
+    } catch (error) {
+      console.error('Error updating bias governance:', error)
+    } finally {
+      setUpdatingGovernance(false)
     }
   }
 
@@ -2708,6 +2746,213 @@ export default function AdminDashboard() {
                       <p className="text-[9px] text-olive-400 mt-2">
                         + {unmeasured} actioned with no effectiveness measurement — run the follow-up check to derive scores
                       </p>
+                    )}
+                  </div>
+                )
+              })()}
+
+              {/* Bias Governance — visibility and controls for learned bias weights */}
+              {(() => {
+                const SUFFICIENCY_LABEL: Record<string, string> = {
+                  INSUFFICIENT: 'Insufficient Data',
+                  MARGINAL:     'Marginal',
+                  SUFFICIENT:   'Sufficient',
+                  STRONG:       'Strong Signal',
+                }
+                const SUFFICIENCY_BADGE: Record<string, string> = {
+                  INSUFFICIENT: 'bg-gray-100 text-gray-600 border border-gray-200',
+                  MARGINAL:     'bg-amber-100 text-amber-800 border border-amber-200',
+                  SUFFICIENT:   'bg-blue-100 text-blue-800 border border-blue-200',
+                  STRONG:       'bg-emerald-100 text-emerald-800 border border-emerald-200',
+                }
+                const SUFFICIENCY_DESC: Record<string, string> = {
+                  INSUFFICIENT: 'Fewer than 3 measured outcomes. Bias will not be applied.',
+                  MARGINAL:     '3–9 outcomes. Observe only — not enough to apply safely.',
+                  SUFFICIENT:   '10–24 outcomes. Cautious application allowed.',
+                  STRONG:       '25+ outcomes. Patterns are reliable.',
+                }
+                const MODE_BADGE: Record<string, string> = {
+                  OFF:                 'bg-gray-100 text-gray-600 border border-gray-200',
+                  OBSERVE_ONLY:        'bg-amber-100 text-amber-800 border border-amber-200',
+                  APPLY_TO_CONFIDENCE: 'bg-violet-100 text-violet-800 border border-violet-200',
+                }
+                const MODE_LABEL: Record<string, string> = {
+                  OFF:                 'Off',
+                  OBSERVE_ONLY:        'Observe Only',
+                  APPLY_TO_CONFIDENCE: 'Apply to Confidence',
+                }
+                const MODE_DESC: Record<string, string> = {
+                  OFF:                 'Weights computed and shown but never applied to recommendations.',
+                  OBSERVE_ONLY:        'Weights monitored and displayed. Not applied to any outputs.',
+                  APPLY_TO_CONFIDENCE: 'Multipliers applied to recommendation confidence at generation time.',
+                }
+
+                if (loadingGovernance && !biasGovernance) {
+                  return (
+                    <div className="bg-white border border-olive-200 p-4 flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-olive-500 border-t-transparent rounded-full animate-spin" />
+                      <span className="text-[10px] text-olive-400">Loading bias governance…</span>
+                    </div>
+                  )
+                }
+                if (!biasGovernance) return null
+
+                const g           = biasGovernance
+                const sufficiency = g.biasDataSufficiencyStatus ?? g.computedSufficiencyStatus ?? 'INSUFFICIENT'
+                const mode        = g.biasMode as string
+                const enabled     = g.biasEnabled as boolean
+                const safeToApply = g.safeToApply as boolean
+                const totalMeas   = g.totalMeasuredAtLastCompute ?? 0
+                const biasWeightsFromRollup = effectivenessRollups?.biasWeights
+
+                return (
+                  <div className="bg-white border border-olive-200 p-4 space-y-4">
+                    {/* Header */}
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-[10px] font-medium text-olive-400 uppercase tracking-wider">Bias Governance</p>
+                        <p className="text-[9px] text-olive-400 mt-0.5">
+                          Controls whether learned effectiveness patterns influence future recommendations
+                        </p>
+                      </div>
+                      <button
+                        onClick={fetchBiasGovernance}
+                        disabled={loadingGovernance}
+                        className="text-[9px] px-2 py-0.5 bg-olive-100 text-olive-700 hover:bg-olive-200 disabled:opacity-50 transition-colors"
+                      >
+                        {loadingGovernance ? 'Loading…' : '⟳ Refresh'}
+                      </button>
+                    </div>
+
+                    {/* Status row */}
+                    <div className="grid grid-cols-3 gap-3">
+                      {/* Bias enabled/disabled */}
+                      <div className="border border-olive-200 bg-parchment-50 p-3">
+                        <p className="text-[9px] font-medium text-olive-400 uppercase tracking-wider mb-1">Bias</p>
+                        <div className="flex items-center justify-between">
+                          <span className={`text-[10px] font-semibold ${
+                            enabled ? 'text-emerald-800' : 'text-gray-500'
+                          }`}>
+                            {enabled ? 'Enabled' : 'Disabled'}
+                          </span>
+                          <button
+                            onClick={() => updateBiasGovernance({ biasEnabled: !enabled })}
+                            disabled={updatingGovernance}
+                            className={`text-[8px] px-1.5 py-0.5 border transition-colors disabled:opacity-50 ${
+                              enabled
+                                ? 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100'
+                                : 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
+                            }`}
+                          >
+                            {updatingGovernance ? '…' : enabled ? 'Disable' : 'Enable'}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Mode */}
+                      <div className="border border-olive-200 bg-parchment-50 p-3">
+                        <p className="text-[9px] font-medium text-olive-400 uppercase tracking-wider mb-1">Mode</p>
+                        <span className={`text-[9px] px-1.5 py-0.5 ${MODE_BADGE[mode] ?? 'bg-gray-100 text-gray-600 border border-gray-200'}`}>
+                          {MODE_LABEL[mode] ?? mode}
+                        </span>
+                      </div>
+
+                      {/* Data sufficiency */}
+                      <div className="border border-olive-200 bg-parchment-50 p-3">
+                        <p className="text-[9px] font-medium text-olive-400 uppercase tracking-wider mb-1">Data Sufficiency</p>
+                        <span className={`text-[9px] px-1.5 py-0.5 ${SUFFICIENCY_BADGE[sufficiency] ?? 'bg-gray-100 text-gray-600 border border-gray-200'}`}>
+                          {SUFFICIENCY_LABEL[sufficiency] ?? sufficiency}
+                        </span>
+                        <p className="text-[8px] text-olive-400 mt-1">{totalMeas} measured</p>
+                      </div>
+                    </div>
+
+                    {/* Sufficiency description */}
+                    <p className="text-[9px] text-olive-500 bg-parchment-50 border border-olive-100 px-3 py-2">
+                      {SUFFICIENCY_DESC[sufficiency] ?? ''}
+                    </p>
+
+                    {/* Safe-to-apply status */}
+                    <div className={`flex items-center gap-2 px-3 py-2 border ${
+                      safeToApply
+                        ? 'bg-emerald-50 border-emerald-200'
+                        : 'bg-amber-50 border-amber-200'
+                    }`}>
+                      <span className={`text-[10px] font-semibold ${
+                        safeToApply ? 'text-emerald-800' : 'text-amber-800'
+                      }`}>
+                        {safeToApply ? '✓ Bias is currently being applied to confidence scores' : '⊘ Bias is NOT being applied to recommendations'}
+                      </span>
+                    </div>
+
+                    {/* Mode controls */}
+                    <div>
+                      <p className="text-[9px] font-medium text-olive-400 uppercase tracking-wider mb-2">Change Mode</p>
+                      <div className="flex gap-2 flex-wrap">
+                        {(['OFF', 'OBSERVE_ONLY', 'APPLY_TO_CONFIDENCE'] as const).map(m => (
+                          <button
+                            key={m}
+                            onClick={() => updateBiasGovernance({ biasMode: m })}
+                            disabled={updatingGovernance || mode === m}
+                            className={`text-[9px] px-2 py-1 border transition-colors disabled:opacity-50 ${
+                              mode === m
+                                ? (MODE_BADGE[m] ?? 'bg-gray-100 text-gray-600 border border-gray-200') + ' font-semibold'
+                                : 'bg-parchment-50 border-olive-200 text-olive-700 hover:bg-olive-100'
+                            }`}
+                          >
+                            {MODE_LABEL[m]}
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-[9px] text-olive-400 mt-1.5">{MODE_DESC[mode] ?? ''}</p>
+                    </div>
+
+                    {/* Current multipliers — only show if we have computed weights */}
+                    {biasWeightsFromRollup && Object.keys(biasWeightsFromRollup.actionType).length > 0 && (
+                      <div>
+                        <p className="text-[9px] font-medium text-olive-400 uppercase tracking-wider mb-2">
+                          Current Multipliers
+                          {!safeToApply && <span className="ml-1 normal-case text-olive-300">(observing — not applied)</span>}
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {(Object.entries(biasWeightsFromRollup.actionType) as Array<[string, number]>).map(([key, weight]) => (
+                            <div key={key} className={`text-[9px] px-2 py-1 border flex flex-col items-center min-w-[80px] ${
+                              weight > 1.05 ? 'bg-emerald-50 border-emerald-200' :
+                              weight < 0.95 ? 'bg-amber-50 border-amber-200'   :
+                              'bg-parchment-50 border-olive-200'
+                            }`}>
+                              <span className={`font-semibold text-[11px] ${
+                                weight > 1.05 ? 'text-emerald-700' :
+                                weight < 0.95 ? 'text-amber-700'   :
+                                'text-olive-600'
+                              }`}>
+                                ×{weight.toFixed(2)}
+                              </span>
+                              <span className="text-[8px] text-olive-400 text-center leading-tight mt-0.5">
+                                {key.replace(/_/g, ' ')}
+                              </span>
+                            </div>
+                          ))}
+                          <div className="text-[9px] px-2 py-1 border bg-blue-50 border-blue-200 flex flex-col items-center min-w-[80px]">
+                            <span className="font-semibold text-[11px] text-blue-700">
+                              ×{(biasWeightsFromRollup.globalModifier as number).toFixed(2)}
+                            </span>
+                            <span className="text-[8px] text-blue-400 text-center leading-tight mt-0.5">global</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Timestamps */}
+                    {(g.biasLastComputedAt || g.biasLastAppliedAt) && (
+                      <div className="flex gap-6 text-[8px] text-olive-300">
+                        {g.biasLastComputedAt && (
+                          <span>Last computed: {new Date(g.biasLastComputedAt).toLocaleString()}</span>
+                        )}
+                        {g.biasLastAppliedAt && (
+                          <span>Last applied: {new Date(g.biasLastAppliedAt).toLocaleString()}</span>
+                        )}
+                      </div>
                     )}
                   </div>
                 )
