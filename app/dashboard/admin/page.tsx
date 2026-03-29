@@ -161,6 +161,18 @@ export default function AdminDashboard() {
   const [importingWineId, setImportingWineId] = useState<string | null>(null)
   const [importingAll, setImportingAll] = useState(false)
 
+  // Customer edit state
+  const [editingCustomer, setEditingCustomer] = useState<{
+    id: string
+    name: string
+    firstName: string
+    lastName: string
+    email: string
+    phone: string
+  } | null>(null)
+  const [syncingPriceId, setSyncingPriceId] = useState<string | null>(null)
+  const [syncingAllPrices, setSyncingAllPrices] = useState(false)
+
   useEffect(() => {
     if (!session) {
       router.push('/auth/signin')
@@ -403,8 +415,73 @@ export default function AdminDashboard() {
     }
   }
 
-  const importAllMissingWines = async () => {
-    const missing = WINES.filter((w) => !products.find((p) => p.slug === w.slug || p.slug === w.id))
+  const updateCustomerProfile = async () => {
+    if (!editingCustomer) return
+    try {
+      const res = await fetch(`/api/admin/customers/${editingCustomer.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editingCustomer.name,
+          firstName: editingCustomer.firstName,
+          lastName: editingCustomer.lastName,
+          email: editingCustomer.email,
+          phone: editingCustomer.phone,
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        alert(err.error || 'Failed to update customer')
+        return
+      }
+      setEditingCustomer(null)
+      fetchData()
+    } catch {
+      alert('Network error updating customer')
+    }
+  }
+
+  const syncPriceToDB = async (wine: (typeof WINES)[0]) => {
+    const dbProduct = products.find((p) => p.slug === wine.slug || p.slug === wine.id)
+    if (!dbProduct) { alert(`${wine.displayName} is not yet in the database. Import it first from the Products tab.`); return }
+    setSyncingPriceId(wine.id)
+    try {
+      await fetch(`/api/products/${dbProduct.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ retailPriceCents: Math.round(wine.consumerPurchasePriceUSD * 100) }),
+      })
+      fetchData()
+    } catch {
+      alert('Network error syncing price')
+    } finally {
+      setSyncingPriceId(null)
+    }
+  }
+
+  const syncAllPricesToDB = async () => {
+    const inDB = WINES.filter((w) => products.find((p) => p.slug === w.slug || p.slug === w.id))
+    if (inDB.length === 0) { alert('No portfolio wines are in the database yet. Import them from the Products tab first.'); return }
+    if (!confirm(`Sync computed consumer prices for ${inDB.length} wines to the database?`)) return
+    setSyncingAllPrices(true)
+    try {
+      for (const wine of inDB) {
+        const dbProduct = products.find((p) => p.slug === wine.slug || p.slug === wine.id)!
+        await fetch(`/api/products/${dbProduct.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ retailPriceCents: Math.round(wine.consumerPurchasePriceUSD * 100) }),
+        })
+      }
+      fetchData()
+    } catch {
+      alert('Error syncing prices')
+    } finally {
+      setSyncingAllPrices(false)
+    }
+  }
+
+  const importAllMissingWines = async () => {    const missing = WINES.filter((w) => !products.find((p) => p.slug === w.slug || p.slug === w.id))
     if (missing.length === 0) { alert('All wines are already in the database.'); return }
     if (!confirm(`Import ${missing.length} missing wine(s) to the database?`)) return
     setImportingAll(true)
@@ -912,12 +989,52 @@ export default function AdminDashboard() {
                 <h2 className="text-base font-semibold text-olive-900">Consumer Accounts</h2>
                 <p className="text-sm text-olive-400">{customers.length} registered</p>
               </div>
+
+              {/* Inline edit form */}
+              {editingCustomer && (
+                <div className="border border-olive-200 bg-parchment-50 p-5 mb-6">
+                  <h3 className="text-sm font-semibold text-olive-900 mb-4">Edit Customer</h3>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="label">Display Name</label>
+                      <input className="input-field" value={editingCustomer.name}
+                        onChange={(e) => setEditingCustomer((s) => s && { ...s, name: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="label">Email</label>
+                      <input className="input-field" type="email" value={editingCustomer.email}
+                        onChange={(e) => setEditingCustomer((s) => s && { ...s, email: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="label">First Name</label>
+                      <input className="input-field" value={editingCustomer.firstName}
+                        onChange={(e) => setEditingCustomer((s) => s && { ...s, firstName: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="label">Last Name</label>
+                      <input className="input-field" value={editingCustomer.lastName}
+                        onChange={(e) => setEditingCustomer((s) => s && { ...s, lastName: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="label">Phone</label>
+                      <input className="input-field" value={editingCustomer.phone}
+                        onChange={(e) => setEditingCustomer((s) => s && { ...s, phone: e.target.value })} />
+                    </div>
+                  </div>
+                  <div className="flex gap-3 mt-4">
+                    <button onClick={updateCustomerProfile} className="text-sm px-5 py-2 bg-olive-700 text-parchment-100 hover:bg-olive-800 transition-colors">Save Changes</button>
+                    <button onClick={() => setEditingCustomer(null)} className="text-sm px-4 py-2 border border-olive-300 text-olive-700 hover:bg-parchment-100 transition-colors">Cancel</button>
+                  </div>
+                </div>
+              )}
+
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="text-left border-b border-olive-200">
                       <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Name / Email</th>
                       <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Phone</th>
+                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Profile</th>
                       <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Age Verification</th>
                       <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Verified At</th>
                       <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Joined</th>
@@ -927,12 +1044,12 @@ export default function AdminDashboard() {
                   <tbody>
                     {customers.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="py-8 text-center text-sm text-olive-400">
+                        <td colSpan={7} className="py-8 text-center text-sm text-olive-400">
                           No consumer accounts yet.
                         </td>
                       </tr>
                     ) : customers.map((c) => (
-                      <tr key={c.id} className="border-b border-olive-100 last:border-0">
+                      <tr key={c.id} className={`border-b border-olive-100 last:border-0 ${editingCustomer?.id === c.id ? 'bg-parchment-50' : ''}`}>
                         <td className="py-3">
                           <p className="text-sm font-medium text-olive-900">
                             {c.firstName || c.lastName
@@ -942,6 +1059,13 @@ export default function AdminDashboard() {
                           <p className="text-xs text-olive-500">{c.email}</p>
                         </td>
                         <td className="py-3 text-sm text-olive-700">{c.phone || '—'}</td>
+                        <td className="py-3">
+                          {(c.firstName || c.lastName) ? (
+                            <span className="text-[10px] font-medium px-2 py-0.5 bg-green-50 text-green-700 border border-green-200">Complete</span>
+                          ) : (
+                            <span className="text-[10px] font-medium px-2 py-0.5 bg-parchment-100 text-olive-400 border border-olive-200">Incomplete</span>
+                          )}
+                        </td>
                         <td className="py-3">
                           {c.ageVerificationStatus === 'ELIGIBLE' && (
                             <span className="inline-block text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-sm bg-green-100 text-green-800">
@@ -969,6 +1093,17 @@ export default function AdminDashboard() {
                         </td>
                         <td className="py-3">
                           <div className="flex gap-1 flex-wrap">
+                            <button
+                              onClick={() => setEditingCustomer({
+                                id: c.id,
+                                name: c.name || '',
+                                firstName: c.firstName || '',
+                                lastName: c.lastName || '',
+                                email: c.email,
+                                phone: c.phone || '',
+                              })}
+                              className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200"
+                            >Edit</button>
                             {c.ageVerificationStatus !== 'ELIGIBLE' && (
                               <button
                                 onClick={() => updateAgeVerification(c.id, 'ELIGIBLE')}
@@ -1749,10 +1884,19 @@ export default function AdminDashboard() {
           {/* Portfolio Pricing Tab */}
           {activeTab === 'portfolio-pricing' && (
             <div className="space-y-6">
-              <div>
-                <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-amber-600 mb-1">Internal Use Only · Not visible to consumers</p>
-                <h2 className="text-2xl font-serif font-bold text-olive-900 mb-1">Portfolio Pricing</h2>
-                <p className="text-sm text-olive-500">Full distribution chain economics for all 21 portfolio wines. Consumers see only the final marketplace price.</p>
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-amber-600 mb-1">Internal Use Only · Not visible to consumers</p>
+                  <h2 className="text-2xl font-serif font-bold text-olive-900 mb-1">Portfolio Pricing</h2>
+                  <p className="text-sm text-olive-500">Full distribution chain economics for all 21 portfolio wines. Consumers see only the final marketplace price.</p>
+                </div>
+                <button
+                  onClick={syncAllPricesToDB}
+                  disabled={syncingAllPrices}
+                  className="shrink-0 text-sm px-4 py-2 bg-olive-700 text-parchment-100 hover:bg-olive-800 disabled:opacity-50 transition-colors"
+                >
+                  {syncingAllPrices ? 'Syncing…' : 'Sync All Prices → DB'}
+                </button>
               </div>
 
               {/* Chain legend */}
@@ -1782,11 +1926,18 @@ export default function AdminDashboard() {
                       <th className="py-3 px-3 text-[10px] font-medium text-olive-600 uppercase tracking-wider">Retail Est.</th>
                       <th className="py-3 px-3 text-[10px] font-medium text-olive-500 uppercase tracking-wider">Restaurant</th>
                       <th className="py-3 px-3 text-[10px] font-bold text-amber-700 uppercase tracking-wider">Consumer ✓</th>
+                      <th className="py-3 px-3 text-[10px] font-medium text-olive-500 uppercase tracking-wider">DB Price</th>
+                      <th className="py-3 px-3 text-[10px] font-medium text-olive-500 uppercase tracking-wider">Sync</th>
                     </tr>
                   </thead>
                   <tbody>
                     {WINES.map((wine) => {
                       const producer = PRODUCERS.find((p) => p.id === wine.producerId)
+                      const dbProduct = products.find((p) => p.slug === wine.slug || p.slug === wine.id)
+                      const canonicalCents = Math.round(wine.consumerPurchasePriceUSD * 100)
+                      const dbCents = dbProduct?.retailPriceCents ?? null
+                      const inSync = dbCents !== null && dbCents === canonicalCents
+                      const drifted = dbCents !== null && dbCents !== canonicalCents
                       return (
                         <tr key={wine.id} className="border-b border-parchment-200 hover:bg-parchment-50 transition-colors">
                           <td className="py-3 pr-4">
@@ -1800,6 +1951,32 @@ export default function AdminDashboard() {
                           <td className="py-3 px-3 text-olive-700 tabular-nums font-medium">${wine.retailEstimatedPriceUSD.toFixed(2)}</td>
                           <td className="py-3 px-3 text-olive-600 tabular-nums">${wine.restaurantBottlePriceUSD.toFixed(2)}</td>
                           <td className="py-3 px-3 text-amber-700 tabular-nums font-semibold">${wine.consumerPurchasePriceUSD.toFixed(2)}</td>
+                          <td className="py-3 px-3 tabular-nums">
+                            {dbCents !== null ? (
+                              <span className={drifted ? 'text-red-600 font-medium' : 'text-green-700'}>
+                                ${(dbCents / 100).toFixed(2)}{drifted && ' ⚠'}
+                              </span>
+                            ) : (
+                              <span className="text-olive-300 italic text-[10px]">Not in DB</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-3">
+                            {dbProduct ? (
+                              inSync ? (
+                                <span className="text-[10px] text-green-600 font-medium">✓ Synced</span>
+                              ) : (
+                                <button
+                                  onClick={() => syncPriceToDB(wine)}
+                                  disabled={syncingPriceId === wine.id || syncingAllPrices}
+                                  className="text-[10px] px-2 py-0.5 bg-amber-100 text-amber-800 hover:bg-amber-200 disabled:opacity-50 transition-colors"
+                                >
+                                  {syncingPriceId === wine.id ? '…' : 'Sync'}
+                                </button>
+                              )
+                            ) : (
+                              <span className="text-[10px] text-olive-300 italic">—</span>
+                            )}
+                          </td>
                         </tr>
                       )
                     })}
