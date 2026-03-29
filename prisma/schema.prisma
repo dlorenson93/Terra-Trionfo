@@ -124,6 +124,16 @@ enum RecommendationActionType {
   DISMISSED
 }
 
+// Recommendation resolution — outcome tracking after an action was taken
+// Separate from workflow status: ACTIONED means someone did something;
+// RESOLVED means the underlying problem actually improved.
+enum RecommendationResolutionStatus {
+  UNRESOLVED        // Action taken, outcome not yet clear (< 14 days)
+  IMPROVING         // Early positive signals detected
+  RESOLVED          // Problem confirmed resolved by signal data
+  REQUIRES_FOLLOW_UP // Action taken but signals have not improved
+}
+
 model User {
   id             String    @id @default(cuid())
   name           String
@@ -270,6 +280,10 @@ model Product {
   lastRecommendationReviewedAt  DateTime?
   lastRecommendationActionedAt  DateTime?
 
+  // Recommendation resolution — outcome tracking after ACTIONED (separate from workflow)
+  recommendationResolutionStatus RecommendationResolutionStatus?
+  lastRecommendationResolvedAt   DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -299,6 +313,10 @@ model ProductRecommendationHistory {
   // Context snapshot — what the engine said at the moment of the action
   releaseMonitorStatus ReleaseMonitorStatus?
   exposureTier         ExposureTier?
+
+  // Resolution state snapshot — before/after when a resolution update was made
+  previousResolutionStatus RecommendationResolutionStatus?
+  newResolutionStatus      RecommendationResolutionStatus?
 
   // Who did it
   changedByUserId String

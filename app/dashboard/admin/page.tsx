@@ -13,6 +13,11 @@ import {
   FRESHNESS_BADGE_CLASS,
   type AnalysisFreshness,
 } from '@/lib/deriveAnalysisFreshness'
+import {
+  RESOLUTION_LABEL,
+  RESOLUTION_BADGE_CLASS,
+  type RecommendationResolutionStatus,
+} from '@/lib/deriveResolutionStatus'
 
 interface Stats {
   totalVendors: number
@@ -61,19 +66,24 @@ interface Product {
   recommendationNotes?: string | null
   lastRecommendationReviewedAt?: string | null
   lastRecommendationActionedAt?: string | null
+  // Recommendation resolution
+  recommendationResolutionStatus?: string | null
+  lastRecommendationResolvedAt?: string | null
 }
 
 interface RecommendationHistoryEvent {
-  id:                  string
-  previousStatus:      string | null
-  newStatus:           string
-  previousActionType:  string | null
-  newActionType:       string | null
-  note:                string | null
-  releaseMonitorStatus: string | null
-  exposureTier:         string | null
-  createdAt:           string
-  changedBy:           { id: string; name: string; email: string }
+  id:                      string
+  previousStatus:          string | null
+  newStatus:               string
+  previousActionType:      string | null
+  newActionType:           string | null
+  note:                    string | null
+  releaseMonitorStatus:    string | null
+  exposureTier:            string | null
+  previousResolutionStatus: string | null
+  newResolutionStatus:     string | null
+  createdAt:               string
+  changedBy:               { id: string; name: string; email: string }
 }
 
 interface RestaurantWineAdmin {
@@ -214,6 +224,9 @@ export default function AdminDashboard() {
   const [recHistory, setRecHistory] = useState<Record<string, RecommendationHistoryEvent[]>>({})
   const [loadingHistoryId, setLoadingHistoryId] = useState<string | null>(null)
   const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null)
+  // Resolution outcome state
+  const [updatingResolutionId, setUpdatingResolutionId] = useState<string | null>(null)
+  const [runningFollowupCheck, setRunningFollowupCheck] = useState(false)
 
   useEffect(() => {
     if (!session) {
@@ -332,6 +345,39 @@ export default function AdminDashboard() {
       console.error('Error updating recommendation:', error)
     } finally {
       setUpdatingRecId(null)
+    }
+  }
+
+  const updateResolution = async (
+    productId: string,
+    resolutionStatus: RecommendationResolutionStatus,
+  ) => {
+    setUpdatingResolutionId(productId)
+    try {
+      await fetch(`/api/admin/recommendations/${productId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recommendationResolutionStatus: resolutionStatus }),
+      })
+      setRecHistory(prev => { const n = { ...prev }; delete n[productId]; return n })
+      fetchData()
+    } catch (error) {
+      console.error('Error updating resolution:', error)
+    } finally {
+      setUpdatingResolutionId(null)
+    }
+  }
+
+  const runFollowupCheck = async () => {
+    if (!confirm('Run automated follow-up check for all ACTIONED products?')) return
+    setRunningFollowupCheck(true)
+    try {
+      await fetch('/api/admin/recommendations/run-followup-check', { method: 'POST' })
+      fetchData()
+    } catch (error) {
+      console.error('Error running follow-up check:', error)
+    } finally {
+      setRunningFollowupCheck(false)
     }
   }
 
@@ -1558,8 +1604,10 @@ export default function AdminDashboard() {
                                 const freshness = deriveAnalysisFreshness(dbProduct.lastRecommendationAt)
                                 const canRun = dbProduct.status === 'APPROVED' && (freshness === 'NEVER_RUN' || freshness === 'STALE' || freshness === 'AGING')
                                 const recStatus = dbProduct.recommendationStatus
+                                const resolutionStatus = dbProduct.recommendationResolutionStatus as RecommendationResolutionStatus | null | undefined
                                 const hasRec = !!dbProduct.releaseMonitorStatus
                                 const isUpdating = updatingRecId === dbProduct.id
+                                const isUpdatingResolution = updatingResolutionId === dbProduct.id
                                 const recStatusColors: Record<string, string> = {
                                   OPEN:      'bg-sky-50 text-sky-700 border border-sky-200',
                                   REVIEWED:  'bg-violet-50 text-violet-700 border border-violet-200',
@@ -1644,6 +1692,48 @@ export default function AdminDashboard() {
                                             </button>
                                           )}
                                         </div>
+                                        {/* Row 4: resolution outcome (only when ACTIONED) */}
+                                        {recStatus === 'ACTIONED' && (
+                                          <div className="flex flex-col gap-1 pt-0.5 border-t border-olive-100">
+                                            <p className="text-[8px] font-medium text-olive-400 uppercase tracking-wider">Outcome</p>
+                                            {resolutionStatus ? (
+                                              <span className={`text-[9px] font-medium px-1.5 py-0.5 w-fit ${RESOLUTION_BADGE_CLASS[resolutionStatus] ?? 'bg-gray-50 text-gray-400 border border-gray-200'}`}>
+                                                {RESOLUTION_LABEL[resolutionStatus]}
+                                              </span>
+                                            ) : (
+                                              <span className="text-[9px] text-olive-300 italic">Not assessed</span>
+                                            )}
+                                            <div className="flex gap-1 flex-wrap">
+                                              {resolutionStatus !== 'IMPROVING' && (
+                                                <button
+                                                  onClick={() => updateResolution(dbProduct.id, 'IMPROVING')}
+                                                  disabled={isUpdatingResolution}
+                                                  className="text-[9px] px-1.5 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 disabled:opacity-50 transition-colors"
+                                                >
+                                                  {isUpdatingResolution ? '…' : '↗ Improving'}
+                                                </button>
+                                              )}
+                                              {resolutionStatus !== 'RESOLVED' && (
+                                                <button
+                                                  onClick={() => updateResolution(dbProduct.id, 'RESOLVED')}
+                                                  disabled={isUpdatingResolution}
+                                                  className="text-[9px] px-1.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 disabled:opacity-50 transition-colors"
+                                                >
+                                                  {isUpdatingResolution ? '…' : '✓ Resolved'}
+                                                </button>
+                                              )}
+                                              {resolutionStatus !== 'REQUIRES_FOLLOW_UP' && (
+                                                <button
+                                                  onClick={() => updateResolution(dbProduct.id, 'REQUIRES_FOLLOW_UP')}
+                                                  disabled={isUpdatingResolution}
+                                                  className="text-[9px] px-1.5 py-0.5 bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 disabled:opacity-50 transition-colors"
+                                                >
+                                                  {isUpdatingResolution ? '…' : '⚑ Follow-up'}
+                                                </button>
+                                              )}
+                                            </div>
+                                          </div>
+                                        )}
                                         {/* History toggle */}
                                         <button
                                           onClick={() => fetchRecommendationHistory(dbProduct.id)}
@@ -1687,6 +1777,11 @@ export default function AdminDashboard() {
                                                           {event.newActionType && event.newActionType !== 'NONE' && (
                                                             <span className="text-[8px] text-olive-400">
                                                               · {event.newActionType.replace(/_/g, ' ')}
+                                                            </span>
+                                                          )}
+                                                          {event.newResolutionStatus && (
+                                                            <span className={`text-[8px] px-1 py-px ${RESOLUTION_BADGE_CLASS[event.newResolutionStatus as RecommendationResolutionStatus] ?? 'bg-gray-50 text-gray-400 border border-gray-100'}`}>
+                                                              {RESOLUTION_LABEL[event.newResolutionStatus as RecommendationResolutionStatus]}
                                                             </span>
                                                           )}
                                                         </div>
@@ -2442,6 +2537,55 @@ export default function AdminDashboard() {
                     {recCounts.UNTRACKED > 0 && (
                       <p className="text-[9px] text-olive-400 mt-2">
                         + {recCounts.UNTRACKED} with no workflow status yet — use ✓ Review in the Products tab to begin tracking
+                      </p>
+                    )}
+                  </div>
+                )
+              })()}
+
+              {/* Resolution Outcome — computed from ACTIONED products */}
+              {(() => {
+                const actioned = products.filter(p => p.status === 'APPROVED' && p.recommendationStatus === 'ACTIONED')
+                const resCounts: Record<RecommendationResolutionStatus, number> = {
+                  UNRESOLVED: 0, IMPROVING: 0, RESOLVED: 0, REQUIRES_FOLLOW_UP: 0,
+                }
+                let unassessed = 0
+                for (const p of actioned) {
+                  const r = p.recommendationResolutionStatus as RecommendationResolutionStatus | null | undefined
+                  if (!r) unassessed++
+                  else if (r in resCounts) resCounts[r]++
+                }
+                const tiles: Array<[RecommendationResolutionStatus, string, string]> = [
+                  ['UNRESOLVED',         'Awaiting',       'border-amber-200 bg-amber-50 text-amber-800'],
+                  ['IMPROVING',          'Improving',      'border-blue-200 bg-blue-50 text-blue-800'],
+                  ['RESOLVED',           'Resolved',       'border-emerald-200 bg-emerald-50 text-emerald-800'],
+                  ['REQUIRES_FOLLOW_UP', 'Follow-up Req.', 'border-red-200 bg-red-50 text-red-800'],
+                ]
+                return (
+                  <div className="bg-white border border-olive-200 p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-[10px] font-medium text-olive-400 uppercase tracking-wider">
+                        Resolution Outcome · {actioned.length} actioned recommendation{actioned.length !== 1 ? 's' : ''}
+                      </p>
+                      <button
+                        onClick={runFollowupCheck}
+                        disabled={runningFollowupCheck}
+                        className="text-[9px] px-2 py-0.5 bg-olive-100 text-olive-700 hover:bg-olive-200 disabled:opacity-50 transition-colors"
+                      >
+                        {runningFollowupCheck ? 'Checking…' : '⟳ Run Follow-up Check'}
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-4 gap-3">
+                      {tiles.map(([key, label, color]) => (
+                        <div key={key} className={`border ${color.split(' ').slice(0, 2).join(' ')} p-3 text-center`}>
+                          <p className={`text-2xl font-serif font-bold ${color.split(' ').slice(2).join(' ')}`}>{resCounts[key]}</p>
+                          <p className="text-[10px] font-medium text-olive-500 uppercase tracking-wider mt-1">{label}</p>
+                        </div>
+                      ))}
+                    </div>
+                    {unassessed > 0 && (
+                      <p className="text-[9px] text-olive-400 mt-2">
+                        + {unassessed} actioned with no outcome assessed — run the follow-up check or manually set in Products tab
                       </p>
                     )}
                   </div>

@@ -29,20 +29,24 @@ export async function PATCH(
     const product = await (prisma.product.findUnique as Function)({
       where:  { id: productId },
       select: {
-        id:                           true,
-        releaseMonitorStatus:         true,
-        exposureTier:                 true,
-        recommendationStatus:         true,
-        recommendationActionType:     true,
-        lastRecommendationReviewedAt: true,
+        id:                                 true,
+        releaseMonitorStatus:               true,
+        exposureTier:                       true,
+        recommendationStatus:               true,
+        recommendationActionType:           true,
+        recommendationResolutionStatus:     true,
+        lastRecommendationReviewedAt:       true,
+        lastRecommendationActionedAt:       true,
       },
     }) as {
       id: string
-      releaseMonitorStatus:         string | null
-      exposureTier:                 string | null
-      recommendationStatus:         string | null
-      recommendationActionType:     string | null
-      lastRecommendationReviewedAt: Date | null
+      releaseMonitorStatus:              string | null
+      exposureTier:                      string | null
+      recommendationStatus:              string | null
+      recommendationActionType:          string | null
+      recommendationResolutionStatus:    string | null
+      lastRecommendationReviewedAt:      Date | null
+      lastRecommendationActionedAt:      Date | null
     } | null
 
     if (!product) {
@@ -50,20 +54,40 @@ export async function PATCH(
     }
 
     const body = await request.json() as {
-      recommendationStatus:     'OPEN' | 'REVIEWED' | 'ACTIONED' | 'DISMISSED'
-      recommendationActionType?: string | null
-      recommendationNotes?:      string | null
+      recommendationStatus?:           'OPEN' | 'REVIEWED' | 'ACTIONED' | 'DISMISSED'
+      recommendationActionType?:       string | null
+      recommendationNotes?:            string | null
+      recommendationResolutionStatus?: string | null
     }
 
-    const { recommendationStatus, recommendationActionType, recommendationNotes } = body
+    const {
+      recommendationStatus,
+      recommendationActionType,
+      recommendationNotes,
+      recommendationResolutionStatus,
+    } = body
 
     const VALID_STATUSES = ['OPEN', 'REVIEWED', 'ACTIONED', 'DISMISSED'] as const
     const VALID_ACTION_TYPES = [
       'NONE', 'ACCELERATE_RELEASE', 'HOLD_RELEASE', 'INCREASE_ALLOCATION',
       'REDUCE_EXPOSURE', 'INCREASE_MERCHANDISING', 'MAINTAIN', 'DISMISSED',
     ] as const
+    const VALID_RESOLUTION_STATUSES = [
+      'UNRESOLVED', 'IMPROVING', 'RESOLVED', 'REQUIRES_FOLLOW_UP',
+    ] as const
 
-    if (!VALID_STATUSES.includes(recommendationStatus as typeof VALID_STATUSES[number])) {
+    // At least one of the two update vectors must be present
+    const updatingWorkflow   = recommendationStatus !== undefined
+    const updatingResolution = recommendationResolutionStatus !== undefined
+
+    if (!updatingWorkflow && !updatingResolution) {
+      return NextResponse.json({ error: 'Nothing to update' }, { status: 400 })
+    }
+
+    if (
+      updatingWorkflow &&
+      !VALID_STATUSES.includes(recommendationStatus as typeof VALID_STATUSES[number])
+    ) {
       return NextResponse.json({ error: 'Invalid recommendationStatus' }, { status: 400 })
     }
     if (
@@ -72,30 +96,57 @@ export async function PATCH(
     ) {
       return NextResponse.json({ error: 'Invalid recommendationActionType' }, { status: 400 })
     }
+    if (
+      updatingResolution &&
+      recommendationResolutionStatus !== null &&
+      !VALID_RESOLUTION_STATUSES.includes(
+        recommendationResolutionStatus as typeof VALID_RESOLUTION_STATUSES[number],
+      )
+    ) {
+      return NextResponse.json({ error: 'Invalid recommendationResolutionStatus' }, { status: 400 })
+    }
 
     const now = new Date()
-    const data: Record<string, unknown> = {
-      recommendationStatus,
-      recommendationNotes: recommendationNotes ?? null,
-    }
+    const data: Record<string, unknown> = {}
 
-    if (recommendationActionType !== undefined) {
-      data.recommendationActionType = recommendationActionType
-    }
+    // ── Workflow update ──────────────────────────────────────────────────────
+    if (updatingWorkflow) {
+      data.recommendationStatus  = recommendationStatus
+      data.recommendationNotes   = recommendationNotes ?? null
 
-    if (recommendationStatus === 'REVIEWED' || recommendationStatus === 'DISMISSED') {
-      data.lastRecommendationReviewedAt = now
-    }
-
-    if (recommendationStatus === 'ACTIONED') {
-      if (!product.lastRecommendationReviewedAt) {
+      if (recommendationActionType !== undefined) {
+        data.recommendationActionType = recommendationActionType
+      }
+      if (recommendationStatus === 'REVIEWED' || recommendationStatus === 'DISMISSED') {
         data.lastRecommendationReviewedAt = now
       }
-      data.lastRecommendationActionedAt = now
+      if (recommendationStatus === 'ACTIONED') {
+        if (!product.lastRecommendationReviewedAt) {
+          data.lastRecommendationReviewedAt = now
+        }
+        data.lastRecommendationActionedAt = now
+        // Auto-seed resolution as UNRESOLVED when first actioned
+        if (!product.recommendationResolutionStatus) {
+          data.recommendationResolutionStatus = 'UNRESOLVED'
+        }
+      }
+      if (recommendationStatus === 'OPEN') {
+        // Reopening clears both action timestamps and resolution
+        data.lastRecommendationActionedAt  = null
+        data.recommendationResolutionStatus = null
+        data.lastRecommendationResolvedAt   = null
+      }
     }
 
-    if (recommendationStatus === 'OPEN') {
-      data.lastRecommendationActionedAt = null
+    // ── Resolution update ────────────────────────────────────────────────────
+    if (updatingResolution) {
+      data.recommendationResolutionStatus = recommendationResolutionStatus
+      if (recommendationResolutionStatus === 'RESOLVED') {
+        data.lastRecommendationResolvedAt = now
+      } else if (recommendationResolutionStatus !== null) {
+        // Cleared or set to non-resolved — clear the resolved timestamp
+        data.lastRecommendationResolvedAt = null
+      }
     }
 
     // Write product update + audit history row in one transaction
@@ -104,26 +155,30 @@ export async function PATCH(
         where: { id: productId },
         data,
         select: {
-          id:                            true,
-          recommendationStatus:          true,
-          recommendationActionType:      true,
-          recommendationNotes:           true,
-          lastRecommendationReviewedAt:  true,
-          lastRecommendationActionedAt:  true,
+          id:                                 true,
+          recommendationStatus:               true,
+          recommendationActionType:           true,
+          recommendationNotes:                true,
+          lastRecommendationReviewedAt:       true,
+          lastRecommendationActionedAt:       true,
+          recommendationResolutionStatus:     true,
+          lastRecommendationResolvedAt:       true,
         },
       }),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (prisma as any).productRecommendationHistory.create({
         data: {
           productId,
-          previousStatus:      product.recommendationStatus    ?? null,
-          newStatus:           recommendationStatus,
-          previousActionType:  product.recommendationActionType ?? null,
-          newActionType:       recommendationActionType         ?? null,
-          note:                recommendationNotes              ?? null,
-          releaseMonitorStatus: product.releaseMonitorStatus   ?? null,
-          exposureTier:         product.exposureTier           ?? null,
-          changedByUserId:      session.user.id,
+          previousStatus:            updatingWorkflow ? (product.recommendationStatus ?? null) : undefined,
+          newStatus:                 updatingWorkflow ? recommendationStatus : (product.recommendationStatus ?? 'OPEN'),
+          previousActionType:        updatingWorkflow ? (product.recommendationActionType ?? null) : undefined,
+          newActionType:             updatingWorkflow ? (recommendationActionType ?? null) : undefined,
+          note:                      recommendationNotes ?? null,
+          releaseMonitorStatus:      product.releaseMonitorStatus ?? null,
+          exposureTier:              product.exposureTier         ?? null,
+          previousResolutionStatus:  updatingResolution ? (product.recommendationResolutionStatus ?? null) : undefined,
+          newResolutionStatus:       updatingResolution ? (recommendationResolutionStatus ?? null)         : undefined,
+          changedByUserId:           session.user.id,
         },
       }),
     ])
