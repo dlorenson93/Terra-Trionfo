@@ -104,6 +104,26 @@ enum ReleaseMonitorStatus {
   UPCOMING_INTEREST   // Pre-release wine with early sign-ups
 }
 
+// Recommendation workflow — tracks whether a recommendation has been acted on
+enum RecommendationStatus {
+  OPEN       // Generated, not yet reviewed by anyone
+  REVIEWED   // Admin has seen and acknowledged it
+  ACTIONED   // A concrete action was taken
+  DISMISSED  // Recommendation noted but not acted on
+}
+
+// Recommendation workflow — type of action taken against a recommendation
+enum RecommendationActionType {
+  NONE
+  ACCELERATE_RELEASE
+  HOLD_RELEASE
+  INCREASE_ALLOCATION
+  REDUCE_EXPOSURE
+  INCREASE_MERCHANDISING
+  MAINTAIN
+  DISMISSED
+}
+
 model User {
   id             String    @id @default(cuid())
   name           String
@@ -241,6 +261,13 @@ model Product {
   releaseMonitorStatus     ReleaseMonitorStatus?
   exposureTier             ExposureTier?
   lastRecommendationAt     DateTime?
+
+  // Recommendation workflow — tracks review/action lifecycle per recommendation cycle
+  recommendationStatus     RecommendationStatus?
+  recommendationActionType RecommendationActionType?
+  recommendationNotes      String?
+  lastRecommendationReviewedAt  DateTime?
+  lastRecommendationActionedAt  DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

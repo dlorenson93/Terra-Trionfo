@@ -55,6 +55,12 @@ interface Product {
   releaseMonitorStatus?: string | null
   exposureTier?: string | null
   lastRecommendationAt?: string | null
+  // Recommendation workflow
+  recommendationStatus?: string | null
+  recommendationActionType?: string | null
+  recommendationNotes?: string | null
+  lastRecommendationReviewedAt?: string | null
+  lastRecommendationActionedAt?: string | null
 }
 
 interface RestaurantWineAdmin {
@@ -189,6 +195,8 @@ export default function AdminDashboard() {
   // Per-product intel run state
   const [runningIntelId, setRunningIntelId] = useState<string | null>(null)
   const [runningAllIntel, setRunningAllIntel] = useState(false)
+  // Recommendation workflow action state
+  const [updatingRecId, setUpdatingRecId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!session) {
@@ -285,6 +293,26 @@ export default function AdminDashboard() {
       console.error('Error running bulk intelligence:', error)
     } finally {
       setRunningAllIntel(false)
+    }
+  }
+
+  const updateRecommendation = async (
+    productId: string,
+    recommendationStatus: 'OPEN' | 'REVIEWED' | 'ACTIONED' | 'DISMISSED',
+    opts?: { recommendationActionType?: string; recommendationNotes?: string },
+  ) => {
+    setUpdatingRecId(productId)
+    try {
+      await fetch(`/api/admin/recommendations/${productId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recommendationStatus, ...opts }),
+      })
+      fetchData()
+    } catch (error) {
+      console.error('Error updating recommendation:', error)
+    } finally {
+      setUpdatingRecId(null)
     }
   }
 
@@ -1487,8 +1515,18 @@ export default function AdminDashboard() {
                               {dbProduct && (() => {
                                 const freshness = deriveAnalysisFreshness(dbProduct.lastRecommendationAt)
                                 const canRun = dbProduct.status === 'APPROVED' && (freshness === 'NEVER_RUN' || freshness === 'STALE' || freshness === 'AGING')
+                                const recStatus = dbProduct.recommendationStatus
+                                const hasRec = !!dbProduct.releaseMonitorStatus
+                                const isUpdating = updatingRecId === dbProduct.id
+                                const recStatusColors: Record<string, string> = {
+                                  OPEN:      'bg-sky-50 text-sky-700 border border-sky-200',
+                                  REVIEWED:  'bg-violet-50 text-violet-700 border border-violet-200',
+                                  ACTIONED:  'bg-emerald-50 text-emerald-700 border border-emerald-200',
+                                  DISMISSED: 'bg-gray-50 text-gray-500 border border-gray-200',
+                                }
                                 return (
                                   <div className="flex flex-col gap-1.5">
+                                    {/* Row 1: monitor status + tier */}
                                     <div className="flex items-center gap-1.5 flex-wrap">
                                       {dbProduct.releaseMonitorStatus ? (
                                         <span className={`text-[9px] font-medium px-1.5 py-0.5 leading-tight ${monitorColors[dbProduct.releaseMonitorStatus] ?? 'bg-white text-olive-400 border border-olive-200'}`}>
@@ -1503,6 +1541,7 @@ export default function AdminDashboard() {
                                         </span>
                                       )}
                                     </div>
+                                    {/* Row 2: freshness + run button */}
                                     <div className="flex items-center gap-1.5">
                                       <span className={`text-[9px] px-1.5 py-0.5 ${FRESHNESS_BADGE_CLASS[freshness]}`}>
                                         {FRESHNESS_LABEL[freshness]}
@@ -1517,6 +1556,54 @@ export default function AdminDashboard() {
                                         </button>
                                       )}
                                     </div>
+                                    {/* Row 3: recommendation workflow (only when a status exists) */}
+                                    {hasRec && (
+                                      <div className="flex flex-col gap-1 pt-0.5 border-t border-olive-100">
+                                        {recStatus && (
+                                          <span className={`text-[9px] font-medium px-1.5 py-0.5 w-fit ${recStatusColors[recStatus] ?? 'bg-gray-50 text-gray-400 border border-gray-200'}`}>
+                                            {recStatus}
+                                          </span>
+                                        )}
+                                        <div className="flex gap-1 flex-wrap">
+                                          {(!recStatus || recStatus === 'OPEN') && (
+                                            <button
+                                              onClick={() => updateRecommendation(dbProduct.id, 'REVIEWED')}
+                                              disabled={isUpdating}
+                                              className="text-[9px] px-1.5 py-0.5 bg-violet-50 text-violet-700 border border-violet-200 hover:bg-violet-100 disabled:opacity-50 transition-colors"
+                                            >
+                                              {isUpdating ? '…' : '✓ Review'}
+                                            </button>
+                                          )}
+                                          {(recStatus === 'OPEN' || recStatus === 'REVIEWED') && (
+                                            <button
+                                              onClick={() => updateRecommendation(dbProduct.id, 'ACTIONED', { recommendationActionType: 'MAINTAIN' })}
+                                              disabled={isUpdating}
+                                              className="text-[9px] px-1.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 disabled:opacity-50 transition-colors"
+                                            >
+                                              {isUpdating ? '…' : '↑ Actioned'}
+                                            </button>
+                                          )}
+                                          {recStatus !== 'DISMISSED' && recStatus !== 'ACTIONED' && (
+                                            <button
+                                              onClick={() => updateRecommendation(dbProduct.id, 'DISMISSED')}
+                                              disabled={isUpdating}
+                                              className="text-[9px] px-1.5 py-0.5 bg-gray-50 text-gray-500 border border-gray-200 hover:bg-gray-100 disabled:opacity-50 transition-colors"
+                                            >
+                                              {isUpdating ? '…' : '✕'}
+                                            </button>
+                                          )}
+                                          {(recStatus === 'ACTIONED' || recStatus === 'DISMISSED') && (
+                                            <button
+                                              onClick={() => updateRecommendation(dbProduct.id, 'OPEN')}
+                                              disabled={isUpdating}
+                                              className="text-[9px] px-1.5 py-0.5 bg-sky-50 text-sky-600 border border-sky-200 hover:bg-sky-100 disabled:opacity-50 transition-colors"
+                                            >
+                                              {isUpdating ? '…' : '↺ Reopen'}
+                                            </button>
+                                          )}
+                                        </div>
+                                      </div>
+                                    )}
                                   </div>
                                 )
                               })()}
@@ -2200,6 +2287,59 @@ export default function AdminDashboard() {
                         </div>
                       ))}
                     </div>
+                  </div>
+                )
+              })()}
+
+              {/* Recommendation Workflow Status — computed from products with a releaseMonitorStatus */}
+              {(() => {
+                const withRec   = products.filter(p => p.status === 'APPROVED' && p.releaseMonitorStatus)
+                const recCounts = { OPEN: 0, REVIEWED: 0, ACTIONED: 0, DISMISSED: 0, UNTRACKED: 0 }
+                let staleOpen   = 0
+                for (const p of withRec) {
+                  const s = p.recommendationStatus
+                  if (!s) {
+                    recCounts.UNTRACKED++
+                  } else if (s in recCounts) {
+                    recCounts[s as keyof typeof recCounts]++
+                  }
+                  // Stale open = OPEN (or untracked) + intelligence is STALE or NEVER_RUN
+                  const freshness = deriveAnalysisFreshness(p.lastRecommendationAt)
+                  if ((!s || s === 'OPEN') && (freshness === 'STALE' || freshness === 'NEVER_RUN')) {
+                    staleOpen++
+                  }
+                }
+                const tiles: Array<[string, number, string, string]> = [
+                  ['OPEN',      recCounts.OPEN,      'Open',      'border-sky-200 bg-sky-50 text-sky-700'],
+                  ['REVIEWED',  recCounts.REVIEWED,  'Reviewed',  'border-violet-200 bg-violet-50 text-violet-700'],
+                  ['ACTIONED',  recCounts.ACTIONED,  'Actioned',  'border-emerald-200 bg-emerald-50 text-emerald-700'],
+                  ['DISMISSED', recCounts.DISMISSED, 'Dismissed', 'border-gray-200 bg-gray-50 text-gray-500'],
+                ]
+                return (
+                  <div className="bg-white border border-olive-200 p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-[10px] font-medium text-olive-400 uppercase tracking-wider">
+                        Recommendation Workflow · {withRec.length} active recommendation{withRec.length !== 1 ? 's' : ''}
+                      </p>
+                      {staleOpen > 0 && (
+                        <span className="text-[9px] font-semibold px-2 py-0.5 bg-red-50 text-red-600 border border-red-200">
+                          {staleOpen} stale open
+                        </span>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-4 gap-3">
+                      {tiles.map(([key, count, label, color]) => (
+                        <div key={key} className={`border ${color.split(' ').slice(0, 2).join(' ')} p-3 text-center`}>
+                          <p className={`text-2xl font-serif font-bold ${color.split(' ').slice(2).join(' ')}`}>{count}</p>
+                          <p className="text-[10px] font-medium text-olive-500 uppercase tracking-wider mt-1">{label}</p>
+                        </div>
+                      ))}
+                    </div>
+                    {recCounts.UNTRACKED > 0 && (
+                      <p className="text-[9px] text-olive-400 mt-2">
+                        + {recCounts.UNTRACKED} with no workflow status yet — use ✓ Review in the Products tab to begin tracking
+                      </p>
+                    )}
                   </div>
                 )
               })()}
