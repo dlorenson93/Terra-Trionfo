@@ -255,6 +255,12 @@ export default function AdminDashboard() {
   // Allocation planning state (Release Intel tab)
   const [allocationPlanning, setAllocationPlanning] = useState<any>(null)
   const [loadingPlanning, setLoadingPlanning] = useState(false)
+  // Planning decisions state (Phase 13 — decision capture)
+  const [planningDecisions, setPlanningDecisions] = useState<Record<string, any>>({})
+  const [loadingDecisions, setLoadingDecisions] = useState(false)
+  const [decisionsLoaded, setDecisionsLoaded] = useState(false)
+  const [overridingProductId, setOverridingProductId] = useState<string | null>(null)
+  const [overrideForm, setOverrideForm] = useState({ allocationSizing: '', releaseTiming: '', rolloutMode: '', notes: '' })
 
   useEffect(() => {
     if (!session) {
@@ -284,6 +290,9 @@ export default function AdminDashboard() {
     }
     if (activeTab === 'release-intelligence' && !allocationPlanning && !loadingPlanning) {
       fetchAllocationPlanning()
+    }
+    if (activeTab === 'release-intelligence' && !decisionsLoaded && !loadingDecisions) {
+      fetchPlanningDecisions()
     }
   }, [activeTab])
 
@@ -381,6 +390,62 @@ export default function AdminDashboard() {
       console.error('Error fetching allocation planning:', error)
     } finally {
       setLoadingPlanning(false)
+    }
+  }
+
+  const fetchPlanningDecisions = async () => {
+    setLoadingDecisions(true)
+    try {
+      const res = await fetch('/api/admin/planning-decisions')
+      if (res.ok) {
+        const rows: any[] = await res.json()
+        // Build latest-per-product map (rows ordered newest-first from API)
+        const map: Record<string, any> = {}
+        for (const row of rows) {
+          if (!map[row.productId]) map[row.productId] = row
+        }
+        setPlanningDecisions(map)
+        setDecisionsLoaded(true)
+      }
+    } catch (error) {
+      console.error('Error fetching planning decisions:', error)
+    } finally {
+      setLoadingDecisions(false)
+    }
+  }
+
+  const submitPlanningDecision = async (
+    plan: any,
+    decisionStatus: 'ACCEPTED' | 'OVERRIDDEN' | 'DEFERRED',
+    override?: { allocationSizing: string; releaseTiming: string; rolloutMode: string; notes: string },
+  ) => {
+    const body = {
+      productId:                   plan.productId,
+      decisionStatus,
+      recommendedAllocationSizing: plan.allocationSizing,
+      recommendedReleaseTiming:    plan.releaseTiming,
+      recommendedRolloutMode:      plan.rolloutMode,
+      recommendedPlanConfidence:   plan.planConfidence,
+      signalScoreAtDecision:       plan.signalScore   ?? null,
+      inventoryAtDecision:         plan.inventory     ?? null,
+      selectedAllocationSizing:    decisionStatus === 'ACCEPTED' ? plan.allocationSizing : (override?.allocationSizing ?? null),
+      selectedReleaseTiming:       decisionStatus === 'ACCEPTED' ? plan.releaseTiming    : (override?.releaseTiming    ?? null),
+      selectedRolloutMode:         decisionStatus === 'ACCEPTED' ? plan.rolloutMode      : (override?.rolloutMode      ?? null),
+      planningDecisionNotes:       override?.notes ?? null,
+    }
+    try {
+      const res = await fetch('/api/admin/planning-decisions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      if (res.ok) {
+        const newDecision = await res.json()
+        setPlanningDecisions(prev => ({ ...prev, [plan.productId]: newDecision }))
+        setOverridingProductId(null)
+      }
+    } catch (error) {
+      console.error('Error submitting planning decision:', error)
     }
   }
 
@@ -3514,53 +3579,194 @@ export default function AdminDashboard() {
                                     <th className="text-left px-3 py-2 font-medium border-b border-olive-200">Rollout</th>
                                     <th className="text-center px-3 py-2 font-medium border-b border-olive-200">Conf.</th>
                                     <th className="text-left px-3 py-2 font-medium border-b border-olive-200">Rationale</th>
+                                    <th className="text-left px-3 py-2 font-medium border-b border-olive-200">Decision</th>
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  {ap.plans.map((plan: any) => (
-                                    <tr key={plan.productId} className="border-b border-olive-100 hover:bg-parchment-50 align-top">
-                                      <td className="px-3 py-2.5">
-                                        <p className="font-medium text-olive-900 leading-tight">{plan.wineName}</p>
-                                        <p className="text-[10px] text-olive-400">{plan.company}</p>
-                                      </td>
-                                      <td className="px-3 py-2.5 text-olive-600 whitespace-nowrap">{plan.releaseStatus}</td>
-                                      <td className="px-3 py-2.5">
-                                        <span className={`text-[10px] px-1.5 py-0.5 rounded border ${
-                                          plan.dominantDriver === 'consumer' ? 'bg-teal-50 text-teal-700 border-teal-200' :
-                                          plan.dominantDriver === 'trade'    ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
-                                                                               'bg-gray-50 text-gray-600 border-gray-200'
-                                        }`}>
-                                          {plan.dominantDriver}
-                                        </span>
-                                      </td>
-                                      <td className="px-3 py-2.5">
-                                        <span className={`text-[10px] px-1.5 py-0.5 rounded ${sizingColor(plan.allocationSizing)}`}>
-                                          {SIZING_LABEL[plan.allocationSizing] ?? plan.allocationSizing}
-                                        </span>
-                                      </td>
-                                      <td className="px-3 py-2.5">
-                                        <span className={`text-[10px] px-1.5 py-0.5 rounded ${timingColor(plan.releaseTiming)}`}>
-                                          {TIMING_LABEL[plan.releaseTiming] ?? plan.releaseTiming}
-                                        </span>
-                                      </td>
-                                      <td className="px-3 py-2.5 text-olive-600 whitespace-nowrap">
-                                        {ROLLOUT_LABEL[plan.rolloutMode] ?? plan.rolloutMode}
-                                      </td>
-                                      <td className="px-3 py-2.5 text-center">
-                                        <span className={confColor(plan.planConfidence)}>{plan.planConfidence}</span>
-                                      </td>
-                                      <td className="px-3 py-2.5 max-w-[260px]">
-                                        <p className="text-olive-700 leading-snug">{plan.allocationRationale}</p>
-                                        <p className="text-olive-500 leading-snug mt-0.5">{plan.timingRationale}</p>
-                                        {plan.learningContext && (
-                                          <p className="text-[10px] text-blue-500 italic mt-1">{plan.learningContext}</p>
+                                  {ap.plans.map((plan: any) => {
+                                    const existing   = planningDecisions[plan.productId]
+                                    const isOverriding = overridingProductId === plan.productId
+
+                                    const decisionBadge = (status: string) => {
+                                      if (status === 'ACCEPTED')   return 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                      if (status === 'OVERRIDDEN') return 'bg-amber-100 text-amber-800 border border-amber-200'
+                                      if (status === 'DEFERRED')   return 'bg-gray-100 text-gray-500 border border-gray-200'
+                                      return 'bg-white text-olive-400 border border-olive-200'
+                                    }
+
+                                    return (
+                                      <>
+                                        <tr key={plan.productId} className="border-b border-olive-100 hover:bg-parchment-50 align-top">
+                                          <td className="px-3 py-2.5">
+                                            <p className="font-medium text-olive-900 leading-tight">{plan.wineName}</p>
+                                            <p className="text-[10px] text-olive-400">{plan.company}</p>
+                                          </td>
+                                          <td className="px-3 py-2.5 text-olive-600 whitespace-nowrap">{plan.releaseStatus}</td>
+                                          <td className="px-3 py-2.5">
+                                            <span className={`text-[10px] px-1.5 py-0.5 rounded border ${
+                                              plan.dominantDriver === 'consumer' ? 'bg-teal-50 text-teal-700 border-teal-200' :
+                                              plan.dominantDriver === 'trade'    ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
+                                                                                   'bg-gray-50 text-gray-600 border-gray-200'
+                                            }`}>
+                                              {plan.dominantDriver}
+                                            </span>
+                                          </td>
+                                          <td className="px-3 py-2.5">
+                                            <span className={`text-[10px] px-1.5 py-0.5 rounded ${sizingColor(plan.allocationSizing)}`}>
+                                              {SIZING_LABEL[plan.allocationSizing] ?? plan.allocationSizing}
+                                            </span>
+                                          </td>
+                                          <td className="px-3 py-2.5">
+                                            <span className={`text-[10px] px-1.5 py-0.5 rounded ${timingColor(plan.releaseTiming)}`}>
+                                              {TIMING_LABEL[plan.releaseTiming] ?? plan.releaseTiming}
+                                            </span>
+                                          </td>
+                                          <td className="px-3 py-2.5 text-olive-600 whitespace-nowrap">
+                                            {ROLLOUT_LABEL[plan.rolloutMode] ?? plan.rolloutMode}
+                                          </td>
+                                          <td className="px-3 py-2.5 text-center">
+                                            <span className={confColor(plan.planConfidence)}>{plan.planConfidence}</span>
+                                          </td>
+                                          <td className="px-3 py-2.5 max-w-[260px]">
+                                            <p className="text-olive-700 leading-snug">{plan.allocationRationale}</p>
+                                            <p className="text-olive-500 leading-snug mt-0.5">{plan.timingRationale}</p>
+                                            {plan.learningContext && (
+                                              <p className="text-[10px] text-blue-500 italic mt-1">{plan.learningContext}</p>
+                                            )}
+                                            {plan.calibrationContext && (
+                                              <p className="text-[10px] text-violet-500 italic mt-0.5">{plan.calibrationContext}</p>
+                                            )}
+                                          </td>
+                                          {/* Decision column */}
+                                          <td className="px-3 py-2.5 whitespace-nowrap">
+                                            {existing ? (
+                                              <div className="flex flex-col gap-1">
+                                                <span className={`text-[10px] px-1.5 py-0.5 rounded border w-fit ${decisionBadge(existing.decisionStatus)}`}>
+                                                  {existing.decisionStatus}
+                                                </span>
+                                                {existing.planningDecisionNotes && (
+                                                  <p className="text-[10px] text-olive-400 italic">{existing.planningDecisionNotes}</p>
+                                                )}
+                                                <button
+                                                  onClick={() => {
+                                                    setOverridingProductId(plan.productId)
+                                                    setOverrideForm({
+                                                      allocationSizing: existing.selectedAllocationSizing ?? plan.allocationSizing,
+                                                      releaseTiming:    existing.selectedReleaseTiming    ?? plan.releaseTiming,
+                                                      rolloutMode:      existing.selectedRolloutMode      ?? plan.rolloutMode,
+                                                      notes: '',
+                                                    })
+                                                  }}
+                                                  className="text-[10px] text-olive-400 hover:text-olive-700 underline"
+                                                >
+                                                  Revise
+                                                </button>
+                                              </div>
+                                            ) : (
+                                              <div className="flex flex-col gap-1">
+                                                <button
+                                                  onClick={() => submitPlanningDecision(plan, 'ACCEPTED')}
+                                                  className="text-[10px] px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded hover:bg-emerald-100"
+                                                >
+                                                  Accept
+                                                </button>
+                                                <button
+                                                  onClick={() => {
+                                                    setOverridingProductId(plan.productId)
+                                                    setOverrideForm({
+                                                      allocationSizing: plan.allocationSizing,
+                                                      releaseTiming:    plan.releaseTiming,
+                                                      rolloutMode:      plan.rolloutMode,
+                                                      notes: '',
+                                                    })
+                                                  }}
+                                                  className="text-[10px] px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 rounded hover:bg-amber-100"
+                                                >
+                                                  Override
+                                                </button>
+                                                <button
+                                                  onClick={() => submitPlanningDecision(plan, 'DEFERRED')}
+                                                  className="text-[10px] px-2 py-0.5 bg-gray-50 text-gray-500 border border-gray-200 rounded hover:bg-gray-100"
+                                                >
+                                                  Defer
+                                                </button>
+                                              </div>
+                                            )}
+                                          </td>
+                                        </tr>
+                                        {/* Inline override form */}
+                                        {isOverriding && (
+                                          <tr key={`${plan.productId}-override`} className="bg-amber-50 border-b border-amber-100">
+                                            <td colSpan={9} className="px-4 py-3">
+                                              <p className="text-[11px] font-medium text-amber-800 mb-2">Override plan for {plan.wineName}</p>
+                                              <div className="flex flex-wrap gap-3 mb-2">
+                                                <div>
+                                                  <label className="text-[9px] uppercase tracking-wider text-amber-600 block mb-0.5">Allocation</label>
+                                                  <select
+                                                    value={overrideForm.allocationSizing}
+                                                    onChange={e => setOverrideForm(f => ({ ...f, allocationSizing: e.target.value }))}
+                                                    className="text-[11px] border border-amber-200 rounded px-2 py-1 bg-white"
+                                                  >
+                                                    {['hold_flat','modest_increase','significant_increase','reduce_exposure','maintain'].map(v => (
+                                                      <option key={v} value={v}>{SIZING_LABEL[v] ?? v}</option>
+                                                    ))}
+                                                  </select>
+                                                </div>
+                                                <div>
+                                                  <label className="text-[9px] uppercase tracking-wider text-amber-600 block mb-0.5">Timing</label>
+                                                  <select
+                                                    value={overrideForm.releaseTiming}
+                                                    onChange={e => setOverrideForm(f => ({ ...f, releaseTiming: e.target.value }))}
+                                                    className="text-[11px] border border-amber-200 rounded px-2 py-1 bg-white"
+                                                  >
+                                                    {['accelerate','hold_until_signal','stage_two_waves','release_trade_first','release_consumer_first','no_action'].map(v => (
+                                                      <option key={v} value={v}>{TIMING_LABEL[v] ?? v}</option>
+                                                    ))}
+                                                  </select>
+                                                </div>
+                                                <div>
+                                                  <label className="text-[9px] uppercase tracking-wider text-amber-600 block mb-0.5">Rollout</label>
+                                                  <select
+                                                    value={overrideForm.rolloutMode}
+                                                    onChange={e => setOverrideForm(f => ({ ...f, rolloutMode: e.target.value }))}
+                                                    className="text-[11px] border border-amber-200 rounded px-2 py-1 bg-white"
+                                                  >
+                                                    {['consumer_led','trade_led','balanced','soft_launch','allocation_first'].map(v => (
+                                                      <option key={v} value={v}>{ROLLOUT_LABEL[v] ?? v}</option>
+                                                    ))}
+                                                  </select>
+                                                </div>
+                                                <div className="flex-1 min-w-[160px]">
+                                                  <label className="text-[9px] uppercase tracking-wider text-amber-600 block mb-0.5">Notes (optional)</label>
+                                                  <input
+                                                    type="text"
+                                                    value={overrideForm.notes}
+                                                    onChange={e => setOverrideForm(f => ({ ...f, notes: e.target.value }))}
+                                                    placeholder="Reason for override…"
+                                                    className="text-[11px] border border-amber-200 rounded px-2 py-1 bg-white w-full"
+                                                  />
+                                                </div>
+                                              </div>
+                                              <div className="flex gap-2">
+                                                <button
+                                                  onClick={() => submitPlanningDecision(plan, 'OVERRIDDEN', overrideForm)}
+                                                  className="text-[11px] px-3 py-1 bg-amber-600 text-white rounded hover:bg-amber-700"
+                                                >
+                                                  Confirm Override
+                                                </button>
+                                                <button
+                                                  onClick={() => setOverridingProductId(null)}
+                                                  className="text-[11px] px-3 py-1 border border-olive-200 text-olive-500 rounded hover:bg-parchment-50"
+                                                >
+                                                  Cancel
+                                                </button>
+                                              </div>
+                                            </td>
+                                          </tr>
                                         )}
-                                        {plan.calibrationContext && (
-                                          <p className="text-[10px] text-violet-500 italic mt-0.5">{plan.calibrationContext}</p>
-                                        )}
-                                      </td>
-                                    </tr>
-                                  ))}
+                                      </>
+                                    )
+                                  })}
                                 </tbody>
                               </table>
                             </div>

@@ -158,6 +158,14 @@ enum BiasMode {
   APPLY_TO_CONFIDENCE  // Weights applied to confidence scores at generation time
 }
 
+// Phase 13 — Planning workflow: what decision the admin made against an allocation plan
+enum PlanningDecisionStatus {
+  PENDING    // Plan generated; no human decision yet
+  ACCEPTED   // Admin accepted the engine recommendation verbatim
+  OVERRIDDEN // Admin chose different allocation/timing/rollout values
+  DEFERRED   // Decision postponed — revisit when signal changes
+}
+
 model User {
   id             String    @id @default(cuid())
   name           String
@@ -182,6 +190,7 @@ model User {
   orders    Order[]
   addresses CustomerAddress[]
   recommendationActions ProductRecommendationHistory[]
+  planningDecisions     ProductPlanningDecision[]
 
   @@map("users")
 }
@@ -328,6 +337,7 @@ model Product {
   waitlists       Waitlist[]
   tradeInterests  TradeInterest[]
   recommendationHistory ProductRecommendationHistory[]
+  planningDecisions     ProductPlanningDecision[]
 
   @@map("products")
 }
@@ -377,6 +387,45 @@ model ProductRecommendationHistory {
   @@index([productId])
   @@index([createdAt])
   @@map("product_recommendation_history")
+}
+
+// Phase 13 — one row per planning decision event per product.
+// Captures what the engine recommended vs what the admin actually chose.
+// Multiple rows per product allowed — latest row = current decision state.
+model ProductPlanningDecision {
+  id String @id @default(cuid())
+
+  // What the engine recommended (snapshot at decision time)
+  recommendedAllocationSizing String
+  recommendedReleaseTiming    String
+  recommendedRolloutMode      String
+  recommendedPlanConfidence   String  // 'high' | 'medium' | 'low'
+
+  // Signal snapshot at decision time — enables outcome comparison later
+  signalScoreAtDecision Float?
+  inventoryAtDecision   Int?
+
+  // Human decision
+  decisionStatus           PlanningDecisionStatus @default(PENDING)
+  selectedAllocationSizing String?  // null when DEFERRED or PENDING
+  selectedReleaseTiming    String?
+  selectedRolloutMode      String?
+  planningDecisionNotes    String?
+
+  // Audit
+  plannedByUserId String
+  plannedBy       User    @relation(fields: [plannedByUserId], references: [id])
+  plannedAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // FK
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([decisionStatus])
+  @@index([plannedAt])
+  @@map("product_planning_decisions")
 }
 
 // Singleton row controlling whether learned bias weights are applied
