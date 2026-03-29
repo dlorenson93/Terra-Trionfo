@@ -25,7 +25,9 @@ function loadEnv(filename: string) {
 loadEnv('.env.local')
 loadEnv('.env')
 
-import { PrismaClient, UserRole, CompanyStatus } from '@prisma/client'
+import { PrismaClient, UserRole, CompanyStatus, ProductStatus, CommerceModel, ListingOwner, ProductCategory } from '@prisma/client'
+import { WINES } from '../data/wines'
+import { PRODUCERS } from '../data/producers'
 import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
@@ -212,6 +214,38 @@ async function main() {
   }
 
   console.log('✅ Portfolio winery companies created')
+
+  // ── Portfolio wines as products ─────────────────────────────────────────
+  for (const wine of WINES) {
+    const producer = PRODUCERS.find((p) => p.id === wine.producerId)
+    const isFoundingWine = producer?.collection === 'classical' ?? false
+
+    await prisma.product.upsert({
+      where: { id: wine.id },
+      update: {},
+      create: {
+        id: wine.id,
+        slug: wine.slug,
+        name: wine.displayName,
+        description: wine.description,
+        category: ProductCategory.WINE,
+        wineStyle: wine.type,
+        appellation: wine.appellation ?? null,
+        region: wine.region,
+        country: 'Italy',
+        commerceModel: CommerceModel.WHOLESALE,
+        listingOwner: ListingOwner.TERRA,
+        wholesalePriceCents: Math.round(wine.internalWholesalePriceEUR * 100),
+        retailPriceCents: Math.round(wine.consumerPurchasePriceUSD * 100),
+        inventory: 0,
+        status: ProductStatus.PENDING,
+        isFoundingWine,
+        companyId: wine.producerId,
+      } as any,
+    })
+  }
+
+  console.log(`✅ ${WINES.length} portfolio wines seeded as products`)
 
   // ── Pickup location ──────────────────────────────────────────────────────
   await (prisma as any).pickupLocation.upsert({

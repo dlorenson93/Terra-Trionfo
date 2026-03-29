@@ -157,6 +157,10 @@ export default function AdminDashboard() {
     name: '', contactEmail: '', region: '', country: 'Italy', phone: '', website: '', bio: '', description: '',
   })
 
+  // Wine import state
+  const [importingWineId, setImportingWineId] = useState<string | null>(null)
+  const [importingAll, setImportingAll] = useState(false)
+
   useEffect(() => {
     if (!session) {
       router.push('/auth/signin')
@@ -361,6 +365,69 @@ export default function AdminDashboard() {
       fetchData()
     } catch (error) {
       console.error('Error creating company:', error)
+    }
+  }
+
+  const importWine = async (wine: (typeof WINES)[0]) => {
+    const producer = PRODUCERS.find((p) => p.id === wine.producerId)
+    const isFoundingWine = producer?.collection === 'classical' ?? false
+    setImportingWineId(wine.id)
+    try {
+      const res = await fetch('/api/admin/products/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: wine.id,
+          slug: wine.slug,
+          name: wine.displayName,
+          description: wine.description,
+          type: wine.type,
+          appellation: wine.appellation,
+          region: wine.region,
+          producerId: wine.producerId,
+          internalWholesalePriceEUR: wine.internalWholesalePriceEUR,
+          consumerPurchasePriceUSD: wine.consumerPurchasePriceUSD,
+          isFoundingWine,
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        alert(err.error || 'Import failed')
+        return
+      }
+      fetchData()
+    } catch {
+      alert('Network error importing wine')
+    } finally {
+      setImportingWineId(null)
+    }
+  }
+
+  const importAllMissingWines = async () => {
+    const missing = WINES.filter((w) => !products.find((p) => p.slug === w.slug || p.slug === w.id))
+    if (missing.length === 0) { alert('All wines are already in the database.'); return }
+    if (!confirm(`Import ${missing.length} missing wine(s) to the database?`)) return
+    setImportingAll(true)
+    try {
+      for (const wine of missing) {
+        const producer = PRODUCERS.find((p) => p.id === wine.producerId)
+        const isFoundingWine = producer?.collection === 'classical' ?? false
+        await fetch('/api/admin/products/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: wine.id, slug: wine.slug, name: wine.displayName, description: wine.description,
+            type: wine.type, appellation: wine.appellation, region: wine.region,
+            producerId: wine.producerId, internalWholesalePriceEUR: wine.internalWholesalePriceEUR,
+            consumerPurchasePriceUSD: wine.consumerPurchasePriceUSD, isFoundingWine,
+          }),
+        })
+      }
+      fetchData()
+    } catch {
+      alert('Error during bulk import')
+    } finally {
+      setImportingAll(false)
     }
   }
 
@@ -1100,9 +1167,16 @@ export default function AdminDashboard() {
                 <div>
                   <h2 className="text-base font-semibold text-olive-900">Portfolio Wines</h2>
                   <p className="text-sm text-olive-400 mt-0.5">
-                    {WINES.length} wines · Showing canonical portfolio — cross-referenced against the product database
+                    {WINES.length} wines · {products.filter((p) => WINES.some((w) => w.slug === p.slug || w.id === p.slug)).length} in DB · cross-referenced against product database
                   </p>
                 </div>
+                <button
+                  onClick={importAllMissingWines}
+                  disabled={importingAll}
+                  className="text-sm px-4 py-2 bg-olive-700 text-parchment-100 hover:bg-olive-800 disabled:opacity-50 transition-colors"
+                >
+                  {importingAll ? 'Importing…' : 'Import All Missing'}
+                </button>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
@@ -1189,7 +1263,13 @@ export default function AdminDashboard() {
                                 <button onClick={() => editProduct(dbProduct)} className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200">Edit</button>
                               </div>
                             ) : (
-                              <span className="text-xs text-olive-400 italic">Import to DB to manage</span>
+                              <button
+                                onClick={() => importWine(wine)}
+                                disabled={importingWineId === wine.id || importingAll}
+                                className="text-xs px-2 py-1 bg-olive-700 text-parchment-100 rounded hover:bg-olive-800 disabled:opacity-50"
+                              >
+                                {importingWineId === wine.id ? 'Importing…' : 'Import'}
+                              </button>
                             )}
                           </td>
                         </tr>
