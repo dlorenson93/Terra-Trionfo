@@ -1361,172 +1361,213 @@ export default function AdminDashboard() {
           )}
 
           {/* Products Tab */}
-          {activeTab === 'products' && (
-            <div className="bg-white border border-olive-200 p-6">
-              <div className="flex items-center justify-between mb-5">
-                <div>
-                  <h2 className="text-base font-semibold text-olive-900">Portfolio Wines</h2>
-                  <p className="text-sm text-olive-400 mt-0.5">
-                    {WINES.length} wines · {products.filter((p) => WINES.some((w) => w.slug === p.slug || w.id === p.slug)).length} in DB · cross-referenced against product database
-                  </p>
+          {activeTab === 'products' && (() => {
+            const portfolioRows = WINES.map(w => ({
+              wine: w,
+              dbProduct: products.find(p => p.slug === w.slug || p.slug === w.id),
+              producer: PRODUCERS.find(p => p.id === w.producerId),
+            }))
+            const inDbCount      = portfolioRows.filter(x => x.dbProduct).length
+            const approvedCount  = portfolioRows.filter(x => x.dbProduct?.status === 'APPROVED').length
+            const pendingCount   = portfolioRows.filter(x => x.dbProduct?.status === 'PENDING').length
+            const notInDbCount   = WINES.length - inDbCount
+            const monitorColors: Record<string, string> = {
+              HIGH_DEMAND:         'bg-emerald-50 text-emerald-800 border border-emerald-200',
+              NEEDS_REVIEW:        'bg-amber-50 text-amber-800 border border-amber-200',
+              ALLOCATION_PRESSURE: 'bg-red-50 text-red-700 border border-red-200',
+              UPCOMING_INTEREST:   'bg-blue-50 text-blue-700 border border-blue-200',
+              UNDERPERFORMING:     'bg-gray-50 text-gray-500 border border-gray-200',
+              STABLE:              'bg-parchment-50 text-olive-500 border border-olive-200',
+            }
+            const tierColors: Record<string, string> = {
+              PRIORITY: 'text-violet-700',
+              LIMITED:  'text-amber-700',
+              STANDARD: 'text-sky-600',
+              LOW:      'text-gray-400',
+            }
+            return (
+              <div className="space-y-4">
+                {/* Header card */}
+                <div className="bg-white border border-olive-200 p-5">
+                  <div className="flex items-start justify-between gap-4 mb-5">
+                    <div>
+                      <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-olive-400 mb-1">Catalog Management</p>
+                      <h2 className="text-2xl font-serif font-bold text-olive-900">Portfolio Wines</h2>
+                    </div>
+                    <button
+                      onClick={importAllMissingWines}
+                      disabled={importingAll}
+                      className="shrink-0 text-sm px-4 py-2 bg-olive-700 text-parchment-100 hover:bg-olive-800 disabled:opacity-50 transition-colors"
+                    >
+                      {importingAll ? 'Importing…' : 'Import All Missing'}
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-4 gap-3">
+                    {([
+                      ['Total in Catalog', WINES.length,    'text-olive-900'],
+                      ['Imported to DB',   inDbCount,       'text-sky-700'],
+                      ['Approved',         approvedCount,   'text-emerald-700'],
+                      ['Pending Review',   pendingCount,    'text-amber-700'],
+                    ] as const).map(([label, count, color]) => (
+                      <div key={label} className="border border-olive-100 bg-parchment-50 px-4 py-3">
+                        <p className={`text-2xl font-serif font-bold ${color}`}>{count}</p>
+                        <p className="text-[10px] font-medium text-olive-400 uppercase tracking-wider mt-0.5">{label}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <button
-                  onClick={importAllMissingWines}
-                  disabled={importingAll}
-                  className="text-sm px-4 py-2 bg-olive-700 text-parchment-100 hover:bg-olive-800 disabled:opacity-50 transition-colors"
-                >
-                  {importingAll ? 'Importing…' : 'Import All Missing'}
-                </button>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="text-left border-b border-olive-200">
-                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Wine</th>
-                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Producer</th>
-                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Region</th>
-                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Consumer Price</th>
-                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Inventory</th>
-                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">DB Status</th>
-                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Editorial</th>
-                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Intel</th>
-                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {WINES.map((wine) => {
-                      const dbProduct = products.find(
-                        (p) => p.slug === wine.slug || p.slug === wine.id
-                      )
-                      const producer = PRODUCERS.find((p) => p.id === wine.producerId)
-                      return (
-                        <tr key={wine.id} className="border-b border-olive-100 last:border-0">
-                          <td className="py-3 text-sm font-medium text-olive-900">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              {wine.displayName}
-                              {dbProduct?.isFeatured && <span className="text-[9px] font-medium text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 uppercase tracking-wider">Featured</span>}
-                              {dbProduct?.isLimitedAllocation && <span className="text-[9px] font-medium text-purple-700 bg-purple-50 border border-purple-200 px-1.5 py-0.5 uppercase tracking-wider">Limited</span>}
-                              {dbProduct?.isFoundingWine && <span className="text-[9px] font-medium text-olive-700 bg-olive-50 border border-olive-200 px-1.5 py-0.5 uppercase tracking-wider">Founding</span>}
-                            </div>
-                            <p className="text-[10px] text-olive-400 mt-0.5">{wine.type} · {wine.appellation ?? wine.region}</p>
-                          </td>
-                          <td className="py-3 text-sm text-olive-800">{producer?.name ?? wine.producerId}</td>
-                          <td className="py-3 text-sm text-olive-600">{wine.region}</td>
-                          <td className="py-3 text-sm font-medium text-olive-900 tabular-nums">
-                            ${wine.consumerPurchasePriceUSD.toFixed(2)}
-                          </td>
-                          <td className="py-3 text-sm text-olive-600 tabular-nums">
-                            {dbProduct ? dbProduct.inventory : <span className="text-olive-300 italic">—</span>}
-                          </td>
-                          <td className="py-3">
-                            {dbProduct ? (
-                              <span className={`badge badge-${dbProduct.status.toLowerCase()}`}>{dbProduct.status}</span>
-                            ) : (
-                              <span className="text-[10px] font-medium px-2 py-0.5 bg-gray-50 text-gray-400 border border-gray-200">
-                                Not in DB
-                              </span>
-                            )}
-                          </td>
-                          <td className="py-3">
-                            {dbProduct ? (
-                              <span className={`text-[10px] font-medium px-2 py-0.5 ${contentStatusStyle(dbProduct.contentStatus ?? 'DRAFT')}`}>
-                                {contentStatusLabel(dbProduct.contentStatus ?? 'DRAFT')}
-                              </span>
-                            ) : (
-                              <span className="text-[10px] text-olive-300 italic">—</span>
-                            )}
-                          </td>
-                          <td className="py-3">
-                            {dbProduct ? (() => {
-                              const monitorColors: Record<string, string> = {
-                                HIGH_DEMAND:         'bg-emerald-50 text-emerald-800 border border-emerald-200',
-                                NEEDS_REVIEW:        'bg-amber-50 text-amber-800 border border-amber-200',
-                                ALLOCATION_PRESSURE: 'bg-red-50 text-red-700 border border-red-200',
-                                UPCOMING_INTEREST:   'bg-blue-50 text-blue-700 border border-blue-200',
-                                UNDERPERFORMING:     'bg-gray-50 text-gray-500 border border-gray-200',
-                                STABLE:              'bg-parchment-50 text-olive-500 border border-olive-200',
-                              }
-                              const tierColors: Record<string, string> = {
-                                PRIORITY: 'text-violet-700',
-                                LIMITED:  'text-amber-700',
-                                STANDARD: 'text-sky-600',
-                                LOW:      'text-gray-400',
-                              }
-                              const freshness = deriveAnalysisFreshness(dbProduct.lastRecommendationAt)
-                              const canRun = dbProduct.status === 'APPROVED' && (freshness === 'NEVER_RUN' || freshness === 'STALE' || freshness === 'AGING')
-                              return (
-                                <div className="flex flex-col gap-1">
-                                  {dbProduct.releaseMonitorStatus && (
-                                    <span className={`text-[9px] font-medium px-1.5 py-0.5 leading-tight ${monitorColors[dbProduct.releaseMonitorStatus] ?? 'bg-white text-olive-400 border border-olive-200'}`}>
-                                      {dbProduct.releaseMonitorStatus.replace(/_/g, ' ')}
-                                    </span>
-                                  )}
-                                  {dbProduct.exposureTier && (
-                                    <span className={`text-[9px] font-semibold uppercase tracking-wider ${tierColors[dbProduct.exposureTier] ?? 'text-olive-400'}`}>
-                                      {dbProduct.exposureTier}
-                                    </span>
-                                  )}
-                                  <span className={`text-[9px] px-1.5 py-0.5 ${FRESHNESS_BADGE_CLASS[freshness]}`}>
-                                    {FRESHNESS_LABEL[freshness]}
-                                  </span>
-                                  {canRun && (
-                                    <button
-                                      onClick={() => runIntelForProduct(dbProduct.id)}
-                                      disabled={runningIntelId === dbProduct.id}
-                                      className="text-[9px] px-1.5 py-0.5 bg-olive-100 text-olive-700 hover:bg-olive-200 disabled:opacity-50 transition-colors text-left"
-                                    >
-                                      {runningIntelId === dbProduct.id ? '…' : '⚡ Run Intel'}
-                                    </button>
-                                  )}
-                                </div>
-                              )
-                            })() : null}
-                          </td>
-                          <td className="py-3">
-                            {dbProduct ? (
-                              <div className="flex gap-1 flex-wrap">
-                                {dbProduct.status === 'PENDING' && (
-                                  <>
-                                    <button onClick={() => updateProductStatus(dbProduct.id, 'APPROVED')} className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded hover:bg-green-200">Approve</button>
-                                    <button onClick={() => updateProductStatus(dbProduct.id, 'REJECTED')} className="text-xs px-2 py-1 bg-red-100 text-red-800 rounded hover:bg-red-200">Reject</button>
-                                  </>
-                                )}
-                                {dbProduct.status === 'APPROVED' && (
-                                  <button onClick={() => updateProductStatus(dbProduct.id, 'REJECTED')} className="text-xs px-2 py-1 bg-red-50 text-red-700 rounded hover:bg-red-100">Revoke</button>
-                                )}
-                                {dbProduct.status === 'REJECTED' && (
-                                  <button onClick={() => updateProductStatus(dbProduct.id, 'APPROVED')} className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded hover:bg-green-200">Re-approve</button>
-                                )}
-                                {dbProduct.contentStatus !== 'LIVE' && (
-                                  <>
-                                    {dbProduct.contentStatus === 'DRAFT' && <button onClick={() => updateContentStatus(dbProduct.id, 'IN_REVIEW')} className="text-xs px-2 py-1 bg-amber-100 text-amber-800 rounded hover:bg-amber-200">Under Review</button>}
-                                    {dbProduct.contentStatus === 'IN_REVIEW' && <button onClick={() => updateContentStatus(dbProduct.id, 'READY')} className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200">Intro Pending</button>}
-                                    {(dbProduct.contentStatus === 'READY' || dbProduct.contentStatus === 'IN_REVIEW') && <button onClick={() => updateContentStatus(dbProduct.id, 'LIVE')} className="text-xs px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700">Go Live</button>}
-                                  </>
-                                )}
-                                {dbProduct.contentStatus === 'LIVE' && (
-                                  <button onClick={() => updateContentStatus(dbProduct.id, 'READY')} className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200">Withdraw</button>
-                                )}
-                                <button onClick={() => editProduct(dbProduct)} className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200">Edit</button>
-                              </div>
-                            ) : (
-                              <button
-                                onClick={() => importWine(wine)}
-                                disabled={importingWineId === wine.id || importingAll}
-                                className="text-xs px-2 py-1 bg-olive-700 text-parchment-100 rounded hover:bg-olive-800 disabled:opacity-50"
-                              >
-                                {importingWineId === wine.id ? 'Importing…' : 'Import'}
-                              </button>
-                            )}
-                          </td>
+
+                {/* Table card */}
+                <div className="bg-white border border-olive-200">
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[960px]">
+                      <thead>
+                        <tr className="border-b border-olive-200 bg-parchment-50/60 text-left">
+                          <th className="px-4 py-3 text-[10px] font-medium text-olive-500 uppercase tracking-wider">Wine</th>
+                          <th className="px-4 py-3 text-[10px] font-medium text-olive-500 uppercase tracking-wider whitespace-nowrap">Estate</th>
+                          <th className="px-4 py-3 text-[10px] font-medium text-olive-500 uppercase tracking-wider whitespace-nowrap">Price</th>
+                          <th className="px-4 py-3 text-[10px] font-medium text-olive-500 uppercase tracking-wider">Inv.</th>
+                          <th className="px-4 py-3 text-[10px] font-medium text-olive-500 uppercase tracking-wider whitespace-nowrap">DB Status</th>
+                          <th className="px-4 py-3 text-[10px] font-medium text-olive-500 uppercase tracking-wider">Editorial</th>
+                          <th className="px-4 py-3 text-[10px] font-medium text-olive-500 uppercase tracking-wider">Intel</th>
+                          <th className="px-4 py-3 text-[10px] font-medium text-olive-500 uppercase tracking-wider">Actions</th>
                         </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
+                      </thead>
+                      <tbody className="divide-y divide-olive-100">
+                        {portfolioRows.map(({ wine, dbProduct, producer }) => (
+                          <tr
+                            key={wine.id}
+                            className={!dbProduct ? 'bg-gray-50/50' : undefined}
+                          >
+                            {/* Wine */}
+                            <td className="px-4 py-3 max-w-[220px]">
+                              <p className="text-sm font-semibold text-olive-900 leading-snug">{wine.displayName}</p>
+                              <p className="text-[10px] text-olive-400 mt-0.5">{wine.type} · {wine.appellation ?? wine.region}</p>
+                              {dbProduct && (dbProduct.isFeatured || dbProduct.isLimitedAllocation || dbProduct.isFoundingWine) && (
+                                <div className="flex gap-1 mt-1.5 flex-wrap">
+                                  {dbProduct.isFeatured        && <span className="text-[8px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-1 py-0.5 uppercase tracking-wider">Featured</span>}
+                                  {dbProduct.isLimitedAllocation && <span className="text-[8px] font-semibold text-purple-700 bg-purple-50 border border-purple-200 px-1 py-0.5 uppercase tracking-wider">Limited</span>}
+                                  {dbProduct.isFoundingWine    && <span className="text-[8px] font-semibold text-olive-700 bg-olive-50 border border-olive-200 px-1 py-0.5 uppercase tracking-wider">Founding</span>}
+                                </div>
+                              )}
+                            </td>
+                            {/* Estate (producer + region merged) */}
+                            <td className="px-4 py-3">
+                              <p className="text-sm text-olive-800">{producer?.name ?? wine.producerId}</p>
+                              <p className="text-[10px] text-olive-400 mt-0.5">{wine.region}</p>
+                            </td>
+                            {/* Price */}
+                            <td className="px-4 py-3 text-sm font-medium text-olive-900 tabular-nums whitespace-nowrap">
+                              ${wine.consumerPurchasePriceUSD.toFixed(2)}
+                            </td>
+                            {/* Inventory */}
+                            <td className="px-4 py-3 text-sm text-olive-600 tabular-nums">
+                              {dbProduct ? dbProduct.inventory : <span className="text-olive-200">—</span>}
+                            </td>
+                            {/* DB Status */}
+                            <td className="px-4 py-3">
+                              {dbProduct ? (
+                                <span className={`badge badge-${dbProduct.status.toLowerCase()}`}>{dbProduct.status}</span>
+                              ) : (
+                                <span className="text-[10px] font-medium px-2 py-0.5 bg-gray-100 text-gray-400 border border-gray-200">Not in DB</span>
+                              )}
+                            </td>
+                            {/* Editorial */}
+                            <td className="px-4 py-3">
+                              {dbProduct ? (
+                                <span className={`text-[10px] font-medium px-2 py-0.5 ${contentStatusStyle(dbProduct.contentStatus ?? 'DRAFT')}`}>
+                                  {contentStatusLabel(dbProduct.contentStatus ?? 'DRAFT')}
+                                </span>
+                              ) : (
+                                <span className="text-olive-200">—</span>
+                              )}
+                            </td>
+                            {/* Intel */}
+                            <td className="px-4 py-3">
+                              {dbProduct && (() => {
+                                const freshness = deriveAnalysisFreshness(dbProduct.lastRecommendationAt)
+                                const canRun = dbProduct.status === 'APPROVED' && (freshness === 'NEVER_RUN' || freshness === 'STALE' || freshness === 'AGING')
+                                return (
+                                  <div className="flex flex-col gap-1.5">
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      {dbProduct.releaseMonitorStatus ? (
+                                        <span className={`text-[9px] font-medium px-1.5 py-0.5 leading-tight ${monitorColors[dbProduct.releaseMonitorStatus] ?? 'bg-white text-olive-400 border border-olive-200'}`}>
+                                          {dbProduct.releaseMonitorStatus.replace(/_/g, ' ')}
+                                        </span>
+                                      ) : (
+                                        <span className="text-[9px] text-olive-300 italic">No status</span>
+                                      )}
+                                      {dbProduct.exposureTier && (
+                                        <span className={`text-[9px] font-semibold uppercase tracking-wider ${tierColors[dbProduct.exposureTier] ?? 'text-olive-400'}`}>
+                                          {dbProduct.exposureTier}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                      <span className={`text-[9px] px-1.5 py-0.5 ${FRESHNESS_BADGE_CLASS[freshness]}`}>
+                                        {FRESHNESS_LABEL[freshness]}
+                                      </span>
+                                      {canRun && (
+                                        <button
+                                          onClick={() => runIntelForProduct(dbProduct.id)}
+                                          disabled={runningIntelId === dbProduct.id}
+                                          className="text-[9px] px-1.5 py-0.5 bg-olive-100 text-olive-700 hover:bg-olive-200 disabled:opacity-50 transition-colors"
+                                        >
+                                          {runningIntelId === dbProduct.id ? '…' : '⚡ Run'}
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                )
+                              })()}
+                            </td>
+                            {/* Actions */}
+                            <td className="px-4 py-3">
+                              {dbProduct ? (
+                                <div className="flex gap-1 flex-wrap">
+                                  {dbProduct.status === 'PENDING' && (
+                                    <>
+                                      <button onClick={() => updateProductStatus(dbProduct.id, 'APPROVED')} className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded hover:bg-green-200">Approve</button>
+                                      <button onClick={() => updateProductStatus(dbProduct.id, 'REJECTED')} className="text-xs px-2 py-1 bg-red-100 text-red-800 rounded hover:bg-red-200">Reject</button>
+                                    </>
+                                  )}
+                                  {dbProduct.status === 'APPROVED' && (
+                                    <button onClick={() => updateProductStatus(dbProduct.id, 'REJECTED')} className="text-xs px-2 py-1 bg-red-50 text-red-700 rounded hover:bg-red-100">Revoke</button>
+                                  )}
+                                  {dbProduct.status === 'REJECTED' && (
+                                    <button onClick={() => updateProductStatus(dbProduct.id, 'APPROVED')} className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded hover:bg-green-200">Re-approve</button>
+                                  )}
+                                  {dbProduct.contentStatus !== 'LIVE' && (
+                                    <>
+                                      {dbProduct.contentStatus === 'DRAFT' && <button onClick={() => updateContentStatus(dbProduct.id, 'IN_REVIEW')} className="text-xs px-2 py-1 bg-amber-100 text-amber-800 rounded hover:bg-amber-200">Under Review</button>}
+                                      {dbProduct.contentStatus === 'IN_REVIEW' && <button onClick={() => updateContentStatus(dbProduct.id, 'READY')} className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200">Intro Pending</button>}
+                                      {(dbProduct.contentStatus === 'READY' || dbProduct.contentStatus === 'IN_REVIEW') && <button onClick={() => updateContentStatus(dbProduct.id, 'LIVE')} className="text-xs px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700">Go Live</button>}
+                                    </>
+                                  )}
+                                  {dbProduct.contentStatus === 'LIVE' && (
+                                    <button onClick={() => updateContentStatus(dbProduct.id, 'READY')} className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200">Withdraw</button>
+                                  )}
+                                  <button onClick={() => editProduct(dbProduct)} className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200">Edit</button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => importWine(wine)}
+                                  disabled={importingWineId === wine.id || importingAll}
+                                  className="text-xs px-2 py-1 bg-olive-700 text-parchment-100 rounded hover:bg-olive-800 disabled:opacity-50"
+                                >
+                                  {importingWineId === wine.id ? 'Importing…' : 'Import'}
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
-            </div>
-          )}
+            )
+          })()}
           {/* Restaurants Tab */}
           {activeTab === 'restaurants' && (
             <div className="space-y-6">
