@@ -7,7 +7,14 @@ import {
   deriveReleaseHealth,
   deriveExposureTier,
   deriveProductDominantDriver,
+  NEUTRAL_BIAS,
 } from '@/lib/releaseOptimizationEngine'
+import type { BiasContext } from '@/lib/releaseOptimizationEngine'
+import { computeEffectivenessRollups } from '@/lib/effectivenessRollups'
+import type { RollupProduct } from '@/lib/effectivenessRollups'
+import { deriveLearningSignals } from '@/lib/deriveLearningSignals'
+import { deriveRecommendationBias } from '@/lib/recommendationBiasEngine'
+import { isBiasSafeToApply } from '@/lib/deriveBiasDataSufficiency'
 
 export const dynamic = 'force-dynamic'
 
@@ -50,8 +57,31 @@ export async function POST(
     }
 
     // Build snapshot and locate this product's signals
-    const snapshot  = await buildDemandSnapshot()
-    const signals   = snapshot.products.find((p) => p.productId === productId)
+    const [snapshot, governance, measuredRaw] = await Promise.all([
+      buildDemandSnapshot(),
+      (prisma as any).biasGovernance.upsert({
+        where:  { id: 'singleton' },
+        create: { id: 'singleton' },
+        update: {},
+      }),
+      (prisma.product.findMany as Function)({
+        where: {
+          recommendationStatus: 'ACTIONED',
+          effectivenessDelta:   { not: null },
+        },
+        select: {
+          id:                       true,
+          recommendationType:       true,
+          recommendationConfidence: true,
+          effectivenessDelta:       true,
+          varietalType:             true,
+          region:                   true,
+          pricePoint:               true,
+          inventory:                true,
+        },
+      }),
+    ])
+    const signals = snapshot.products.find((p) => p.productId === productId)
 
     if (!signals) {
       return NextResponse.json(
@@ -64,6 +94,25 @@ export async function POST(
     const exposureTier         = deriveExposureTier(signals)
     const dominantDriver       = deriveProductDominantDriver(signals)
     const now                  = new Date()
+
+    // Compute bias context
+    let biasCtx: BiasContext = NEUTRAL_BIAS
+    let biasActive = false
+    try {
+      const rollups = computeEffectivenessRollups(measuredRaw as RollupProduct[])
+      const learningSignals = deriveLearningSignals(rollups)
+      const weights = deriveRecommendationBias(learningSignals, rollups.portfolioSummary.totalMeasured)
+      biasCtx = {
+        actionType:     weights.actionType,
+        globalModifier: weights.globalModifier,
+        biasEnabled:    governance.biasEnabled,
+        biasMode:       governance.biasMode,
+        totalMeasured:  rollups.portfolioSummary.totalMeasured,
+      }
+      biasActive = isBiasSafeToApply(biasCtx.totalMeasured, biasCtx.biasEnabled, biasCtx.biasMode)
+    } catch {
+      // Fall back to neutral — never block a single-product refresh
+    }
 
     await prisma.product.update({
       where: { id: productId },
@@ -78,6 +127,8 @@ export async function POST(
       dominantDriver,
       lastRecommendationAt: now.toISOString(),
       freshness:            'FRESH',
+      biasActive,
+      biasMode:             biasCtx.biasMode,
     })
   } catch (error) {
     console.error('[Intelligence Run Single]', error)

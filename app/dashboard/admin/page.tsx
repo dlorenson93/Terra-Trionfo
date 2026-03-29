@@ -3431,6 +3431,14 @@ export default function AdminDashboard() {
                                       <span className={`text-[10px] font-semibold uppercase ${confidenceBadge(r.confidence)}`}>
                                         {r.confidence}
                                       </span>
+                                      {r.biasApplied && (
+                                        <p className="text-[9px] mt-0.5 whitespace-nowrap">
+                                          <span className="line-through text-olive-300">{r.baseConfidenceScore}</span>
+                                          <span className="text-olive-400 mx-0.5">→</span>
+                                          <span className="font-semibold text-violet-600">{r.adjustedConfidenceScore}</span>
+                                          <span className="text-olive-300 ml-0.5">×{r.biasMultiplier.toFixed(2)}</span>
+                                        </p>
+                                      )}
                                       {r.confidenceReason && (
                                         <p className="text-[9px] text-olive-400 mt-0.5 leading-snug max-w-[160px]">{r.confidenceReason}</p>
                                       )}

@@ -7,7 +7,13 @@ import {
   deriveReleaseOptimization,
   deriveReleaseHealth,
   deriveExposureTier,
+  NEUTRAL_BIAS,
 } from '@/lib/releaseOptimizationEngine'
+import type { BiasContext } from '@/lib/releaseOptimizationEngine'
+import { computeEffectivenessRollups } from '@/lib/effectivenessRollups'
+import type { RollupProduct } from '@/lib/effectivenessRollups'
+import { deriveLearningSignals } from '@/lib/deriveLearningSignals'
+import { deriveRecommendationBias } from '@/lib/recommendationBiasEngine'
 
 export const dynamic = 'force-dynamic'
 
@@ -31,8 +37,50 @@ export async function GET() {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const snapshot = await buildDemandSnapshot()
-    const result   = deriveReleaseOptimization(snapshot)
+    // Fetch snapshot, governance singleton, and measured products in parallel
+    const [snapshot, governance, measuredRaw] = await Promise.all([
+      buildDemandSnapshot(),
+      (prisma as any).biasGovernance.upsert({
+        where:  { id: 'singleton' },
+        create: { id: 'singleton' },
+        update: {},
+      }),
+      (prisma.product.findMany as Function)({
+        where: {
+          recommendationStatus: 'ACTIONED',
+          effectivenessDelta:   { not: null },
+        },
+        select: {
+          id:                   true,
+          recommendationType:   true,
+          recommendationConfidence: true,
+          effectivenessDelta:   true,
+          varietalType:         true,
+          region:               true,
+          pricePoint:           true,
+          inventory:            true,
+        },
+      }),
+    ])
+
+    // Build bias context from learned weights
+    let biasCtx: BiasContext = NEUTRAL_BIAS
+    try {
+      const rollups = computeEffectivenessRollups(measuredRaw as RollupProduct[])
+      const signals = deriveLearningSignals(rollups)
+      const weights = deriveRecommendationBias(signals, rollups.portfolioSummary.totalMeasured)
+      biasCtx = {
+        actionType:     weights.actionType,
+        globalModifier: weights.globalModifier,
+        biasEnabled:    governance.biasEnabled,
+        biasMode:       governance.biasMode,
+        totalMeasured:  rollups.portfolioSummary.totalMeasured,
+      }
+    } catch {
+      // If bias computation fails for any reason, fall back to neutral — never block recommendations
+    }
+
+    const result = deriveReleaseOptimization(snapshot, biasCtx)
 
     // Persist computed intelligence state for EVERY analysed product.
     // We call the helpers directly on the snapshot so products that matched no
@@ -54,6 +102,12 @@ export async function GET() {
     return NextResponse.json({
       generatedAt: snapshot.generatedAt,
       ...result,
+      biasContext: {
+        active:         biasCtx.biasEnabled && biasCtx.biasMode === 'APPLY_TO_CONFIDENCE',
+        mode:           biasCtx.biasMode,
+        totalMeasured:  biasCtx.totalMeasured,
+        globalModifier: biasCtx.globalModifier,
+      },
     })
   } catch (error) {
     console.error('[Release Optimization]', error)

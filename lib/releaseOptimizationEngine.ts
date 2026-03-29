@@ -72,6 +72,14 @@ export interface ReleaseRecommendation {
     /** share of demand coming from consumer (0–1) */
     consumerRatio?: number
   }
+  /** Numeric confidence score (0–100) before bias adjustment */
+  baseConfidenceScore: number
+  /** Numeric confidence score (0–100) after bias multiplier applied (may equal base if bias not active) */
+  adjustedConfidenceScore: number
+  /** Whether a bias multiplier was applied to produce adjustedConfidenceScore */
+  biasApplied: boolean
+  /** The bias multiplier that was applied (1.0 = no change) */
+  biasMultiplier: number
 }
 
 export interface SignalBias {
@@ -322,9 +330,110 @@ export function deriveAllocationPressure(sig: ProductSignals): AllocationPressur
   }
 }
 
+// ─── Bias types passed in from the calling route ─────────────────────────────
+
+export interface BiasContext {
+  actionType:     Record<string, number>
+  globalModifier: number
+  biasEnabled:    boolean
+  biasMode:       string
+  totalMeasured:  number
+}
+
+/** Neutral bias context — used when no governance data is available */
+export const NEUTRAL_BIAS: BiasContext = {
+  actionType:     {},
+  globalModifier: 1.0,
+  biasEnabled:    false,
+  biasMode:       'OFF',
+  totalMeasured:  0,
+}
+
+// ─── Numeric confidence map ───────────────────────────────────────────────────
+
+/**
+ * Maps the engine's qualitative confidence tier to a 0–100 numeric score.
+ * Midpoint of each tier so bias multipliers produce meaningful differentiation.
+ */
+const CONFIDENCE_NUMERIC: Record<'high' | 'medium' | 'low', number> = {
+  high:   85,
+  medium: 55,
+  low:    25,
+}
+
+/**
+ * Returns the qualitative confidence label for a numeric score.
+ * Used to re-derive the label after bias adjustment, so that a medium
+ * boosted to 73+ becomes 'high', and a medium dampened to 35- becomes 'low'.
+ */
+export function numericToConfidenceLabel(score: number): 'high' | 'medium' | 'low' {
+  if (score >= 70) return 'high'
+  if (score >= 40) return 'medium'
+  return 'low'
+}
+
+// ─── Bias action type key mapping ─────────────────────────────────────────────
+
+/**
+ * Maps engine ReleaseRecommendationType to the DB action type key used
+ * by the bias engine (which stores SCREAMING_SNAKE_CASE keys from
+ * RecommendationActionType enum).
+ */
+const TYPE_TO_ACTION_KEY: Partial<Record<ReleaseRecommendationType, string>> = {
+  accelerate_release:    'ACCELERATE_RELEASE',
+  hold_release:          'HOLD_RELEASE',
+  increase_allocation:   'INCREASE_ALLOCATION',
+  reduce_exposure:       'REDUCE_EXPOSURE',
+  increase_merchandising: 'INCREASE_MERCHANDISING',
+  maintain:              'MAINTAIN',
+  trade_led_interest:    'INCREASE_ALLOCATION',    // closest action equivalent
+  consumer_led_interest: 'INCREASE_MERCHANDISING', // closest action equivalent
+}
+
+// ─── Per-recommendation bias stamper ─────────────────────────────────────────
+
+import { isBiasSafeToApply } from './deriveBiasDataSufficiency'
+
+/**
+ * Takes a partial recommendation (without bias fields) and stamps the four
+ * bias-related fields onto it: baseConfidenceScore, adjustedConfidenceScore,
+ * biasApplied, biasMultiplier.
+ *
+ * This is pure — no side effects. Called inside evaluateProduct.
+ */
+function stampBiasFields(
+  confidence: 'high' | 'medium' | 'low',
+  type:       ReleaseRecommendationType,
+  bias:       BiasContext,
+): Pick<ReleaseRecommendation, 'baseConfidenceScore' | 'adjustedConfidenceScore' | 'biasApplied' | 'biasMultiplier'> {
+  const base    = CONFIDENCE_NUMERIC[confidence]
+  const canApply = isBiasSafeToApply(bias.totalMeasured, bias.biasEnabled, bias.biasMode)
+
+  if (!canApply) {
+    return {
+      baseConfidenceScore:     base,
+      adjustedConfidenceScore: base,
+      biasApplied:             false,
+      biasMultiplier:          1.0,
+    }
+  }
+
+  const actionKey  = TYPE_TO_ACTION_KEY[type] ?? null
+  const typeMult   = actionKey ? (bias.actionType[actionKey] ?? 1.0) : 1.0
+  const multiplier = parseFloat((typeMult * bias.globalModifier).toFixed(3))
+  const adjusted   = Math.min(100, Math.max(0, Math.round(base * multiplier)))
+
+  return {
+    baseConfidenceScore:     base,
+    adjustedConfidenceScore: adjusted,
+    biasApplied:             true,
+    biasMultiplier:          multiplier,
+  }
+}
+
 // ─── Per-product rule evaluator ───────────────────────────────────────────────
 
-function evaluateProduct(sig: ProductSignals): ReleaseRecommendation | null {
+function evaluateProduct(sig: ProductSignals, bias: BiasContext = NEUTRAL_BIAS): ReleaseRecommendation | null {
   const monitorStatus   = deriveReleaseHealth(sig)
   const exposureTier    = deriveExposureTier(sig)
   const freshness       = deriveFreshness(sig.lastRecommendationAt)
@@ -362,6 +471,7 @@ function evaluateProduct(sig: ProductSignals): ReleaseRecommendation | null {
         : `Signal score ${sig.signalScore} is above activation threshold but still building — moderate confidence to move to LIVE`,
       reason: `${sig.waitlistCount} early sign-ups with signal score ${sig.signalScore} — consumer interest is ready; consider moving to LIVE`,
       signals: { signalScore: sig.signalScore, waitlistCount: sig.waitlistCount },
+      ...stampBiasFields(isHigh ? 'high' : 'medium', 'accelerate_release', bias),
     }
   }
 
@@ -387,6 +497,7 @@ function evaluateProduct(sig: ProductSignals): ReleaseRecommendation | null {
         purchaseCount:      sig.purchaseCount,
         tradeRatio,
       },
+      ...stampBiasFields(isHigh ? 'high' : 'medium', 'trade_led_interest', bias),
     }
   }
 
@@ -412,6 +523,7 @@ function evaluateProduct(sig: ProductSignals): ReleaseRecommendation | null {
         velocityScore:      sig.velocityScore,
         consumerRatio,
       },
+      ...stampBiasFields(isHigh ? 'high' : 'medium', 'consumer_led_interest', bias),
     }
   }
 
@@ -433,6 +545,7 @@ function evaluateProduct(sig: ProductSignals): ReleaseRecommendation | null {
         inventory:    sig.inventory,
         velocityScore: sig.velocityScore,
       },
+      ...stampBiasFields('high', 'increase_allocation', bias),
     }
   }
 
@@ -456,6 +569,7 @@ function evaluateProduct(sig: ProductSignals): ReleaseRecommendation | null {
         waitlistCount:    sig.waitlistCount,
         conversionProxy:  sig.conversionProxy,
       },
+      ...stampBiasFields('medium', 'increase_merchandising', bias),
     }
   }
 
@@ -477,6 +591,7 @@ function evaluateProduct(sig: ProductSignals): ReleaseRecommendation | null {
         signalScore: sig.signalScore,
         inventory:   sig.inventory,
       },
+      ...stampBiasFields('low', 'reduce_exposure', bias),
     }
   }
 
@@ -490,6 +605,7 @@ function evaluateProduct(sig: ProductSignals): ReleaseRecommendation | null {
       confidenceReason: `Signal score ${sig.signalScore} is positive but no rule threshold is exceeded — monitor trends before acting`,
       reason: `Demand signals present and release health is stable`,
       signals: { signalScore: sig.signalScore },
+      ...stampBiasFields('low', 'maintain', bias),
     }
   }
 
@@ -506,6 +622,7 @@ function evaluateProduct(sig: ProductSignals): ReleaseRecommendation | null {
         signalScore:  sig.signalScore,
         waitlistCount: sig.waitlistCount,
       },
+      ...stampBiasFields('low', 'hold_release', bias),
     }
   }
 
@@ -518,11 +635,14 @@ function evaluateProduct(sig: ProductSignals): ReleaseRecommendation | null {
  * Primary entry point. Takes a DemandSnapshot and returns the full
  * ReleaseOptimizationOutput.
  */
-export function deriveReleaseOptimization(snapshot: DemandSnapshot): ReleaseOptimizationOutput {
+export function deriveReleaseOptimization(
+  snapshot: DemandSnapshot,
+  bias: BiasContext = NEUTRAL_BIAS,
+): ReleaseOptimizationOutput {
   const recommendations: ReleaseRecommendation[] = []
 
   for (const sig of snapshot.products) {
-    const rec = evaluateProduct(sig)
+    const rec = evaluateProduct(sig, bias)
     if (rec) recommendations.push(rec)
   }
 
