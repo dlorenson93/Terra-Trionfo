@@ -34,10 +34,14 @@ interface Product {
   name: string
   category: string
   retailPriceCents: number
+  inventory: number
   status: string
   contentStatus: string
   commerceModel: 'MARKETPLACE' | 'WHOLESALE' | 'HYBRID'
   listingOwner: 'VENDOR' | 'TERRA'
+  isFeatured: boolean
+  isFoundingWine: boolean
+  isLimitedAllocation: boolean
   company: { name: string }
 }
 
@@ -118,12 +122,16 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<'overview' | 'companies' | 'products' | 'restaurants' | 'fulfillment' | 'portfolio-pricing' | 'customers'>('overview')
   const [fulfillmentSubTab, setFulfillmentSubTab] = useState<'zones' | 'routes' | 'schedules'>('zones')
 
-  // Inline product edit state (replaces prompt() dialogs)
+  // Inline product edit state
   const [editingProduct, setEditingProduct] = useState<{
     id: string
     commerceModel: string
     listingOwner: string
     retailPriceDollars: string
+    inventory: string
+    isFeatured: boolean
+    isFoundingWine: boolean
+    isLimitedAllocation: boolean
   } | null>(null)
 
   // Fulfillment ops state
@@ -250,6 +258,10 @@ export default function AdminDashboard() {
       commerceModel: prod.commerceModel,
       listingOwner: prod.listingOwner,
       retailPriceDollars: (prod.retailPriceCents / 100).toFixed(2),
+      inventory: String(prod.inventory),
+      isFeatured: prod.isFeatured,
+      isFoundingWine: prod.isFoundingWine,
+      isLimitedAllocation: prod.isLimitedAllocation,
     })
   }
 
@@ -257,6 +269,8 @@ export default function AdminDashboard() {
     if (!editingProduct) return
     const retailPriceCents = Math.round(parseFloat(editingProduct.retailPriceDollars) * 100)
     if (isNaN(retailPriceCents) || retailPriceCents <= 0) return
+    const inventory = parseInt(editingProduct.inventory)
+    if (isNaN(inventory) || inventory < 0) return
     try {
       await fetch(`/api/products/${editingProduct.id}`, {
         method: 'PATCH',
@@ -265,12 +279,42 @@ export default function AdminDashboard() {
           commerceModel: editingProduct.commerceModel,
           listingOwner: editingProduct.listingOwner,
           retailPriceCents,
+          inventory,
+          isFeatured: editingProduct.isFeatured,
+          isFoundingWine: editingProduct.isFoundingWine,
+          isLimitedAllocation: editingProduct.isLimitedAllocation,
         }),
       })
       setEditingProduct(null)
       fetchData()
     } catch (error) {
       console.error('Error editing product:', error)
+    }
+  }
+
+  const updateOrderStatus = async (orderId: string, status: string) => {
+    try {
+      await fetch(`/api/orders/${orderId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      })
+      fetchData()
+    } catch (error) {
+      console.error('Error updating order status:', error)
+    }
+  }
+
+  const updateAgeVerification = async (userId: string, ageVerificationStatus: string) => {
+    try {
+      await fetch(`/api/admin/customers/${userId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ageVerificationStatus }),
+      })
+      fetchData()
+    } catch (error) {
+      console.error('Error updating age verification:', error)
     }
   }
 
@@ -602,39 +646,68 @@ export default function AdminDashboard() {
                 <button onClick={() => setEditingProduct(null)} className="text-olive-400 hover:text-olive-800 text-lg leading-none transition-colors">✕</button>
               </div>
               <div className="px-6 py-5 space-y-4">
-                <div>
-                  <label className="label">Retail Price (USD)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0.01"
-                    className="input-field"
-                    value={editingProduct.retailPriceDollars}
-                    onChange={(e) => setEditingProduct((p) => p ? { ...p, retailPriceDollars: e.target.value } : null)}
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="label">Retail Price (USD)</label>
+                    <input
+                      type="number" step="0.01" min="0.01"
+                      className="input-field"
+                      value={editingProduct.retailPriceDollars}
+                      onChange={(e) => setEditingProduct((p) => p ? { ...p, retailPriceDollars: e.target.value } : null)}
+                    />
+                  </div>
+                  <div>
+                    <label className="label">Inventory (units)</label>
+                    <input
+                      type="number" min="0"
+                      className="input-field"
+                      value={editingProduct.inventory}
+                      onChange={(e) => setEditingProduct((p) => p ? { ...p, inventory: e.target.value } : null)}
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="label">Commerce Model</label>
-                  <select
-                    className="input-field"
-                    value={editingProduct.commerceModel}
-                    onChange={(e) => setEditingProduct((p) => p ? { ...p, commerceModel: e.target.value } : null)}
-                  >
-                    <option value="MARKETPLACE">Marketplace</option>
-                    <option value="WHOLESALE">Wholesale</option>
-                    <option value="HYBRID">Hybrid</option>
-                  </select>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="label">Commerce Model</label>
+                    <select
+                      className="input-field"
+                      value={editingProduct.commerceModel}
+                      onChange={(e) => setEditingProduct((p) => p ? { ...p, commerceModel: e.target.value } : null)}
+                    >
+                      <option value="MARKETPLACE">Marketplace</option>
+                      <option value="WHOLESALE">Wholesale</option>
+                      <option value="HYBRID">Hybrid</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="label">Listing Owner</label>
+                    <select
+                      className="input-field"
+                      value={editingProduct.listingOwner}
+                      onChange={(e) => setEditingProduct((p) => p ? { ...p, listingOwner: e.target.value } : null)}
+                    >
+                      <option value="VENDOR">Vendor</option>
+                      <option value="TERRA">Terra</option>
+                    </select>
+                  </div>
                 </div>
-                <div>
-                  <label className="label">Listing Owner</label>
-                  <select
-                    className="input-field"
-                    value={editingProduct.listingOwner}
-                    onChange={(e) => setEditingProduct((p) => p ? { ...p, listingOwner: e.target.value } : null)}
-                  >
-                    <option value="VENDOR">Vendor</option>
-                    <option value="TERRA">Terra</option>
-                  </select>
+                <div className="border border-olive-200 bg-parchment-50 p-3 space-y-2">
+                  <p className="text-xs font-medium text-olive-500 uppercase tracking-wider mb-2">Flags</p>
+                  {([
+                    { key: 'isFeatured',        label: 'Featured on storefront' },
+                    { key: 'isFoundingWine',     label: 'Founding wine' },
+                    { key: 'isLimitedAllocation', label: 'Limited allocation' },
+                  ] as const).map(({ key, label }) => (
+                    <label key={key} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 accent-olive-700"
+                        checked={editingProduct[key]}
+                        onChange={(e) => setEditingProduct((p) => p ? { ...p, [key]: e.target.checked } : null)}
+                      />
+                      <span className="text-sm text-olive-800">{label}</span>
+                    </label>
+                  ))}
                 </div>
               </div>
               <div className="flex gap-3 px-6 py-4 border-t border-olive-200 bg-parchment-50">
@@ -679,6 +752,7 @@ export default function AdminDashboard() {
                         <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Total</th>
                         <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Status</th>
                         <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Date</th>
+                        <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -689,6 +763,22 @@ export default function AdminDashboard() {
                           <td className="py-3 text-sm font-medium text-olive-900">${order.total.toFixed(2)}</td>
                           <td className="py-3"><span className={`badge badge-${order.status.toLowerCase()}`}>{order.status}</span></td>
                           <td className="py-3 text-sm text-olive-500">{new Date(order.createdAt).toLocaleDateString()}</td>
+                          <td className="py-3">
+                            <div className="flex gap-1 flex-wrap">
+                              {order.status === 'PENDING' && (
+                                <button onClick={() => updateOrderStatus(order.id, 'CONFIRMED')} className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200">Confirm</button>
+                              )}
+                              {order.status === 'CONFIRMED' && (
+                                <button onClick={() => updateOrderStatus(order.id, 'SHIPPED')} className="text-xs px-2 py-1 bg-indigo-100 text-indigo-800 rounded hover:bg-indigo-200">Mark Shipped</button>
+                              )}
+                              {order.status === 'SHIPPED' && (
+                                <button onClick={() => updateOrderStatus(order.id, 'DELIVERED')} className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded hover:bg-green-200">Mark Delivered</button>
+                              )}
+                              {!['DELIVERED', 'CANCELLED'].includes(order.status) && (
+                                <button onClick={() => updateOrderStatus(order.id, 'CANCELLED')} className="text-xs px-2 py-1 bg-red-50 text-red-700 rounded hover:bg-red-100">Cancel</button>
+                              )}
+                            </div>
+                          </td>
                         </tr>
                       )) : null}
                     </tbody>
@@ -716,12 +806,13 @@ export default function AdminDashboard() {
                       <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Age Verification</th>
                       <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Verified At</th>
                       <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Joined</th>
+                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {customers.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="py-8 text-center text-sm text-olive-400">
+                        <td colSpan={6} className="py-8 text-center text-sm text-olive-400">
                           No consumer accounts yet.
                         </td>
                       </tr>
@@ -760,6 +851,28 @@ export default function AdminDashboard() {
                         </td>
                         <td className="py-3 text-sm text-olive-600">
                           {new Date(c.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="py-3">
+                          <div className="flex gap-1 flex-wrap">
+                            {c.ageVerificationStatus !== 'ELIGIBLE' && (
+                              <button
+                                onClick={() => updateAgeVerification(c.id, 'ELIGIBLE')}
+                                className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded hover:bg-green-200"
+                              >✓ Verify 21+</button>
+                            )}
+                            {c.ageVerificationStatus === 'ELIGIBLE' && (
+                              <button
+                                onClick={() => updateAgeVerification(c.id, 'UNVERIFIED')}
+                                className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded hover:bg-gray-200"
+                              >Reset</button>
+                            )}
+                            {c.ageVerificationStatus !== 'INELIGIBLE' && (
+                              <button
+                                onClick={() => updateAgeVerification(c.id, 'INELIGIBLE')}
+                                className="text-xs px-2 py-1 bg-red-50 text-red-700 rounded hover:bg-red-100"
+                              >Flag Ineligible</button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -816,6 +929,9 @@ export default function AdminDashboard() {
                                 <button onClick={() => updateCompanyStatus(company.id, 'APPROVED')} className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded hover:bg-green-200">Approve</button>
                                 <button onClick={() => updateCompanyStatus(company.id, 'REJECTED')} className="text-xs px-2 py-1 bg-red-100 text-red-800 rounded hover:bg-red-200">Reject</button>
                               </>
+                            )}
+                            {company.status === 'APPROVED' && (
+                              <button onClick={() => updateCompanyStatus(company.id, 'REJECTED')} className="text-xs px-2 py-1 bg-red-50 text-red-700 rounded hover:bg-red-100">Revoke</button>
                             )}
                             {company.contentStatus !== 'LIVE' && (
                               <>
@@ -889,6 +1005,9 @@ export default function AdminDashboard() {
                                 <button onClick={() => updateProductStatus(product.id, 'APPROVED')} className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded hover:bg-green-200">Approve</button>
                                 <button onClick={() => updateProductStatus(product.id, 'REJECTED')} className="text-xs px-2 py-1 bg-red-100 text-red-800 rounded hover:bg-red-200">Reject</button>
                               </>
+                            )}
+                            {product.status === 'APPROVED' && (
+                              <button onClick={() => updateProductStatus(product.id, 'REJECTED')} className="text-xs px-2 py-1 bg-red-50 text-red-700 rounded hover:bg-red-100">Revoke</button>
                             )}
                             {product.contentStatus !== 'LIVE' && (
                               <>
