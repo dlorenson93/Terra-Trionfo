@@ -25,7 +25,7 @@ function loadEnv(filename: string) {
 loadEnv('.env.local')
 loadEnv('.env')
 
-import { PrismaClient, UserRole, CompanyStatus, ProductStatus, OrderStatus, CommerceModel, ListingOwner, FulfillmentType, ProductCategory } from '@prisma/client'
+import { PrismaClient, UserRole, CompanyStatus } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
@@ -86,295 +86,132 @@ async function main() {
 
   console.log('✅ Users created')
 
-  // Create sample producer companies
-  const companiesData = [
+  // Create portfolio winery companies
+  const companiesData: any[] = [
+    // ── Classical Collection ─────────────────────────────────────────
     {
-      id: 'sample-company',
-      name: 'Famiglia Rossi Farms',
-      slug: 'famiglia-rossi',
-      contactEmail: 'vendor@example.com',
-      phone: '+39 123 456 7890',
-      address: 'Via delle Vigne 42, Tuscany, Italy',
-      description: 'Family-owned farm producing organic olive oil and wines since 1890',
-      bio: 'We are a multi-generational Tuscany farm, passionate about sustainable agriculture and fine foods.',
-      region: 'Tuscany',
+      id: 'stroppiana',
+      name: 'Stroppiana',
+      slug: 'stroppiana',
+      contactEmail: 'info@stroppiana.it',
+      region: 'Piemonte',
       country: 'Italy',
-      website: 'https://famigliarossi.example.com',
-      heroImageUrl: 'https://images.unsplash.com/photo-1506801310323-534be5e7bbfd?w=1200',
+      description: 'Family-owned estate based in La Morra with vineyards in Bussia and Verduno.',
+      bio: 'Family-owned estate based in La Morra with vineyards also in Bussia and Verduno. Practicing sustainable, organically inspired viticulture, Stroppiana consistently earns high critic scores and offers strong positioning across the Barolo appellation.',
       status: CompanyStatus.APPROVED,
-      ownerId: vendorUser.id,
+      isFoundingProducer: true,
+      ownerId: adminUser.id,
+      foundedYear: 1929,
+      sustainablePractices: 'Sustainable viticulture, no synthetic herbicides',
+      contentStatus: 'DRAFT',
+      shortDescription: 'Family-owned Barolo estate spanning La Morra, Bussia, and Verduno — three distinct expressions in one estate relationship.',
+      story: "Three-site family estate spanning La Morra, the Bussia cru, and the rarely exported Verduno subzone — capturing the full range of Barolo expression across three of Piemonte's most distinctive terroirs within a single producer relationship.",
     },
     {
-      id: 'sample-company-2',
-      name: 'Vini del Sud',
-      slug: 'vini-del-sud',
-      contactEmail: 'vendor2@example.com',
-      phone: '+39 098 765 4321',
-      address: 'Via del Vino 10, Puglia, Italy',
-      description: 'Specializing in organic red wines from the heel of Italy.',
-      bio: 'Crafted with care from our vineyards in Puglia, our wines celebrate southern Italian terroir.',
-      region: 'Puglia',
+      id: 'lantieri',
+      name: 'Lantieri',
+      slug: 'lantieri',
+      contactEmail: 'info@lantierivini.it',
+      region: 'Lombardy',
       country: 'Italy',
-      website: 'https://vinidelsud.example.com',
-      heroImageUrl: 'https://images.unsplash.com/photo-1519677100203-a0e668c92439?w=1200',
+      description: 'Fourth-generation certified organic Franciacorta DOCG estate.',
+      bio: "Fourth-generation family estate at the heart of Franciacorta — Italy's most serious traditional-method sparkling wine appellation. Certified organic since 2002, with Tre Bicchieri award recognition.",
       status: CompanyStatus.APPROVED,
-      ownerId: vendorUser.id,
+      isFoundingProducer: true,
+      ownerId: adminUser.id,
+      sustainablePractices: 'Certified organic since 2002, morainic glacier soils',
+      contentStatus: 'DRAFT',
+      shortDescription: 'Certified organic Franciacorta DOCG — fourth-generation estate with Tre Bicchieri recognition.',
+      story: 'Fourth-generation estate producing certified organic Franciacorta DOCG from Chardonnay, Pinot Nero, and Pinot Bianco grown on morainic glacier soils. One of the few organic Franciacorta estates with Tre Bicchieri recognition.',
     },
     {
-      id: 'sample-company-3',
-      name: 'La Pasta Perfetta',
-      slug: 'la-pasta-perfetta',
-      contactEmail: 'vendor3@example.com',
-      phone: '+39 111 222 3333',
-      address: 'Via della Farina 5, Emilia-Romagna, Italy',
-      description: 'Handmade artisanal pasta made daily in the heart of Emilia-Romagna.',
-      bio: 'Our nonna taught us to make pasta by hand, and we continue the tradition with love.',
+      id: 'zanotelli',
+      name: 'Zanotelli',
+      slug: 'zanotelli',
+      contactEmail: 'info@zanotelli.it',
+      region: 'Trentino-Alto Adige',
+      country: 'Italy',
+      description: 'Family-owned alpine winery producing mineral-driven wines from high-altitude Dolomite vineyards.',
+      bio: 'Family-owned winery producing mineral-driven alpine wines from high-altitude Dolomite vineyards. Specialises in native varietals — Kerner and Lagrein — that express the precision and freshness of mountain viticulture.',
+      status: CompanyStatus.APPROVED,
+      isFoundingProducer: true,
+      ownerId: adminUser.id,
+      foundedYear: 1962,
+      sustainablePractices: 'Conventional with low intervention, minimal treatments',
+      contentStatus: 'DRAFT',
+      shortDescription: 'High-altitude family estate in the Dolomites — native varietals (Kerner, Lagrein) with alpine mineral precision.',
+      story: 'Family-run alpine estate producing wines from cool, high-altitude vineyards in the Dolomites, where natural temperature variation between day and night preserves acidity and develops aromatic complexity.',
+    },
+    // ── Alternative & Next Generation ────────────────────────────────
+    {
+      id: 'randi',
+      name: 'Randi',
+      slug: 'randi',
+      contactEmail: 'info@cantinarandi.it',
       region: 'Emilia-Romagna',
       country: 'Italy',
-      website: 'https://pastaperfetta.example.com',
-      heroImageUrl: 'https://images.unsplash.com/photo-1529692236671-f1f4a8d0a76c?w=1200',
+      description: 'Multi-generational certified organic estate producing vegan-certified wines from rare native varietals.',
+      bio: 'Multi-generational certified organic estate on the Adriatic coast producing low-alcohol, vegan-certified wines from rare native varietals — including the nearly lost Burson grape — and a pioneering 200 ml canned wine range.',
       status: CompanyStatus.APPROVED,
-      ownerId: vendorUser.id,
+      isFoundingProducer: false,
+      ownerId: adminUser.id,
+      foundedYear: 1978,
+      sustainablePractices: 'Certified organic, vegan certified, no fining agents',
+      contentStatus: 'DRAFT',
+      shortDescription: 'Certified organic, vegan-certified estate preserving the nearly extinct Burson grape with a pioneering canned wine range.',
+      story: 'Adriatic coast estate producing certified organic, vegan-certified wines from native varietals including the near-extinct Burson grape. The 200 ml canned wine format — across four expressions — serves aperitif, events, and on-trade occasions no other estate in the portfolio covers.',
+    },
+    {
+      id: 'luca-faccinelli',
+      name: 'Luca Faccinelli',
+      slug: 'luca-faccinelli',
+      contactEmail: 'info@lucafaccinelli.it',
+      region: 'Lombardy',
+      country: 'Italy',
+      description: 'Small husband-and-wife winery on steep terraced Valtellina vineyards producing alpine Nebbiolo.',
+      bio: "Small husband-and-wife winery working steep terraced vineyards in Valtellina — one of the most physically demanding wine regions in Europe — producing Nebbiolo (Chiavennasca) with alpine elegance, freshness, and structural restraint.",
+      status: CompanyStatus.APPROVED,
+      isFoundingProducer: false,
+      ownerId: adminUser.id,
+      foundedYear: 2008,
+      sustainablePractices: 'Organically inspired, steep terraced cultivation by hand',
+      contentStatus: 'DRAFT',
+      shortDescription: "Husband-and-wife estate on terraced Valtellina vineyards — the sommelier's Nebbiolo with alpine freshness.",
+      story: 'Husband-and-wife estate cultivating terraced Nebbiolo (Chiavennasca) at altitude in Valtellina. Production is small and entirely hand-managed, with the steep inclines making mechanisation impossible.',
+      winemakerName: 'Luca Faccinelli',
+      winemakerBio: 'Luca and his wife manage every aspect of the estate by hand on the near-vertical terraced vineyards of Valtellina, where mechanisation is physically impossible.',
+    },
+    {
+      id: 'l-autin',
+      name: "L'Autin",
+      slug: 'l-autin',
+      contactEmail: 'info@lautin.it',
+      region: 'Piemonte Alps',
+      country: 'Italy',
+      description: 'Women-led certified organic estate near Mount Monviso producing rare native varietals.',
+      bio: "Women-led certified organic estate near Mount Monviso, producing wines from high-altitude mineral soils using native varietals — including Timorasso, Bonarda, and Ramìe — that are rarely found in the U.S. market.",
+      status: CompanyStatus.APPROVED,
+      isFoundingProducer: false,
+      ownerId: adminUser.id,
+      foundedYear: 2012,
+      sustainablePractices: 'Certified organic, biodynamically inspired',
+      contentStatus: 'DRAFT',
+      shortDescription: "Women-led certified organic estate producing Timorasso, Bonarda, and Ramìe from the Piemonte Alps near Mount Monviso.",
+      story: "Women-led certified organic estate on the Piemonte Alps near Mount Monviso. Elisa Camusso produces Timorasso (a rare Piemontese white making a comeback), native Bonarda, and Ramìe — a historic alpine wine with almost no U.S. presence.",
+      winemakerName: 'Elisa Camusso',
+      winemakerBio: "Elisa Camusso leads the estate, championing native varietals — Timorasso, Bonarda, and Ramìe — that are rarely found outside Italy.",
     },
   ]
 
-  const companies = []
   for (const comp of companiesData) {
-    const created = await prisma.company.upsert({
+    await prisma.company.upsert({
       where: { id: comp.id as string },
-      update: { contentStatus: 'DRAFT' } as any,
+      update: {} as any,
       create: comp as any,
     })
-    companies.push(created)
   }
 
-  console.log('✅ Companies created')
-
-  // Create products
-  const products: any[] = [
-    {
-      id: 'prod-1',
-      name: 'Extra Virgin Olive Oil',
-      description: 'Cold-pressed from Tuscan olives, perfect for salads and finishing dishes',
-      category: ProductCategory.OLIVE_OIL,
-      imageUrl: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800',
-      commerceModel: 'MARKETPLACE',
-      listingOwner: 'VENDOR',
-      vendorPriceCents: 2400,
-      retailPriceCents: 2999,
-      inventory: 50,
-      status: ProductStatus.APPROVED,
-      companyId: companies[0].id,
-    },
-    {
-      id: 'prod-2',
-      name: 'Chianti Classico DOCG 2020',
-      description: 'Full-bodied red wine with notes of cherry and violet',
-      category: ProductCategory.WINE,
-      imageUrl: 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=800',
-      commerceModel: 'WHOLESALE',
-      listingOwner: 'TERRA',
-      wholesalePriceCents: 1200,
-      retailPriceCents: 3599,
-      inventory: 30,
-      status: ProductStatus.APPROVED,
-      companyId: companies[1].id,
-    },
-    {
-      id: 'prod-3',
-      name: 'Artisan Pasta Variety Pack',
-      description: 'Handmade pasta including pappardelle, tagliatelle, and fettuccine',
-      category: ProductCategory.FOOD,
-      imageUrl: 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=800',
-      commerceModel: 'HYBRID',
-      listingOwner: 'VENDOR',
-      vendorPriceCents: 1800,
-      wholesalePriceCents: 800,
-      retailPriceCents: 2160,
-      inventory: 75,
-      status: ProductStatus.APPROVED,
-      companyId: companies[2].id,
-    },
-    {
-      id: 'prod-4',
-      name: 'Aged Balsamic Vinegar',
-      description: '25-year aged balsamic from Modena, perfect for gourmet dishes',
-      category: ProductCategory.OLIVE_OIL,
-      imageUrl: 'https://images.unsplash.com/photo-1452251889946-8ff5ea7b27ab?w=800',
-      commerceModel: 'MARKETPLACE',
-      listingOwner: 'VENDOR',
-      vendorPriceCents: 4500,
-      retailPriceCents: 5400,
-      inventory: 20,
-      status: ProductStatus.APPROVED,
-      companyId: companies[0].id,
-    },
-    {
-      id: 'prod-5',
-      name: 'San Marzano Tomatoes',
-      description: 'DOP certified tomatoes from the volcanic soil of Mount Vesuvius',
-      category: ProductCategory.FOOD,
-      imageUrl: 'https://images.unsplash.com/photo-1592838064575-70ed626d3a0e?w=800',
-      commerceModel: 'WHOLESALE',
-      listingOwner: 'TERRA',
-      wholesalePriceCents: 350,
-      retailPriceCents: 899,
-      inventory: 100,
-      status: ProductStatus.APPROVED,
-      companyId: companies[1].id,
-    },
-    {
-      id: 'prod-6',
-      name: 'Truffle-Infused Honey',
-      description: 'Rare black truffle honey, perfect for cheese and charcuterie',
-      category: ProductCategory.FOOD,
-      imageUrl: 'https://images.unsplash.com/photo-1587049352846-4a222e784099?w=800',
-      commerceModel: 'MARKETPLACE',
-      listingOwner: 'VENDOR',
-      vendorPriceCents: 3200,
-      retailPriceCents: 3840,
-      inventory: 15,
-      status: ProductStatus.PENDING,
-      companyId: companies[2].id,
-    },
-  ]
-
-  for (const product of products) {
-    await prisma.product.upsert({
-      where: { id: product.id },
-      update: { contentStatus: 'DRAFT' } as any,
-      create: product,
-    })
-  }
-
-  console.log('✅ Products created')
-
-  // Create a sample order
-  const order = await prisma.order.create({
-    data: {
-      userId: consumerUser.id,
-      total: 68.98,
-      status: OrderStatus.DELIVERED,
-      fulfillmentType: 'PICKUP',
-      deliveryFeeCents: 0,
-      orderItems: {
-        create: [
-          {
-            productId: 'prod-1',
-            quantity: 1,
-            unitPrice: 29.99,
-            commerceModel: 'MARKETPLACE',
-          },
-          {
-            productId: 'prod-5',
-            quantity: 2,
-            unitPrice: 8.99,
-            commerceModel: 'WHOLESALE',
-          },
-          {
-            productId: 'prod-3',
-            quantity: 1,
-            unitPrice: 21.60,
-            commerceModel: 'MARKETPLACE',
-          },
-        ] as any,
-      },
-    } as any,
-  })
-
-  console.log('✅ Sample order created')
-
-  // ── Enrich founding producer companies ──────────────────────────────────
-  await prisma.company.update({
-    where: { id: 'sample-company' },
-    data: {
-      isFoundingProducer: true,
-      contentStatus: 'DRAFT',
-      shortDescription: 'Multi-generational Tuscan farm producing estate olive oil and wine since 1890.',
-      story:
-        'Founded by Nonno Giovanni Rossi in 1890, our family has tended these Tuscan hills through every harvest. Today, the fourth generation maintains the same organic principles and hand-harvesting techniques that have defined our oils and wines for over a century.',
-      winemakerName: 'Marco Rossi',
-      winemakerBio:
-        'Marco studied enology in Florence and returned to modernize the cellar while preserving the traditional blending methods his grandfather used.',
-      foundedYear: 1890,
-      sustainablePractices:
-        'Certified organic since 1998. Rain-fed vineyards, no synthetic pesticides. Pomace compost returns nutrients to the soil.',
-    } as any,
-  })
-
-  await prisma.company.update({
-    where: { id: 'sample-company-2' },
-    data: {
-      isFoundingProducer: true,
-      contentStatus: 'DRAFT',
-      shortDescription: "Organic red wines from the sun-drenched terroir of Puglia's Salento peninsula.",
-      story:
-        "Vini del Sud was born from a belief that Puglia's Primitivo and Negroamaro deserve the same reverence as Barolo or Brunello. Our small-batch approach keeps each vintage limited and expressive.",
-      winemakerName: 'Lucia De Santis',
-      winemakerBio:
-        "Lucia trained under a master enologist in Lecce, then returned to her family's land to craft wines that reflect Puglia's warmth and mineral complexity.",
-      foundedYear: 2003,
-      sustainablePractices:
-        'Dry-farmed bush vines averaging 40 years old. Minimal-intervention winemaking with indigenous yeasts. No additives.',
-    } as any,
-  })
-
-  console.log('✅ Companies enriched with founding producer data')
-
-  // ── Enrich wine and olive oil products ──────────────────────────────────
-  await prisma.product.update({
-    where: { id: 'prod-2' },
-    data: {
-      slug: 'chianti-classico-docg-2020',
-      contentStatus: 'DRAFT',
-      vintage: 2020,
-      appellation: 'Chianti Classico DOCG',
-      designation: 'Riserva',
-      country: 'Italy',
-      region: 'Tuscany',
-      subregion: 'Gaiole in Chianti',
-      grapeVarietals: ['Sangiovese', 'Canaiolo'],
-      wineStyle: 'Red',
-      body: 'Full',
-      acidity: 'High',
-      tannin: 'Medium-High',
-      abv: 13.5,
-      bottleSizeMl: 750,
-      tastingNotesShort:
-        'Vibrant cherry, dried violet, and earthy tobacco on the nose — silky on the palate with a long, spice-laced finish.',
-      aromaNotes: 'Fresh cherry, dried violet, subtle tobacco, and a hint of leather.',
-      palateNotes:
-        'Rounded tannins, bright acidity, flavors of sour cherry, spice, and earthy mineral notes.',
-      finishNotes: 'Long and persistent with lingering dried fruit and a touch of cedar.',
-      vinification:
-        'Fermented on skins for 14 days in stainless steel, gently pressed and aged in Slovenian oak.',
-      aging: '24 months in large Slavonian oak casks, followed by 6 months in bottle.',
-      servingTemperature: '16–18 °C (62–64 °F)',
-      decantingNotes: 'Decant 30 minutes before serving to soften tannins.',
-      foodPairings: ['Bistecca alla Fiorentina', 'Aged Pecorino', 'Wild boar ragu', 'Mushroom risotto'],
-      sustainabilityNotes: 'Organic viticulture. Estate-bottled. Gravity-flow winery.',
-      producerStoryExcerpt:
-        'Our Chianti Classico comes from a single block of Sangiovese vines planted in 2003 at 380 metres altitude, where cool nights preserve aromatic intensity and natural acidity.',
-      isFoundingWine: true,
-    } as any,
-  })
-
-  await prisma.product.update({
-    where: { id: 'prod-1' },
-    data: {
-      slug: 'extra-virgin-olive-oil-tuscany',
-      contentStatus: 'DRAFT',
-      country: 'Italy',
-      region: 'Tuscany',
-      sustainabilityNotes:
-        'Hand-harvested from our certified organic grove. Cold-pressed within 24 hours of picking.',
-      producerStoryExcerpt:
-        'This oil comes from the same grove my grandfather planted in 1952. Each bottle is numbered by hand and represents a single harvest.',
-      isFeatured: true,
-    } as any,
-  })
-
-  console.log('✅ Products enriched with wine and editorial data')
+  console.log('✅ Portfolio winery companies created')
 
   // ── Pickup location ──────────────────────────────────────────────────────
   await (prisma as any).pickupLocation.upsert({
