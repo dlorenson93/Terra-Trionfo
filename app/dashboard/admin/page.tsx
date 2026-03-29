@@ -7,6 +7,12 @@ import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import { WINES } from '@/data/wines'
 import { PRODUCERS } from '@/data/producers'
+import {
+  deriveAnalysisFreshness,
+  FRESHNESS_LABEL,
+  FRESHNESS_BADGE_CLASS,
+  type AnalysisFreshness,
+} from '@/lib/deriveAnalysisFreshness'
 
 interface Stats {
   totalVendors: number
@@ -180,6 +186,9 @@ export default function AdminDashboard() {
   // Release intelligence state
   const [releaseIntelligence, setReleaseIntelligence] = useState<any>(null)
   const [loadingIntelligence, setLoadingIntelligence] = useState(false)
+  // Per-product intel run state
+  const [runningIntelId, setRunningIntelId] = useState<string | null>(null)
+  const [runningAllIntel, setRunningAllIntel] = useState(false)
 
   useEffect(() => {
     if (!session) {
@@ -250,6 +259,32 @@ export default function AdminDashboard() {
       console.error('Error fetching release intelligence:', error)
     } finally {
       setLoadingIntelligence(false)
+    }
+  }
+
+  const runIntelForProduct = async (productId: string) => {
+    setRunningIntelId(productId)
+    try {
+      await fetch(`/api/admin/intelligence/run/${productId}`, { method: 'POST' })
+      fetchData()
+    } catch (error) {
+      console.error('Error running intelligence for product:', error)
+    } finally {
+      setRunningIntelId(null)
+    }
+  }
+
+  const runAllIntel = async () => {
+    if (!confirm('Refresh intelligence for all approved products?')) return
+    setRunningAllIntel(true)
+    try {
+      await fetch('/api/admin/intelligence/run-all', { method: 'POST' })
+      fetchData()
+      if (releaseIntelligence) fetchReleaseIntelligence()
+    } catch (error) {
+      console.error('Error running bulk intelligence:', error)
+    } finally {
+      setRunningAllIntel(false)
     }
   }
 
@@ -1402,7 +1437,7 @@ export default function AdminDashboard() {
                             )}
                           </td>
                           <td className="py-3">
-                            {dbProduct?.releaseMonitorStatus ? (() => {
+                            {dbProduct ? (() => {
                               const monitorColors: Record<string, string> = {
                                 HIGH_DEMAND:         'bg-emerald-50 text-emerald-800 border border-emerald-200',
                                 NEEDS_REVIEW:        'bg-amber-50 text-amber-800 border border-amber-200',
@@ -1417,21 +1452,35 @@ export default function AdminDashboard() {
                                 STANDARD: 'text-sky-600',
                                 LOW:      'text-gray-400',
                               }
+                              const freshness = deriveAnalysisFreshness(dbProduct.lastRecommendationAt)
+                              const canRun = dbProduct.status === 'APPROVED' && (freshness === 'NEVER_RUN' || freshness === 'STALE' || freshness === 'AGING')
                               return (
                                 <div className="flex flex-col gap-1">
-                                  <span className={`text-[9px] font-medium px-1.5 py-0.5 leading-tight ${monitorColors[dbProduct.releaseMonitorStatus] ?? 'bg-white text-olive-400 border border-olive-200'}`}>
-                                    {dbProduct.releaseMonitorStatus.replace(/_/g, ' ')}
-                                  </span>
+                                  {dbProduct.releaseMonitorStatus && (
+                                    <span className={`text-[9px] font-medium px-1.5 py-0.5 leading-tight ${monitorColors[dbProduct.releaseMonitorStatus] ?? 'bg-white text-olive-400 border border-olive-200'}`}>
+                                      {dbProduct.releaseMonitorStatus.replace(/_/g, ' ')}
+                                    </span>
+                                  )}
                                   {dbProduct.exposureTier && (
                                     <span className={`text-[9px] font-semibold uppercase tracking-wider ${tierColors[dbProduct.exposureTier] ?? 'text-olive-400'}`}>
                                       {dbProduct.exposureTier}
                                     </span>
                                   )}
+                                  <span className={`text-[9px] px-1.5 py-0.5 ${FRESHNESS_BADGE_CLASS[freshness]}`}>
+                                    {FRESHNESS_LABEL[freshness]}
+                                  </span>
+                                  {canRun && (
+                                    <button
+                                      onClick={() => runIntelForProduct(dbProduct.id)}
+                                      disabled={runningIntelId === dbProduct.id}
+                                      className="text-[9px] px-1.5 py-0.5 bg-olive-100 text-olive-700 hover:bg-olive-200 disabled:opacity-50 transition-colors text-left"
+                                    >
+                                      {runningIntelId === dbProduct.id ? '…' : '⚡ Run Intel'}
+                                    </button>
+                                  )}
                                 </div>
                               )
-                            })() : (
-                              <span className="text-[9px] text-olive-300 italic">Not run</span>
-                            )}
+                            })() : null}
                           </td>
                           <td className="py-3">
                             {dbProduct ? (
@@ -2068,14 +2117,51 @@ export default function AdminDashboard() {
                   <h2 className="text-2xl font-serif font-bold text-olive-900 mb-1">Release Intelligence</h2>
                   <p className="text-sm text-olive-500">Time-decayed demand signals → release timing, allocation, and catalog exposure recommendations.</p>
                 </div>
-                <button
-                  onClick={() => { setReleaseIntelligence(null); fetchReleaseIntelligence() }}
-                  disabled={loadingIntelligence}
-                  className="shrink-0 text-sm px-4 py-2 bg-olive-700 text-parchment-100 hover:bg-olive-800 disabled:opacity-50 transition-colors"
-                >
-                  {loadingIntelligence ? 'Refreshing…' : '↻ Refresh'}
-                </button>
+                <div className="flex gap-2 shrink-0">
+                  <button
+                    onClick={runAllIntel}
+                    disabled={runningAllIntel || loadingIntelligence}
+                    className="text-sm px-4 py-2 border border-olive-300 text-olive-700 hover:bg-parchment-100 disabled:opacity-50 transition-colors"
+                  >
+                    {runningAllIntel ? 'Running…' : '⚡ Refresh All Intel'}
+                  </button>
+                  <button
+                    onClick={() => { setReleaseIntelligence(null); fetchReleaseIntelligence() }}
+                    disabled={loadingIntelligence}
+                    className="text-sm px-4 py-2 bg-olive-700 text-parchment-100 hover:bg-olive-800 disabled:opacity-50 transition-colors"
+                  >
+                    {loadingIntelligence ? 'Refreshing…' : '↻ Refresh'}
+                  </button>
+                </div>
               </div>
+
+              {/* Analysis Coverage — computed from products state, always visible */}
+              {(() => {
+                const approved = products.filter(p => p.status === 'APPROVED')
+                const counts: Record<AnalysisFreshness, number> = { NEVER_RUN: 0, FRESH: 0, AGING: 0, STALE: 0 }
+                for (const p of approved) counts[deriveAnalysisFreshness(p.lastRecommendationAt)]++
+                const tiers: Array<[AnalysisFreshness, string, string]> = [
+                  ['NEVER_RUN', 'Never Analyzed', 'border-gray-200 bg-gray-50'],
+                  ['FRESH',     'Fresh',           'border-emerald-200 bg-emerald-50'],
+                  ['AGING',     'Aging',           'border-amber-200 bg-amber-50'],
+                  ['STALE',     'Stale',           'border-red-200 bg-red-50'],
+                ]
+                return (
+                  <div className="bg-white border border-olive-200 p-4">
+                    <p className="text-[10px] font-medium text-olive-400 uppercase tracking-wider mb-3">
+                      Analysis Coverage · {approved.length} approved product{approved.length !== 1 ? 's' : ''}
+                    </p>
+                    <div className="grid grid-cols-4 gap-3">
+                      {tiers.map(([key, label, color]) => (
+                        <div key={key} className={`border ${color} p-3 text-center`}>
+                          <p className="text-2xl font-serif font-bold text-olive-900">{counts[key]}</p>
+                          <p className="text-[10px] font-medium text-olive-500 uppercase tracking-wider mt-1">{label}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })()}
 
               {loadingIntelligence && (
                 <div className="flex items-center justify-center py-20">
