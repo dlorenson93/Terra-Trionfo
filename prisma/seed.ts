@@ -218,7 +218,7 @@ async function main() {
   // ── Portfolio wines as products ─────────────────────────────────────────
   for (const wine of WINES) {
     const producer = PRODUCERS.find((p) => p.id === wine.producerId)
-    const isFoundingWine = producer?.collection === 'classical' ?? false
+    const isFoundingWine = producer?.collection === 'classical' ? true : false
 
     await prisma.product.upsert({
       where: { id: wine.id },

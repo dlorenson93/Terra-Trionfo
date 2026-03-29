@@ -370,8 +370,7 @@ export default function AdminDashboard() {
 
   const importWine = async (wine: (typeof WINES)[0]) => {
     const producer = PRODUCERS.find((p) => p.id === wine.producerId)
-    const isFoundingWine = producer?.collection === 'classical' ?? false
-    setImportingWineId(wine.id)
+    const isFoundingWine = producer?.collection === 'classical' ? true : false(wine.id)
     try {
       const res = await fetch('/api/admin/products/import', {
         method: 'POST',
@@ -411,7 +410,7 @@ export default function AdminDashboard() {
     try {
       for (const wine of missing) {
         const producer = PRODUCERS.find((p) => p.id === wine.producerId)
-        const isFoundingWine = producer?.collection === 'classical' ?? false
+        const isFoundingWine = producer?.collection === 'classical' ? true : false
         await fetch('/api/admin/products/import', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
