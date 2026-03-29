@@ -31,8 +31,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    // Verify the producer company exists
-    const company = await prisma.company.findUnique({ where: { id: producerId } })
+    // Verify the producer company exists — producerId from the wine data
+    // is the producer's slug (e.g. "stroppiana"), not the DB cuid
+    const company = await prisma.company.findFirst({ where: { slug: producerId } })
     if (!company) {
       return NextResponse.json({ error: `Producer company '${producerId}' not found in DB` }, { status: 404 })
     }
@@ -57,7 +58,7 @@ export async function POST(request: Request) {
         inventory: 0,
         status: 'PENDING',
         isFoundingWine: isFoundingWine ?? false,
-        companyId: producerId,
+        companyId: company.id,
       },
       include: {
         company: { select: { id: true, name: true, slug: true, status: true } },
