@@ -32,6 +32,7 @@ interface Company {
 
 interface Product {
   id: string
+  slug?: string | null
   name: string
   category: string
   retailPriceCents: number
@@ -1097,9 +1098,9 @@ export default function AdminDashboard() {
             <div className="bg-white border border-olive-200 p-6">
               <div className="flex items-center justify-between mb-5">
                 <div>
-                  <h2 className="text-base font-semibold text-olive-900">Wine Products</h2>
+                  <h2 className="text-base font-semibold text-olive-900">Portfolio Wines</h2>
                   <p className="text-sm text-olive-400 mt-0.5">
-                    {products.filter((p) => p.category === 'WINE').length} wines · Content status controls public visibility
+                    {WINES.length} wines · Showing canonical portfolio — cross-referenced against the product database
                   </p>
                 </div>
               </div>
@@ -1107,70 +1108,93 @@ export default function AdminDashboard() {
                 <table className="w-full">
                   <thead>
                     <tr className="text-left border-b border-olive-200">
-                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Product</th>
-                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Company</th>
+                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Wine</th>
+                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Producer</th>
+                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Region</th>
+                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Consumer Price</th>
                       <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Inventory</th>
-                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Retail</th>
-                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Status</th>
-                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Content</th>
+                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">DB Status</th>
+                      <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Editorial</th>
                       <th className="pb-3 text-xs font-medium text-olive-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {products.filter((p) => p.category === 'WINE').length === 0 ? (
-                      <tr>
-                        <td colSpan={7} className="py-8 text-center text-sm text-olive-400">No wine products yet.</td>
-                      </tr>
-                    ) : products.filter((p) => p.category === 'WINE').map((product) => (
-                      <tr key={product.id} className="border-b border-olive-100 last:border-0">
-                        <td className="py-3 text-sm font-medium text-olive-900">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            {product.name}
-                            {product.isFeatured && <span className="text-[9px] font-medium text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 uppercase tracking-wider">Featured</span>}
-                            {product.isLimitedAllocation && <span className="text-[9px] font-medium text-purple-700 bg-purple-50 border border-purple-200 px-1.5 py-0.5 uppercase tracking-wider">Limited</span>}
-                            {product.isFoundingWine && <span className="text-[9px] font-medium text-olive-700 bg-olive-50 border border-olive-200 px-1.5 py-0.5 uppercase tracking-wider">Founding</span>}
-                          </div>
-                        </td>
-                        <td className="py-3 text-sm text-olive-800">{product.company.name}</td>
-                        <td className="py-3 text-sm text-olive-600 tabular-nums">{product.inventory}</td>
-                        <td className="py-3 text-sm text-olive-800">${(product.retailPriceCents / 100).toFixed(2)}</td>
-                        <td className="py-3">
-                          <span className={`badge badge-${product.status.toLowerCase()}`}>{product.status}</span>
-                        </td>
-                        <td className="py-3">
-                          <span className={`text-[10px] font-medium px-2 py-0.5 ${contentStatusStyle(product.contentStatus ?? 'DRAFT')}`}>
-                            {contentStatusLabel(product.contentStatus ?? 'DRAFT')}
-                          </span>
-                        </td>
-                        <td className="py-3">
-                          <div className="flex gap-1 flex-wrap">
-                            {product.status === 'PENDING' && (
-                              <>
-                                <button onClick={() => updateProductStatus(product.id, 'APPROVED')} className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded hover:bg-green-200">Approve</button>
-                                <button onClick={() => updateProductStatus(product.id, 'REJECTED')} className="text-xs px-2 py-1 bg-red-100 text-red-800 rounded hover:bg-red-200">Reject</button>
-                              </>
+                    {WINES.map((wine) => {
+                      const dbProduct = products.find(
+                        (p) => p.slug === wine.slug || p.slug === wine.id
+                      )
+                      const producer = PRODUCERS.find((p) => p.id === wine.producerId)
+                      return (
+                        <tr key={wine.id} className="border-b border-olive-100 last:border-0">
+                          <td className="py-3 text-sm font-medium text-olive-900">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {wine.displayName}
+                              {dbProduct?.isFeatured && <span className="text-[9px] font-medium text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 uppercase tracking-wider">Featured</span>}
+                              {dbProduct?.isLimitedAllocation && <span className="text-[9px] font-medium text-purple-700 bg-purple-50 border border-purple-200 px-1.5 py-0.5 uppercase tracking-wider">Limited</span>}
+                              {dbProduct?.isFoundingWine && <span className="text-[9px] font-medium text-olive-700 bg-olive-50 border border-olive-200 px-1.5 py-0.5 uppercase tracking-wider">Founding</span>}
+                            </div>
+                            <p className="text-[10px] text-olive-400 mt-0.5">{wine.type} · {wine.appellation ?? wine.region}</p>
+                          </td>
+                          <td className="py-3 text-sm text-olive-800">{producer?.name ?? wine.producerId}</td>
+                          <td className="py-3 text-sm text-olive-600">{wine.region}</td>
+                          <td className="py-3 text-sm font-medium text-olive-900 tabular-nums">
+                            ${wine.consumerPurchasePriceUSD.toFixed(2)}
+                          </td>
+                          <td className="py-3 text-sm text-olive-600 tabular-nums">
+                            {dbProduct ? dbProduct.inventory : <span className="text-olive-300 italic">—</span>}
+                          </td>
+                          <td className="py-3">
+                            {dbProduct ? (
+                              <span className={`badge badge-${dbProduct.status.toLowerCase()}`}>{dbProduct.status}</span>
+                            ) : (
+                              <span className="text-[10px] font-medium px-2 py-0.5 bg-gray-50 text-gray-400 border border-gray-200">
+                                Not in DB
+                              </span>
                             )}
-                            {product.status === 'APPROVED' && (
-                              <button onClick={() => updateProductStatus(product.id, 'REJECTED')} className="text-xs px-2 py-1 bg-red-50 text-red-700 rounded hover:bg-red-100">Revoke</button>
+                          </td>
+                          <td className="py-3">
+                            {dbProduct ? (
+                              <span className={`text-[10px] font-medium px-2 py-0.5 ${contentStatusStyle(dbProduct.contentStatus ?? 'DRAFT')}`}>
+                                {contentStatusLabel(dbProduct.contentStatus ?? 'DRAFT')}
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-olive-300 italic">—</span>
                             )}
-                            {product.status === 'REJECTED' && (
-                              <button onClick={() => updateProductStatus(product.id, 'APPROVED')} className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded hover:bg-green-200">Re-approve</button>
+                          </td>
+                          <td className="py-3">
+                            {dbProduct ? (
+                              <div className="flex gap-1 flex-wrap">
+                                {dbProduct.status === 'PENDING' && (
+                                  <>
+                                    <button onClick={() => updateProductStatus(dbProduct.id, 'APPROVED')} className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded hover:bg-green-200">Approve</button>
+                                    <button onClick={() => updateProductStatus(dbProduct.id, 'REJECTED')} className="text-xs px-2 py-1 bg-red-100 text-red-800 rounded hover:bg-red-200">Reject</button>
+                                  </>
+                                )}
+                                {dbProduct.status === 'APPROVED' && (
+                                  <button onClick={() => updateProductStatus(dbProduct.id, 'REJECTED')} className="text-xs px-2 py-1 bg-red-50 text-red-700 rounded hover:bg-red-100">Revoke</button>
+                                )}
+                                {dbProduct.status === 'REJECTED' && (
+                                  <button onClick={() => updateProductStatus(dbProduct.id, 'APPROVED')} className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded hover:bg-green-200">Re-approve</button>
+                                )}
+                                {dbProduct.contentStatus !== 'LIVE' && (
+                                  <>
+                                    {dbProduct.contentStatus === 'DRAFT' && <button onClick={() => updateContentStatus(dbProduct.id, 'IN_REVIEW')} className="text-xs px-2 py-1 bg-amber-100 text-amber-800 rounded hover:bg-amber-200">Under Review</button>}
+                                    {dbProduct.contentStatus === 'IN_REVIEW' && <button onClick={() => updateContentStatus(dbProduct.id, 'READY')} className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200">Intro Pending</button>}
+                                    {(dbProduct.contentStatus === 'READY' || dbProduct.contentStatus === 'IN_REVIEW') && <button onClick={() => updateContentStatus(dbProduct.id, 'LIVE')} className="text-xs px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700">Go Live</button>}
+                                  </>
+                                )}
+                                {dbProduct.contentStatus === 'LIVE' && (
+                                  <button onClick={() => updateContentStatus(dbProduct.id, 'READY')} className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200">Withdraw</button>
+                                )}
+                                <button onClick={() => editProduct(dbProduct)} className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200">Edit</button>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-olive-400 italic">Import to DB to manage</span>
                             )}
-                            {product.contentStatus !== 'LIVE' && (
-                              <>
-                                {product.contentStatus === 'DRAFT' && <button onClick={() => updateContentStatus(product.id, 'IN_REVIEW')} className="text-xs px-2 py-1 bg-amber-100 text-amber-800 rounded hover:bg-amber-200">Mark Under Review</button>}
-                                {product.contentStatus === 'IN_REVIEW' && <button onClick={() => updateContentStatus(product.id, 'READY')} className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200">Mark Intro Pending</button>}
-                                {(product.contentStatus === 'READY' || product.contentStatus === 'IN_REVIEW') && <button onClick={() => updateContentStatus(product.id, 'LIVE')} className="text-xs px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700">Introduce Publicly</button>}
-                              </>
-                            )}
-                            {product.contentStatus === 'LIVE' && (
-                              <button onClick={() => updateContentStatus(product.id, 'READY')} className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200">Withdraw</button>
-                            )}
-                            <button onClick={() => editProduct(product)} className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200">Edit</button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                        </tr>
+                      )
+                    })}
                   </tbody>
                 </table>
               </div>
