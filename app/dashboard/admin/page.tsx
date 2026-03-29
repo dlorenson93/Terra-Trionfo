@@ -252,6 +252,9 @@ export default function AdminDashboard() {
   // Calibration rollups state (Release Intel tab)
   const [calibrationRollups, setCalibrationRollups] = useState<any>(null)
   const [loadingCalibration, setLoadingCalibration] = useState(false)
+  // Allocation planning state (Release Intel tab)
+  const [allocationPlanning, setAllocationPlanning] = useState<any>(null)
+  const [loadingPlanning, setLoadingPlanning] = useState(false)
 
   useEffect(() => {
     if (!session) {
@@ -278,6 +281,9 @@ export default function AdminDashboard() {
     }
     if (activeTab === 'release-intelligence' && !calibrationRollups && !loadingCalibration) {
       fetchCalibrationRollups()
+    }
+    if (activeTab === 'release-intelligence' && !allocationPlanning && !loadingPlanning) {
+      fetchAllocationPlanning()
     }
   }, [activeTab])
 
@@ -363,6 +369,18 @@ export default function AdminDashboard() {
       console.error('Error fetching calibration rollups:', error)
     } finally {
       setLoadingCalibration(false)
+    }
+  }
+
+  const fetchAllocationPlanning = async () => {
+    setLoadingPlanning(true)
+    try {
+      const res = await fetch('/api/admin/allocation-planning')
+      if (res.ok) setAllocationPlanning(await res.json())
+    } catch (error) {
+      console.error('Error fetching allocation planning:', error)
+    } finally {
+      setLoadingPlanning(false)
     }
   }
 
@@ -3366,6 +3384,193 @@ export default function AdminDashboard() {
                         </div>
                       </>
                     )}
+                  </div>
+                )
+              })()}
+
+              {/* ── Phase 12: Predictive Allocation & Release Planning ──────────── */}
+              {(() => {
+                const SIZING_LABEL: Record<string, string> = {
+                  significant_increase: 'Sig. Increase',
+                  modest_increase:      'Modest Increase',
+                  hold_flat:            'Hold Flat',
+                  maintain:             'Maintain',
+                  reduce_exposure:      'Reduce',
+                }
+                const TIMING_LABEL: Record<string, string> = {
+                  accelerate:             'Accelerate',
+                  hold_until_signal:      'Hold for Signal',
+                  stage_two_waves:        'Two Waves',
+                  release_trade_first:    'Trade First',
+                  release_consumer_first: 'Consumer First',
+                  no_action:              'No Action',
+                }
+                const ROLLOUT_LABEL: Record<string, string> = {
+                  consumer_led:     'Consumer Led',
+                  trade_led:        'Trade Led',
+                  balanced:         'Balanced',
+                  soft_launch:      'Soft Launch',
+                  allocation_first: 'Allocation First',
+                }
+                const sizingColor = (v: string) => {
+                  if (v === 'significant_increase') return 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                  if (v === 'modest_increase')      return 'bg-sky-100 text-sky-800 border border-sky-200'
+                  if (v === 'reduce_exposure')      return 'bg-red-100 text-red-700 border border-red-200'
+                  return 'bg-parchment-100 text-olive-700 border border-olive-200'
+                }
+                const timingColor = (v: string) => {
+                  if (v === 'accelerate')             return 'bg-violet-100 text-violet-800 border border-violet-200'
+                  if (v === 'hold_until_signal')      return 'bg-amber-100 text-amber-700 border border-amber-200'
+                  if (v === 'release_trade_first')    return 'bg-indigo-100 text-indigo-800 border border-indigo-200'
+                  if (v === 'release_consumer_first') return 'bg-teal-100 text-teal-800 border border-teal-200'
+                  if (v === 'stage_two_waves')        return 'bg-cyan-100 text-cyan-800 border border-cyan-200'
+                  return 'bg-gray-100 text-gray-500 border border-gray-200'
+                }
+                const confColor = (v: string) => {
+                  if (v === 'high')   return 'text-emerald-700 font-semibold'
+                  if (v === 'medium') return 'text-amber-700'
+                  return 'text-gray-400'
+                }
+
+                return (
+                  <div className="mb-6">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h3 className="text-sm font-semibold text-olive-800 tracking-wide uppercase">Predictive Allocation &amp; Release Planning</h3>
+                        <p className="text-[11px] text-olive-400 mt-0.5">Advisory only — no automation. Based on current demand signals, calibration &amp; learning data.</p>
+                      </div>
+                      <button
+                        onClick={() => { setAllocationPlanning(null); fetchAllocationPlanning() }}
+                        className="text-[11px] text-olive-500 hover:text-olive-800 border border-olive-200 px-2 py-1 rounded"
+                      >
+                        Refresh
+                      </button>
+                    </div>
+
+                    {loadingPlanning && (
+                      <div className="flex items-center gap-2 py-6 text-sm text-olive-400">
+                        <div className="w-4 h-4 border-2 border-olive-400 border-t-transparent rounded-full animate-spin" />
+                        Building allocation plans…
+                      </div>
+                    )}
+
+                    {!loadingPlanning && !allocationPlanning && (
+                      <div className="text-sm text-olive-400 py-6 text-center border border-dashed border-olive-200 rounded">
+                        No planning data available yet.
+                      </div>
+                    )}
+
+                    {!loadingPlanning && allocationPlanning && (() => {
+                      const ap = allocationPlanning
+                      const s  = ap.summary
+                      const ctx = ap.context
+                      return (
+                        <>
+                          {/* Summary bar */}
+                          <div className="bg-parchment-50 border border-olive-200 rounded p-4 mb-4">
+                            <p className="text-[11px] text-olive-600 mb-3 italic">{s.portfolioHealthNote}</p>
+                            <div className="flex flex-wrap gap-3">
+                              {[
+                                { label: 'Accelerate', value: s.accelerateCandidates,         color: 'text-violet-700' },
+                                { label: 'Increase Alloc', value: s.increaseAllocationCandidates, color: 'text-emerald-700' },
+                                { label: 'Hold Flat', value: s.holdFlatCount,                 color: 'text-olive-600' },
+                                { label: 'Reduce', value: s.reduceCandidates,                 color: 'text-red-600' },
+                                { label: 'Trade First', value: s.tradeFirstCandidates,         color: 'text-indigo-700' },
+                                { label: 'Consumer First', value: s.consumerFirstCandidates,  color: 'text-teal-700' },
+                                { label: 'Total Analysed', value: s.totalAnalysed,             color: 'text-gray-500' },
+                              ].map(chip => (
+                                <div key={chip.label} className="flex flex-col items-center bg-white border border-olive-100 rounded px-3 py-1.5 min-w-[72px]">
+                                  <span className={`text-base font-bold ${chip.color}`}>{chip.value}</span>
+                                  <span className="text-[9px] text-olive-400 uppercase tracking-wide mt-0.5">{chip.label}</span>
+                                </div>
+                              ))}
+                            </div>
+                            {/* Data context indicators */}
+                            <div className="flex gap-3 mt-3">
+                              <span className={`text-[10px] px-2 py-0.5 rounded-full border ${ctx.hasRollups ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-50 text-gray-400 border-gray-200'}`}>
+                                {ctx.hasRollups ? `✓ Rollups (${ctx.rollupMeasuredCount})` : '○ No rollup data'}
+                              </span>
+                              <span className={`text-[10px] px-2 py-0.5 rounded-full border ${ctx.hasCalibration ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-50 text-gray-400 border-gray-200'}`}>
+                                {ctx.hasCalibration ? `✓ Calibration (${ctx.calibrationPoints} pts)` : '○ No calibration data'}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Plans table */}
+                          {ap.plans.length === 0 ? (
+                            <div className="text-sm text-olive-400 py-6 text-center border border-dashed border-olive-200 rounded">
+                              No products with sufficient signal for planning.
+                            </div>
+                          ) : (
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-[11px] border-collapse">
+                                <thead>
+                                  <tr className="bg-parchment-100 text-olive-500 uppercase tracking-wider text-[9px]">
+                                    <th className="text-left px-3 py-2 font-medium border-b border-olive-200">Wine</th>
+                                    <th className="text-left px-3 py-2 font-medium border-b border-olive-200">Status</th>
+                                    <th className="text-left px-3 py-2 font-medium border-b border-olive-200">Driver</th>
+                                    <th className="text-left px-3 py-2 font-medium border-b border-olive-200">Allocation</th>
+                                    <th className="text-left px-3 py-2 font-medium border-b border-olive-200">Timing</th>
+                                    <th className="text-left px-3 py-2 font-medium border-b border-olive-200">Rollout</th>
+                                    <th className="text-center px-3 py-2 font-medium border-b border-olive-200">Conf.</th>
+                                    <th className="text-left px-3 py-2 font-medium border-b border-olive-200">Rationale</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {ap.plans.map((plan: any) => (
+                                    <tr key={plan.productId} className="border-b border-olive-100 hover:bg-parchment-50 align-top">
+                                      <td className="px-3 py-2.5">
+                                        <p className="font-medium text-olive-900 leading-tight">{plan.wineName}</p>
+                                        <p className="text-[10px] text-olive-400">{plan.company}</p>
+                                      </td>
+                                      <td className="px-3 py-2.5 text-olive-600 whitespace-nowrap">{plan.releaseStatus}</td>
+                                      <td className="px-3 py-2.5">
+                                        <span className={`text-[10px] px-1.5 py-0.5 rounded border ${
+                                          plan.dominantDriver === 'consumer' ? 'bg-teal-50 text-teal-700 border-teal-200' :
+                                          plan.dominantDriver === 'trade'    ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
+                                                                               'bg-gray-50 text-gray-600 border-gray-200'
+                                        }`}>
+                                          {plan.dominantDriver}
+                                        </span>
+                                      </td>
+                                      <td className="px-3 py-2.5">
+                                        <span className={`text-[10px] px-1.5 py-0.5 rounded ${sizingColor(plan.allocationSizing)}`}>
+                                          {SIZING_LABEL[plan.allocationSizing] ?? plan.allocationSizing}
+                                        </span>
+                                      </td>
+                                      <td className="px-3 py-2.5">
+                                        <span className={`text-[10px] px-1.5 py-0.5 rounded ${timingColor(plan.releaseTiming)}`}>
+                                          {TIMING_LABEL[plan.releaseTiming] ?? plan.releaseTiming}
+                                        </span>
+                                      </td>
+                                      <td className="px-3 py-2.5 text-olive-600 whitespace-nowrap">
+                                        {ROLLOUT_LABEL[plan.rolloutMode] ?? plan.rolloutMode}
+                                      </td>
+                                      <td className="px-3 py-2.5 text-center">
+                                        <span className={confColor(plan.planConfidence)}>{plan.planConfidence}</span>
+                                      </td>
+                                      <td className="px-3 py-2.5 max-w-[260px]">
+                                        <p className="text-olive-700 leading-snug">{plan.allocationRationale}</p>
+                                        <p className="text-olive-500 leading-snug mt-0.5">{plan.timingRationale}</p>
+                                        {plan.learningContext && (
+                                          <p className="text-[10px] text-blue-500 italic mt-1">{plan.learningContext}</p>
+                                        )}
+                                        {plan.calibrationContext && (
+                                          <p className="text-[10px] text-violet-500 italic mt-0.5">{plan.calibrationContext}</p>
+                                        )}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                          <p className="text-[10px] text-olive-300 mt-2 text-right">
+                            Generated {new Date(ap.generatedAt).toLocaleString()}
+                          </p>
+                        </>
+                      )
+                    })()}
                   </div>
                 )
               })()}
