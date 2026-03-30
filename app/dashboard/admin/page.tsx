@@ -264,6 +264,9 @@ export default function AdminDashboard() {
   // Phase 14 — execution tracking state
   const [executingDecisionId, setExecutingDecisionId] = useState<string | null>(null)
   const [executionForm, setExecutionForm] = useState({ allocationSizing: '', releaseTiming: '', rolloutMode: '', notes: '' })
+  // Phase 15 — decision quality analytics state
+  const [decisionQuality, setDecisionQuality] = useState<any>(null)
+  const [loadingDecisionQuality, setLoadingDecisionQuality] = useState(false)
 
   useEffect(() => {
     if (!session) {
@@ -296,6 +299,9 @@ export default function AdminDashboard() {
     }
     if (activeTab === 'release-intelligence' && !decisionsLoaded && !loadingDecisions) {
       fetchPlanningDecisions()
+    }
+    if (activeTab === 'release-intelligence' && !decisionQuality && !loadingDecisionQuality) {
+      fetchDecisionQuality()
     }
   }, [activeTab])
 
@@ -478,6 +484,18 @@ export default function AdminDashboard() {
       }
     } catch (error) {
       console.error('Error submitting execution:', error)
+    }
+  }
+
+  const fetchDecisionQuality = async () => {
+    setLoadingDecisionQuality(true)
+    try {
+      const res = await fetch('/api/admin/decision-quality')
+      if (res.ok) setDecisionQuality(await res.json())
+    } catch (error) {
+      console.error('Error fetching decision quality:', error)
+    } finally {
+      setLoadingDecisionQuality(false)
     }
   }
 
@@ -3970,6 +3988,261 @@ export default function AdminDashboard() {
                           )}
                           <p className="text-[10px] text-olive-300 mt-2 text-right">
                             Generated {new Date(ap.generatedAt).toLocaleString()}
+                          </p>
+                        </>
+                      )
+                    })()}
+                  </div>
+                )
+              })()}
+
+              {/* ── Phase 15: Decision Quality & Adherence Analytics ─────────── */}
+              {(() => {
+                const RATE_COLOR = (rate: number) =>
+                  rate >= 60 ? 'text-emerald-700 font-semibold' :
+                  rate >= 35 ? 'text-amber-700' : 'text-red-600'
+
+                const ADHERE_LABEL: Record<string, string> = {
+                  matched_recommendation:  'Followed rec.',
+                  matched_decision:        'Followed override',
+                  recommendation_restored: 'Rec. restored',
+                  deviated_from_decision:  'Deviated',
+                  partially_executed:      'Partial',
+                  not_executed:            'Not executed',
+                }
+
+                return (
+                  <div className="mb-6">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h3 className="text-sm font-semibold text-olive-800 tracking-wide uppercase">Decision Quality &amp; Adherence Analytics</h3>
+                        <p className="text-[11px] text-olive-400 mt-0.5">What is the recommendation → decision → execution chain teaching us?</p>
+                      </div>
+                      <button
+                        onClick={() => { setDecisionQuality(null); fetchDecisionQuality() }}
+                        className="text-[11px] text-olive-500 hover:text-olive-800 border border-olive-200 px-2 py-1 rounded"
+                      >
+                        Refresh
+                      </button>
+                    </div>
+
+                    {loadingDecisionQuality && (
+                      <div className="flex items-center gap-2 py-6 text-sm text-olive-400">
+                        <div className="w-4 h-4 border-2 border-olive-400 border-t-transparent rounded-full animate-spin" />
+                        Computing decision quality rollups…
+                      </div>
+                    )}
+
+                    {!loadingDecisionQuality && !decisionQuality && (
+                      <div className="text-sm text-olive-400 py-6 text-center border border-dashed border-olive-200 rounded">
+                        No decision quality data available yet.
+                      </div>
+                    )}
+
+                    {!loadingDecisionQuality && decisionQuality && (() => {
+                      const dq = decisionQuality
+                      if (!dq.rollups) return (
+                        <div className="text-sm text-olive-400 py-6 text-center border border-dashed border-olive-200 rounded">
+                          {dq.note ?? 'No decisions recorded yet.'}
+                        </div>
+                      )
+                      const r  = dq.rollups
+                      const ph = r.processHealth
+                      const rq = r.recommendationQuality
+                      const eq = r.executionQuality
+                      const aq = r.adherenceQuality
+
+                      return (
+                        <>
+                          {/* Process health bar */}
+                          <div className="bg-parchment-50 border border-olive-200 rounded p-4 mb-4">
+                            <div className="flex flex-wrap gap-3 mb-3">
+                              {[
+                                { label: 'Total Decisions', value: ph.totalDecisions,        color: 'text-gray-600' },
+                                { label: 'Decided',         value: ph.decidedCount,           color: 'text-olive-700' },
+                                { label: 'Executed',        value: ph.executedCount,          color: 'text-sky-700' },
+                                { label: 'Measured',        value: ph.measuredCount,          color: 'text-violet-700' },
+                                { label: 'Decision Cov.',   value: `${ph.decisionCoverageRate}%`,    color: ph.decisionCoverageRate >= 70 ? 'text-emerald-700' : 'text-amber-700' },
+                                { label: 'Execution Cov.',  value: `${ph.executionCoverageRate}%`,   color: ph.executionCoverageRate >= 60 ? 'text-emerald-700' : 'text-amber-700' },
+                                { label: 'Overall Positive',value: `${ph.overallPositiveRate}%`,     color: RATE_COLOR(ph.overallPositiveRate) },
+                              ].map(chip => (
+                                <div key={chip.label} className="flex flex-col items-center bg-white border border-olive-100 rounded px-3 py-1.5 min-w-[80px]">
+                                  <span className={`text-sm font-bold ${chip.color}`}>{chip.value}</span>
+                                  <span className="text-[9px] text-olive-400 uppercase tracking-wide mt-0.5">{chip.label}</span>
+                                </div>
+                              ))}
+                            </div>
+                            {ph.breakdownNotes.map((note: string, i: number) => (
+                              <p key={i} className="text-[11px] text-olive-600 italic mt-1">{note}</p>
+                            ))}
+                          </div>
+
+                          {/* Two-column: Rec quality + Execution quality */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            {/* Recommendation Quality */}
+                            <div className="border border-olive-200 rounded p-3">
+                              <p className="text-[10px] font-semibold text-olive-600 uppercase tracking-wider mb-2">Recommendation Quality</p>
+                              <table className="w-full text-[11px]">
+                                <thead>
+                                  <tr className="text-[9px] text-olive-400 uppercase border-b border-olive-100">
+                                    <th className="text-left py-1">Decision</th>
+                                    <th className="text-center py-1">n</th>
+                                    <th className="text-center py-1">Measured</th>
+                                    <th className="text-center py-1">Positive%</th>
+                                    <th className="text-center py-1">Negative%</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {[rq.accepted, rq.overridden, rq.deferred].map((b: any) => (
+                                    <tr key={b.label} className="border-b border-olive-50">
+                                      <td className="py-1.5 text-olive-700">{b.label}</td>
+                                      <td className="py-1.5 text-center text-olive-500">{b.count}</td>
+                                      <td className="py-1.5 text-center text-olive-500">{b.withOutcome}</td>
+                                      <td className={`py-1.5 text-center ${RATE_COLOR(b.positiveRate)}`}>{b.positiveRate}%</td>
+                                      <td className={`py-1.5 text-center ${b.negativeRate > 30 ? 'text-red-600' : 'text-olive-500'}`}>{b.negativeRate}%</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                              <p className={`text-[10px] italic mt-2 ${
+                                rq.overrideAdvantage > 10 ? 'text-amber-700' :
+                                rq.overrideAdvantage < -10 ? 'text-emerald-700' : 'text-olive-500'
+                              }`}>
+                                {rq.overrideAdvantageNote}
+                              </p>
+                            </div>
+
+                            {/* Execution Quality */}
+                            <div className="border border-olive-200 rounded p-3">
+                              <p className="text-[10px] font-semibold text-olive-600 uppercase tracking-wider mb-2">Execution Quality</p>
+                              <table className="w-full text-[11px]">
+                                <thead>
+                                  <tr className="text-[9px] text-olive-400 uppercase border-b border-olive-100">
+                                    <th className="text-left py-1">Status</th>
+                                    <th className="text-center py-1">n</th>
+                                    <th className="text-center py-1">Measured</th>
+                                    <th className="text-center py-1">Positive%</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {[eq.executed, eq.partial, eq.deviated, eq.notExecuted].map((b: any) => (
+                                    <tr key={b.label} className="border-b border-olive-50">
+                                      <td className="py-1.5 text-olive-700">{b.label}</td>
+                                      <td className="py-1.5 text-center text-olive-500">{b.count}</td>
+                                      <td className="py-1.5 text-center text-olive-500">{b.withOutcome}</td>
+                                      <td className={`py-1.5 text-center ${RATE_COLOR(b.positiveRate)}`}>{b.positiveRate}%</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                              <p className="text-[10px] italic mt-2 text-olive-500">
+                                Completion rate: <span className={eq.executionCompletionRate >= 60 ? 'text-emerald-700 font-medium' : 'text-amber-700 font-medium'}>{eq.executionCompletionRate}%</span>
+                                {' — '}{eq.executionQualityNote}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Adherence Quality */}
+                          <div className="border border-olive-200 rounded p-3 mb-4">
+                            <p className="text-[10px] font-semibold text-olive-600 uppercase tracking-wider mb-2">Adherence Outcome Comparison</p>
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-[11px]">
+                                <thead>
+                                  <tr className="text-[9px] text-olive-400 uppercase border-b border-olive-100">
+                                    <th className="text-left py-1">Adherence Pattern</th>
+                                    <th className="text-center py-1">n</th>
+                                    <th className="text-center py-1">Measured</th>
+                                    <th className="text-center py-1">Positive%</th>
+                                    <th className="text-center py-1">Mixed%</th>
+                                    <th className="text-center py-1">Negative%</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {[aq.matchedRecommendation, aq.matchedDecision, aq.recommendationRestored, aq.deviatedFromDecision, aq.partiallyExecuted, aq.notExecuted].map((b: any) => (
+                                    <tr key={b.label} className="border-b border-olive-50">
+                                      <td className="py-1.5 text-olive-700">{b.label}</td>
+                                      <td className="py-1.5 text-center text-olive-500">{b.count}</td>
+                                      <td className="py-1.5 text-center text-olive-500">{b.withOutcome}</td>
+                                      <td className={`py-1.5 text-center ${RATE_COLOR(b.positiveRate)}`}>{b.positiveRate}%</td>
+                                      <td className="py-1.5 text-center text-olive-500">{b.mixedRate}%</td>
+                                      <td className={`py-1.5 text-center ${b.negativeRate > 30 ? 'text-red-600' : 'text-olive-500'}`}>{b.negativeRate}%</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                            <div className="flex gap-4 mt-2">
+                              <p className="text-[10px] text-olive-500">
+                                Best pattern: <span className="text-emerald-700 font-medium">{ADHERE_LABEL[aq.bestAdherencePattern] ?? aq.bestAdherencePattern}</span>
+                              </p>
+                              <p className="text-[10px] text-olive-500">
+                                Weakest pattern: <span className="text-red-600 font-medium">{ADHERE_LABEL[aq.worstAdherencePattern] ?? aq.worstAdherencePattern}</span>
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Regional & Style breakdown (only when data exists) */}
+                          {(r.regionBreakdown.length > 0 || r.styleBreakdown.length > 0) && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                              {r.regionBreakdown.length > 0 && (
+                                <div className="border border-olive-200 rounded p-3">
+                                  <p className="text-[10px] font-semibold text-olive-600 uppercase tracking-wider mb-2">By Region</p>
+                                  <table className="w-full text-[11px]">
+                                    <thead>
+                                      <tr className="text-[9px] text-olive-400 uppercase border-b border-olive-100">
+                                        <th className="text-left py-1">Region</th>
+                                        <th className="text-center py-1">n</th>
+                                        <th className="text-center py-1">Positive%</th>
+                                        <th className="text-center py-1">Accepted%</th>
+                                        <th className="text-center py-1">Executed%</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {r.regionBreakdown.map((d: any) => (
+                                        <tr key={d.key} className="border-b border-olive-50">
+                                          <td className="py-1.5 text-olive-700">{d.label}</td>
+                                          <td className="py-1.5 text-center text-olive-500">{d.count}</td>
+                                          <td className={`py-1.5 text-center ${RATE_COLOR(d.positiveRate)}`}>{d.positiveRate}%</td>
+                                          <td className="py-1.5 text-center text-olive-500">{d.acceptedRate}%</td>
+                                          <td className="py-1.5 text-center text-olive-500">{d.executedRate}%</td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )}
+                              {r.styleBreakdown.length > 0 && (
+                                <div className="border border-olive-200 rounded p-3">
+                                  <p className="text-[10px] font-semibold text-olive-600 uppercase tracking-wider mb-2">By Wine Style</p>
+                                  <table className="w-full text-[11px]">
+                                    <thead>
+                                      <tr className="text-[9px] text-olive-400 uppercase border-b border-olive-100">
+                                        <th className="text-left py-1">Style</th>
+                                        <th className="text-center py-1">n</th>
+                                        <th className="text-center py-1">Positive%</th>
+                                        <th className="text-center py-1">Accepted%</th>
+                                        <th className="text-center py-1">Executed%</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {r.styleBreakdown.map((d: any) => (
+                                        <tr key={d.key} className="border-b border-olive-50">
+                                          <td className="py-1.5 text-olive-700">{d.label}</td>
+                                          <td className="py-1.5 text-center text-olive-500">{d.count}</td>
+                                          <td className={`py-1.5 text-center ${RATE_COLOR(d.positiveRate)}`}>{d.positiveRate}%</td>
+                                          <td className="py-1.5 text-center text-olive-500">{d.acceptedRate}%</td>
+                                          <td className="py-1.5 text-center text-olive-500">{d.executedRate}%</td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          <p className="text-[10px] text-olive-300 text-right">
+                            Generated {new Date(dq.generatedAt).toLocaleString()}
                           </p>
                         </>
                       )
