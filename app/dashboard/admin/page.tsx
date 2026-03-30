@@ -3813,6 +3813,30 @@ export default function AdminDashboard() {
                                                       ))}
                                                     </ul>
                                                   )}
+                                                  {/* Phase 19 — pattern influence badge */}
+                                                  {predictivePlanning?.patternInfluences?.[plan.productId] && (() => {
+                                                    const inf = predictivePlanning.patternInfluences[plan.productId]
+                                                    const dir = inf.patternInfluenceDirection
+                                                    if (dir === 'insufficient') return (
+                                                      <p className="text-[9px] text-gray-400 italic mt-1 leading-tight">◦ No relevant pattern evidence</p>
+                                                    )
+                                                    const badgeCls =
+                                                      dir === 'positive' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' :
+                                                      dir === 'negative' ? 'bg-red-50 border-red-200 text-red-600' :
+                                                                           'bg-gray-50 border-gray-200 text-gray-500'
+                                                    const badgeLabel =
+                                                      dir === 'positive' ? '★ Pattern-assisted' :
+                                                      dir === 'negative' ? '▼ Pattern risk present' :
+                                                                           '~ Pattern signals mixed'
+                                                    return (
+                                                      <div className="mt-1">
+                                                        <span className={`inline-flex items-center text-[9px] px-1.5 py-0.5 rounded border font-medium ${badgeCls}`}>
+                                                          {badgeLabel}
+                                                        </span>
+                                                        <p className="text-[9px] text-gray-500 italic mt-0.5 leading-tight">{inf.explanation}</p>
+                                                      </div>
+                                                    )
+                                                  })()}
                                                 </div>
                                               )
                                             })()}
@@ -4146,6 +4170,31 @@ export default function AdminDashboard() {
                                                   )}
                                                 </div>
                                                 <p className="text-[10px] text-indigo-500 italic mb-2">{comparison.spreadNote}</p>
+                                                {/* Phase 19 — pattern influence for this product context */}
+                                                {scenarioData?.patternInfluences?.[plan.productId] && (() => {
+                                                  const inf = scenarioData.patternInfluences[plan.productId]
+                                                  const dir = inf.patternInfluenceDirection
+                                                  if (dir === 'insufficient') return (
+                                                    <p className="text-[9px] text-gray-400 italic mb-2 leading-tight">◦ No relevant pattern evidence for this product context.</p>
+                                                  )
+                                                  const badgeCls =
+                                                    dir === 'positive' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' :
+                                                    dir === 'negative' ? 'bg-red-50 border-red-200 text-red-600' :
+                                                                         'bg-gray-50 border-gray-200 text-gray-500'
+                                                  const badgeLabel =
+                                                    dir === 'positive' ? '★ Pattern-assisted' :
+                                                    dir === 'negative' ? '▼ Pattern risk present' :
+                                                                         '~ Pattern signals mixed'
+                                                  return (
+                                                    <div className="mb-2">
+                                                      <span className={`inline-flex items-center text-[9px] px-1.5 py-0.5 rounded border font-medium ${badgeCls}`}>
+                                                        {badgeLabel}
+                                                      </span>
+                                                      <p className="text-[9px] text-gray-500 italic mt-0.5 leading-tight">{inf.explanation}</p>
+                                                      <p className="text-[9px] text-gray-400 mt-0.5 leading-tight">{inf.governanceNote}</p>
+                                                    </div>
+                                                  )
+                                                })()}
                                                 <div className="flex flex-wrap gap-3">
                                                   {allScenarios.map((sc: any) => {
                                                     const isBest = sc.label === comparison.bestFitLabel

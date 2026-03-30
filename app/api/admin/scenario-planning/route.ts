@@ -29,6 +29,9 @@ import type { CalibrationPoint }          from '@/lib/calibrationRollups'
 import { computeDecisionQualityRollups }  from '@/lib/decisionQualityRollups'
 import type { DecisionRow }               from '@/lib/decisionQualityRollups'
 import { computeScenarioPlanning }        from '@/lib/scenarioPlanningEngine'
+import { computeStrategyPatterns }         from '@/lib/strategyPatternEngine'
+import { computePatternInfluence }         from '@/lib/strategyPatternInfluenceEngine'
+import type { PatternContext }             from '@/lib/strategyPatternInfluenceEngine'
 
 export const dynamic = 'force-dynamic'
 
@@ -146,6 +149,7 @@ export async function GET() {
 
   // ── Decision quality ─────────────────────────────────────────────────────────
   let decisionQuality = null
+  let dqRowsForPatterns: DecisionRow[] = []
   try {
     const dRows = decisionRows as any[]
     if (dRows.length > 0) {
@@ -186,12 +190,28 @@ export async function GET() {
         }
       })
 
-      decisionQuality = computeDecisionQualityRollups(dqRows)
+      dqRowsForPatterns = dqRows
+      decisionQuality   = computeDecisionQualityRollups(dqRows)
     }
   } catch { /* non-fatal */ }
 
   // ── Scenario planning ─────────────────────────────────────────────────────────
   const output = computeScenarioPlanning(plans, decisionQuality, rollups, generatedAt)
 
-  return NextResponse.json(output)
+  // ── Phase 19: Pattern influence per product ──────────────────────────────────
+  let patternInfluences: Record<string, any> = {}
+  try {
+    const patternLibrary = computeStrategyPatterns(dqRowsForPatterns, rollups, generatedAt)
+    for (const plan of plans) {
+      const ctx: PatternContext = {
+        region:      plan.region,
+        style:       plan.wineStyle,
+        rolloutMode: plan.rolloutMode,
+        timing:      plan.releaseTiming,
+      }
+      patternInfluences[plan.productId] = computePatternInfluence(patternLibrary, ctx)
+    }
+  } catch { /* non-fatal */ }
+
+  return NextResponse.json({ ...output, patternInfluences })
 }

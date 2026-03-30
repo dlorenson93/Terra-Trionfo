@@ -29,6 +29,9 @@ import type { CalibrationPoint }            from '@/lib/calibrationRollups'
 import { computeDecisionQualityRollups }    from '@/lib/decisionQualityRollups'
 import type { DecisionRow }                 from '@/lib/decisionQualityRollups'
 import { computePredictivePlanEnrichments } from '@/lib/predictivePlanningEngine'
+import { computeStrategyPatterns }          from '@/lib/strategyPatternEngine'
+import { computePatternInfluence }          from '@/lib/strategyPatternInfluenceEngine'
+import type { PatternContext }              from '@/lib/strategyPatternInfluenceEngine'
 
 export const dynamic = 'force-dynamic'
 
@@ -161,6 +164,7 @@ export async function GET() {
 
   // ── Build decision quality rollups ──────────────────────────────────────────
   let decisionQuality = null
+  let dqRowsForPatterns: DecisionRow[] = []
   try {
     const dRows = decisionRows as any[]
     if (dRows.length > 0) {
@@ -206,7 +210,8 @@ export async function GET() {
         }
       })
 
-      decisionQuality = computeDecisionQualityRollups(dqRows)
+      dqRowsForPatterns = dqRows
+      decisionQuality   = computeDecisionQualityRollups(dqRows)
     }
   } catch {
     // Non-fatal — proceed without decision quality context
@@ -215,5 +220,22 @@ export async function GET() {
   // ── Compute predictive enrichments ──────────────────────────────────────────
   const output = computePredictivePlanEnrichments(plans, decisionQuality, rollups, generatedAt)
 
-  return NextResponse.json(output)
+  // ── Phase 19: Pattern influence per plan ─────────────────────────────────────
+  let patternInfluences: Record<string, any> = {}
+  try {
+    const patternLibrary = computeStrategyPatterns(dqRowsForPatterns, rollups, generatedAt)
+    for (const plan of plans) {
+      const ctx: PatternContext = {
+        region:      plan.region,
+        style:       plan.wineStyle,
+        rolloutMode: plan.rolloutMode,
+        timing:      plan.releaseTiming,
+      }
+      patternInfluences[plan.productId] = computePatternInfluence(patternLibrary, ctx)
+    }
+  } catch {
+    // Non-fatal — proceed without pattern influence
+  }
+
+  return NextResponse.json({ ...output, patternInfluences })
 }
