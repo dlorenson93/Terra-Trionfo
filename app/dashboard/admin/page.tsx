@@ -277,6 +277,8 @@ export default function AdminDashboard() {
   // Phase 18 — strategy pattern library
   const [strategyPatterns, setStrategyPatterns] = useState<any>(null)
   const [loadingPatterns, setLoadingPatterns] = useState(false)
+  // Phase 20 — expandable score composition per product
+  const [expandedCompositions, setExpandedCompositions] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     if (!session) {
@@ -556,6 +558,15 @@ export default function AdminDashboard() {
 
   const toggleScenario = (productId: string) => {
     setExpandedScenarios(prev => {
+      const next = new Set(prev)
+      if (next.has(productId)) next.delete(productId)
+      else next.add(productId)
+      return next
+    })
+  }
+
+  const toggleComposition = (productId: string) => {
+    setExpandedCompositions(prev => {
       const next = new Set(prev)
       if (next.has(productId)) next.delete(productId)
       else next.add(productId)
@@ -3837,6 +3848,52 @@ export default function AdminDashboard() {
                                                       </div>
                                                     )
                                                   })()}
+                                                  {/* Phase 20 — Score composition expandable */}
+                                                  {predictivePlanning?.scoreCompositions?.[plan.productId] && (() => {
+                                                    const comp = predictivePlanning.scoreCompositions[plan.productId]
+                                                    const isOpen = expandedCompositions.has(plan.productId)
+                                                    const compositeLabelCls: Record<string, string> = {
+                                                      high:      'text-emerald-700',
+                                                      medium:    'text-sky-700',
+                                                      low:       'text-amber-700',
+                                                      uncertain: 'text-red-600',
+                                                    }
+                                                    return (
+                                                      <div className="mt-1.5 pt-1 border-t border-dashed border-olive-100">
+                                                        <button
+                                                          onClick={() => toggleComposition(plan.productId)}
+                                                          className="flex items-center gap-1 text-[9px] text-olive-500 hover:text-olive-700 font-medium leading-tight"
+                                                        >
+                                                          <span>{isOpen ? '▲' : '▼'}</span>
+                                                          <span>Score composition</span>
+                                                          <span className={`font-semibold ml-0.5 ${compositeLabelCls[comp.compositeLabel] ?? ''}`}>
+                                                            {comp.finalCompositeScore.toFixed(2)} ({comp.compositeLabel})
+                                                          </span>
+                                                        </button>
+                                                        {isOpen && (
+                                                          <div className="mt-1 space-y-0.5 bg-white/60 rounded border border-olive-100 px-2 py-1.5">
+                                                            {comp.contributions.map((c: any) => (
+                                                              <div key={c.label} className="flex items-start justify-between gap-2">
+                                                                <span className="text-[9px] text-gray-600 leading-tight flex-1">{c.label}</span>
+                                                                <span className={`text-[9px] font-mono font-semibold leading-tight shrink-0 ${
+                                                                  c.value > 0.01 ? 'text-emerald-700' :
+                                                                  c.value < -0.01 ? 'text-red-600' :
+                                                                  'text-gray-500'
+                                                                }`}>{c.formatted}</span>
+                                                              </div>
+                                                            ))}
+                                                            <div className="flex items-start justify-between gap-2 pt-0.5 border-t border-olive-100 mt-0.5">
+                                                              <span className="text-[9px] font-medium text-gray-700 leading-tight">Final composite</span>
+                                                              <span className={`text-[9px] font-mono font-bold leading-tight ${compositeLabelCls[comp.compositeLabel] ?? ''}`}>
+                                                                {comp.finalCompositeScore.toFixed(2)}
+                                                              </span>
+                                                            </div>
+                                                            <p className="text-[8px] text-gray-400 italic leading-tight mt-0.5">{comp.governanceNote}</p>
+                                                          </div>
+                                                        )}
+                                                      </div>
+                                                    )
+                                                  })()}
                                                 </div>
                                               )
                                             })()}
@@ -4192,6 +4249,39 @@ export default function AdminDashboard() {
                                                       </span>
                                                       <p className="text-[9px] text-gray-500 italic mt-0.5 leading-tight">{inf.explanation}</p>
                                                       <p className="text-[9px] text-gray-400 mt-0.5 leading-tight">{inf.governanceNote}</p>
+                                                    </div>
+                                                  )
+                                                })()}
+                                                {/* Phase 20 — Inline score composition summary for scenario row */}
+                                                {scenarioData?.patternInfluences?.[plan.productId] && predictivePlanning?.scoreCompositions?.[plan.productId] && (() => {
+                                                  const comp = predictivePlanning.scoreCompositions[plan.productId]
+                                                  const compositeLabelCls: Record<string, string> = {
+                                                    high:      'text-emerald-700',
+                                                    medium:    'text-sky-700',
+                                                    low:       'text-amber-700',
+                                                    uncertain: 'text-red-600',
+                                                  }
+                                                  return (
+                                                    <div className="mb-2 bg-white/50 border border-indigo-100 rounded px-2 py-1.5 text-[9px]">
+                                                      <p className="font-semibold text-indigo-700 mb-0.5">Score composition (recommended plan)</p>
+                                                      <div className="space-y-0.5">
+                                                        {comp.contributions.map((c: any) => (
+                                                          <div key={c.label} className="flex justify-between gap-4">
+                                                            <span className="text-gray-600">{c.label}</span>
+                                                            <span className={`font-mono font-semibold ${
+                                                              c.value > 0.01 ? 'text-emerald-700' :
+                                                              c.value < -0.01 ? 'text-red-600' :
+                                                              'text-gray-500'
+                                                            }`}>{c.formatted}</span>
+                                                          </div>
+                                                        ))}
+                                                        <div className="flex justify-between gap-4 pt-0.5 border-t border-indigo-100 font-semibold">
+                                                          <span className="text-indigo-700">Composite</span>
+                                                          <span className={`font-mono ${compositeLabelCls[comp.compositeLabel] ?? ''}`}>
+                                                            {comp.finalCompositeScore.toFixed(2)} ({comp.compositeLabel})
+                                                          </span>
+                                                        </div>
+                                                      </div>
                                                     </div>
                                                   )
                                                 })()}

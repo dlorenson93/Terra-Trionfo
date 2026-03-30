@@ -32,6 +32,7 @@ import { computePredictivePlanEnrichments } from '@/lib/predictivePlanningEngine
 import { computeStrategyPatterns }          from '@/lib/strategyPatternEngine'
 import { computePatternInfluence }          from '@/lib/strategyPatternInfluenceEngine'
 import type { PatternContext }              from '@/lib/strategyPatternInfluenceEngine'
+import { computeScoreCompositions }         from '@/lib/planningScoreCompositionEngine'
 
 export const dynamic = 'force-dynamic'
 
@@ -237,5 +238,20 @@ export async function GET() {
     // Non-fatal — proceed without pattern influence
   }
 
-  return NextResponse.json({ ...output, patternInfluences })
+  // ── Phase 20: Score composition per plan ───────────────────────────────
+  let scoreCompositions: Record<string, any> = {}
+  try {
+    const compositionOutput = computeScoreCompositions(
+      plans,
+      output.enrichments ?? {},
+      patternInfluences,
+      calibration,
+      generatedAt,
+    )
+    scoreCompositions = compositionOutput.compositions
+  } catch {
+    // Non-fatal — proceed without score compositions
+  }
+
+  return NextResponse.json({ ...output, patternInfluences, scoreCompositions })
 }
