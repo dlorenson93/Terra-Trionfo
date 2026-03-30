@@ -282,6 +282,9 @@ export default function AdminDashboard() {
   // Phase 21 — planning outcome attribution & model trust
   const [planningAttribution, setPlanningAttribution] = useState<any>(null)
   const [loadingAttribution, setLoadingAttribution] = useState(false)
+  // Phase 22 — strategy execution learning & playbook candidates
+  const [strategyLearning, setStrategyLearning] = useState<any>(null)
+  const [loadingLearning, setLoadingLearning] = useState(false)
 
   useEffect(() => {
     if (!session) {
@@ -329,6 +332,9 @@ export default function AdminDashboard() {
     }
     if (activeTab === 'release-intelligence' && !planningAttribution && !loadingAttribution) {
       fetchPlanningAttribution()
+    }
+    if (activeTab === 'release-intelligence' && !strategyLearning && !loadingLearning) {
+      fetchStrategyLearning()
     }
   }, [activeTab])
 
@@ -580,6 +586,18 @@ export default function AdminDashboard() {
       console.error('Error fetching planning attribution:', error)
     } finally {
       setLoadingAttribution(false)
+    }
+  }
+
+  const fetchStrategyLearning = async () => {
+    setLoadingLearning(true)
+    try {
+      const res = await fetch('/api/admin/strategy-learning')
+      if (res.ok) setStrategyLearning(await res.json())
+    } catch (error) {
+      console.error('Error fetching strategy learning:', error)
+    } finally {
+      setLoadingLearning(false)
     }
   }
 
@@ -3875,6 +3893,47 @@ export default function AdminDashboard() {
                                                       </div>
                                                     )
                                                   })()}
+                                                  {/* Phase 22 — Playbook context */}
+                                                  {strategyLearning && (() => {
+                                                    const CONF_CLS: Record<string, string> = {
+                                                      strong:   'bg-emerald-50 text-emerald-700 border-emerald-200',
+                                                      moderate: 'bg-sky-50 text-sky-700 border-sky-200',
+                                                      limited:  'bg-gray-50 text-gray-500 border-gray-200',
+                                                    }
+                                                    const matchC = (strategyLearning.playbookCandidates ?? []).find((c: any) =>
+                                                      (c.rolloutMode      && c.rolloutMode      === plan.rolloutMode)      ||
+                                                      (c.allocationSizing && c.allocationSizing === plan.allocationSizing) ||
+                                                      (c.style            && c.style            === plan.wineStyle)        ||
+                                                      (c.region           && c.region           === plan.region),
+                                                    )
+                                                    const matchR = !matchC && (strategyLearning.riskPlaybooks ?? []).find((r: any) =>
+                                                      (r.rolloutMode      && r.rolloutMode      === plan.rolloutMode)      ||
+                                                      (r.allocationSizing && r.allocationSizing === plan.allocationSizing) ||
+                                                      (r.style            && r.style            === plan.wineStyle)        ||
+                                                      (r.region           && r.region           === plan.region),
+                                                    )
+                                                    if (!matchC && !matchR) return null
+                                                    return (
+                                                      <div className="mt-1 pt-1 border-t border-dashed border-olive-100">
+                                                        {matchC && (
+                                                          <div className="flex items-start gap-1">
+                                                            <span className={`shrink-0 text-[8px] px-1 py-0.5 rounded border font-medium ${CONF_CLS[matchC.confidence] ?? CONF_CLS.limited}`}>
+                                                              {matchC.playbookStatus === 'candidate' ? 'playbook' : 'watch'}
+                                                            </span>
+                                                            <p className="text-[9px] text-emerald-700 leading-tight">{matchC.title} — {matchC.positiveRate}% positive (n={matchC.evidenceCount})</p>
+                                                          </div>
+                                                        )}
+                                                        {matchR && (
+                                                          <div className="flex items-start gap-1">
+                                                            <span className="shrink-0 text-[8px] px-1 py-0.5 rounded border font-medium bg-amber-50 text-amber-700 border-amber-200">
+                                                              risk
+                                                            </span>
+                                                            <p className="text-[9px] text-amber-700 leading-tight">{matchR.title} — {matchR.positiveRate}% positive (n={matchR.evidenceCount})</p>
+                                                          </div>
+                                                        )}
+                                                      </div>
+                                                    )
+                                                  })()}
                                                   {/* Phase 20 — Score composition expandable */}
                                                   {predictivePlanning?.scoreCompositions?.[plan.productId] && (() => {
                                                     const comp = predictivePlanning.scoreCompositions[plan.productId]
@@ -4899,6 +4958,152 @@ export default function AdminDashboard() {
                           )}
                           <p className="text-[10px] text-olive-300 text-right mt-2">
                             Generated {new Date(pa.generatedAt).toLocaleString()}
+                          </p>
+                        </>
+                      )
+                    })()}
+                  </div>
+                )
+              })()}
+
+              {/* ── Phase 22: Strategy Execution Learning Loop ──────────── */}
+              {(() => {
+                const CONF_BADGE: Record<string, string> = {
+                  strong:       'bg-emerald-100 text-emerald-800 border border-emerald-200',
+                  moderate:     'bg-sky-100 text-sky-800 border border-sky-200',
+                  limited:      'bg-gray-100 text-gray-500 border border-gray-200',
+                }
+                const STATUS_BADGE: Record<string, string> = {
+                  candidate:    'bg-emerald-100 text-emerald-800 border border-emerald-200',
+                  watch:        'bg-amber-100 text-amber-800 border border-amber-200',
+                  insufficient: 'bg-gray-100 text-gray-400 border border-gray-200',
+                }
+                const RISK_BADGE: Record<string, string> = {
+                  warning:      'bg-red-100 text-red-800 border border-red-200',
+                  watch:        'bg-amber-100 text-amber-800 border border-amber-200',
+                  insufficient: 'bg-gray-100 text-gray-400 border border-gray-200',
+                }
+                return (
+                  <div className="rounded-xl border border-olive-200 bg-parchment-50 p-5 mb-6 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-sm font-semibold text-olive-800 tracking-wide uppercase">Strategy Execution Learning Loop</h3>
+                      <button
+                        onClick={() => { setStrategyLearning(null); setLoadingLearning(false); setTimeout(() => fetchStrategyLearning(), 50) }}
+                        className="text-[11px] text-olive-500 hover:text-olive-700 border border-olive-200 rounded px-2 py-0.5"
+                      >↻ Refresh</button>
+                    </div>
+
+                    {loadingLearning && (
+                      <div className="flex items-center gap-2 py-6 justify-center text-olive-400 text-sm">
+                        <div className="w-4 h-4 border-2 border-olive-500 border-t-transparent rounded-full animate-spin" />
+                        Synthesising playbook candidates…
+                      </div>
+                    )}
+
+                    {!loadingLearning && !strategyLearning && (
+                      <p className="text-xs text-olive-400 italic py-4 text-center">No strategy learning data yet. Playbook memory builds as planning decisions complete the full lifecycle.</p>
+                    )}
+
+                    {!loadingLearning && strategyLearning && (() => {
+                      const sl = strategyLearning
+                      const cov = sl.learningCoverage
+                      const sum = sl.executionLearningSummary
+                      return (
+                        <>
+                          {/* Coverage row */}
+                          <div className="flex flex-wrap gap-4 mb-4 text-xs text-olive-700">
+                            <span>Eligible decisions: <strong>{cov.totalEligibleDecisions}</strong></span>
+                            <span>Full lifecycle: <strong>{cov.totalWithFullLifecycle}</strong></span>
+                            <span>Coverage: <strong>{cov.coveragePercentage}%</strong></span>
+                            <span>Playbook candidates: <strong className="text-emerald-700">{cov.playbookCandidateCount}</strong></span>
+                            <span>Risk playbooks: <strong className="text-red-700">{cov.riskPlaybookCount}</strong></span>
+                            <span>Dimensions with evidence: <strong>{cov.dimensionsWithEvidence}/{cov.dimensionsAnalyzed}</strong></span>
+                          </div>
+
+                          {/* Portfolio observations */}
+                          {sum.portfolioObservations?.length > 0 && (
+                            <div className="rounded-lg bg-olive-50 border border-olive-200 px-4 py-3 mb-5 space-y-1.5">
+                              <p className="text-[10px] font-semibold text-olive-700 uppercase tracking-wide mb-1.5">Portfolio Memory</p>
+                              {sum.portfolioObservations.map((obs: string, i: number) => (
+                                <p key={i} className="text-[11px] text-olive-700 leading-snug italic">{obs}</p>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Winning Playbook Candidates */}
+                          {sl.playbookCandidates?.length > 0 && (
+                            <div className="mb-5">
+                              <p className="text-[11px] font-semibold text-olive-700 uppercase tracking-wide mb-2">Playbook Candidates</p>
+                              <div className="space-y-2">
+                                {sl.playbookCandidates.map((c: any) => (
+                                  <div key={c.id} className="border border-olive-100 rounded-lg px-3 py-2.5 bg-white">
+                                    <div className="flex items-start justify-between gap-2 mb-1">
+                                      <p className="text-[11px] font-semibold text-olive-800 leading-snug">{c.title}</p>
+                                      <div className="flex gap-1 shrink-0">
+                                        <span className={`text-[9px] px-1.5 py-0.5 rounded border font-medium ${STATUS_BADGE[c.playbookStatus] ?? STATUS_BADGE.watch}`}>
+                                          {c.playbookStatus}
+                                        </span>
+                                        <span className={`text-[9px] px-1.5 py-0.5 rounded border font-medium ${CONF_BADGE[c.confidence] ?? CONF_BADGE.limited}`}>
+                                          {c.confidence}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <p className="text-[10px] text-olive-600 leading-snug mb-1.5">{c.description}</p>
+                                    <div className="flex flex-wrap items-center gap-3 text-[10px] text-olive-600">
+                                      <span>Evidence: <strong>{c.evidenceCount}</strong></span>
+                                      <span>Positive rate: <strong className="text-emerald-700">{c.positiveRate}%</strong></span>
+                                      <span>Avg delta: <strong className={c.avgDelta > 0 ? 'text-emerald-700' : c.avgDelta < 0 ? 'text-red-600' : 'text-gray-500'}>{c.avgDelta > 0 ? '+' : ''}{c.avgDelta.toFixed(2)}</strong></span>
+                                      {c.family && <span className="text-olive-400 text-[9px]">Family {c.family}</span>}
+                                    </div>
+                                    <p className="text-[9px] text-olive-400 italic mt-1.5">{c.governanceNote}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Risk Playbooks */}
+                          {sl.riskPlaybooks?.length > 0 && (
+                            <div className="mb-5">
+                              <p className="text-[11px] font-semibold text-olive-700 uppercase tracking-wide mb-2">Risk Playbooks</p>
+                              <div className="space-y-2">
+                                {sl.riskPlaybooks.map((r: any) => (
+                                  <div key={r.id} className="border border-red-100 rounded-lg px-3 py-2.5 bg-white">
+                                    <div className="flex items-start justify-between gap-2 mb-1">
+                                      <p className="text-[11px] font-semibold text-olive-800 leading-snug">{r.title}</p>
+                                      <div className="flex gap-1 shrink-0">
+                                        <span className={`text-[9px] px-1.5 py-0.5 rounded border font-medium ${RISK_BADGE[r.riskStatus] ?? RISK_BADGE.watch}`}>
+                                          {r.riskStatus}
+                                        </span>
+                                        <span className={`text-[9px] px-1.5 py-0.5 rounded border font-medium ${CONF_BADGE[r.confidence] ?? CONF_BADGE.limited}`}>
+                                          {r.confidence}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <p className="text-[10px] text-olive-600 leading-snug mb-1.5">{r.description}</p>
+                                    <div className="flex flex-wrap items-center gap-3 text-[10px] text-olive-600">
+                                      <span>Evidence: <strong>{r.evidenceCount}</strong></span>
+                                      <span>Positive rate: <strong className="text-red-600">{r.positiveRate}%</strong></span>
+                                      <span>Negative/mixed: <strong className="text-red-600">{r.negativeRate}%</strong></span>
+                                      {r.family && <span className="text-olive-400 text-[9px]">Family {r.family}</span>}
+                                    </div>
+                                    <p className="text-[9px] text-olive-400 italic mt-1.5">{r.governanceNote}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Empty state when data exists but no patterns yet */}
+                          {sl.playbookCandidates?.length === 0 && sl.riskPlaybooks?.length === 0 && (
+                            <p className="text-xs text-olive-400 italic py-2">No patterns have crossed the minimum evidence threshold yet (n≥3, lifecycle complete). Continue recording and measuring planning decisions.</p>
+                          )}
+
+                          {sl.dataNote && (
+                            <p className="text-[10px] text-olive-400 italic mt-2">{sl.dataNote}</p>
+                          )}
+                          <p className="text-[10px] text-olive-300 text-right mt-2">
+                            Generated {new Date(sl.generatedAt).toLocaleString()}
                           </p>
                         </>
                       )
