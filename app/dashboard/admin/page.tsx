@@ -261,6 +261,9 @@ export default function AdminDashboard() {
   const [decisionsLoaded, setDecisionsLoaded] = useState(false)
   const [overridingProductId, setOverridingProductId] = useState<string | null>(null)
   const [overrideForm, setOverrideForm] = useState({ allocationSizing: '', releaseTiming: '', rolloutMode: '', notes: '' })
+  // Phase 14 — execution tracking state
+  const [executingDecisionId, setExecutingDecisionId] = useState<string | null>(null)
+  const [executionForm, setExecutionForm] = useState({ allocationSizing: '', releaseTiming: '', rolloutMode: '', notes: '' })
 
   useEffect(() => {
     if (!session) {
@@ -446,6 +449,35 @@ export default function AdminDashboard() {
       }
     } catch (error) {
       console.error('Error submitting planning decision:', error)
+    }
+  }
+
+  const submitExecution = async (
+    decisionId: string,
+    productId: string,
+    executionStatus: 'EXECUTED' | 'PARTIAL' | 'DEVIATED' | 'NOT_EXECUTED',
+    actuals?: { allocationSizing: string; releaseTiming: string; rolloutMode: string; notes: string },
+  ) => {
+    const body = {
+      executionStatus,
+      executedAllocationSizing: executionStatus === 'NOT_EXECUTED' ? null : (actuals?.allocationSizing ?? null),
+      executedReleaseTiming:    executionStatus === 'NOT_EXECUTED' ? null : (actuals?.releaseTiming    ?? null),
+      executedRolloutMode:      executionStatus === 'NOT_EXECUTED' ? null : (actuals?.rolloutMode      ?? null),
+      executionNotes:           actuals?.notes ?? null,
+    }
+    try {
+      const res = await fetch(`/api/admin/planning-decisions/${decisionId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      if (res.ok) {
+        const updated = await res.json()
+        setPlanningDecisions(prev => ({ ...prev, [productId]: updated }))
+        setExecutingDecisionId(null)
+      }
+    } catch (error) {
+      console.error('Error submitting execution:', error)
     }
   }
 
@@ -3637,15 +3669,98 @@ export default function AdminDashboard() {
                                               <p className="text-[10px] text-violet-500 italic mt-0.5">{plan.calibrationContext}</p>
                                             )}
                                           </td>
-                                          {/* Decision column */}
-                                          <td className="px-3 py-2.5 whitespace-nowrap">
+                                          {/* Decision + Execution column */}
+                                          <td className="px-3 py-2.5 min-w-[130px]">
                                             {existing ? (
                                               <div className="flex flex-col gap-1">
+                                                {/* Decision badge */}
                                                 <span className={`text-[10px] px-1.5 py-0.5 rounded border w-fit ${decisionBadge(existing.decisionStatus)}`}>
                                                   {existing.decisionStatus}
                                                 </span>
                                                 {existing.planningDecisionNotes && (
                                                   <p className="text-[10px] text-olive-400 italic">{existing.planningDecisionNotes}</p>
+                                                )}
+                                                {/* Adherence badge when execution recorded */}
+                                                {existing.planAdherence && existing.planAdherence !== 'pending' && (() => {
+                                                  const ADHERENCE_LABEL: Record<string,string> = {
+                                                    matched_recommendation:  'Followed rec.',
+                                                    matched_decision:        'Followed override',
+                                                    recommendation_restored: 'Rec. restored',
+                                                    deviated_from_decision:  'Deviated',
+                                                    partially_executed:      'Partial',
+                                                    not_executed:            'Not executed',
+                                                  }
+                                                  const ADHERENCE_COLOR: Record<string,string> = {
+                                                    matched_recommendation:  'bg-emerald-50 text-emerald-700 border border-emerald-200',
+                                                    matched_decision:        'bg-sky-50 text-sky-700 border border-sky-200',
+                                                    recommendation_restored: 'bg-violet-50 text-violet-700 border border-violet-200',
+                                                    deviated_from_decision:  'bg-red-50 text-red-700 border border-red-200',
+                                                    partially_executed:      'bg-amber-50 text-amber-700 border border-amber-200',
+                                                    not_executed:            'bg-gray-50 text-gray-500 border border-gray-200',
+                                                  }
+                                                  return (
+                                                    <span className={`text-[10px] px-1.5 py-0.5 rounded w-fit ${ADHERENCE_COLOR[existing.planAdherence] ?? 'bg-gray-50 text-gray-500 border border-gray-200'}`}>
+                                                      {ADHERENCE_LABEL[existing.planAdherence] ?? existing.planAdherence}
+                                                    </span>
+                                                  )
+                                                })()}
+                                                {/* Execution controls — only when decision is ACCEPTED or OVERRIDDEN and not yet executed */}
+                                                {['ACCEPTED','OVERRIDDEN'].includes(existing.decisionStatus) && (!existing.executionStatus || existing.executionStatus === 'PENDING') && (
+                                                  <div className="flex flex-col gap-0.5 mt-0.5">
+                                                    <button
+                                                      onClick={() => {
+                                                        const sel = existing.selectedAllocationSizing ?? plan.allocationSizing
+                                                        submitExecution(existing.id, plan.productId, 'EXECUTED', {
+                                                          allocationSizing: sel,
+                                                          releaseTiming:    existing.selectedReleaseTiming ?? plan.releaseTiming,
+                                                          rolloutMode:      existing.selectedRolloutMode   ?? plan.rolloutMode,
+                                                          notes: '',
+                                                        })
+                                                      }}
+                                                      className="text-[10px] px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded hover:bg-emerald-100"
+                                                    >
+                                                      Mark Executed
+                                                    </button>
+                                                    <button
+                                                      onClick={() => {
+                                                        setExecutingDecisionId(existing.id)
+                                                        setExecutionForm({
+                                                          allocationSizing: existing.selectedAllocationSizing ?? plan.allocationSizing,
+                                                          releaseTiming:    existing.selectedReleaseTiming    ?? plan.releaseTiming,
+                                                          rolloutMode:      existing.selectedRolloutMode      ?? plan.rolloutMode,
+                                                          notes: '',
+                                                        })
+                                                      }}
+                                                      className="text-[10px] px-2 py-0.5 bg-sky-50 text-sky-700 border border-sky-200 rounded hover:bg-sky-100"
+                                                    >
+                                                      Record Actuals
+                                                    </button>
+                                                    <button
+                                                      onClick={() => submitExecution(existing.id, plan.productId, 'NOT_EXECUTED', { allocationSizing: '', releaseTiming: '', rolloutMode: '', notes: '' })}
+                                                      className="text-[10px] px-2 py-0.5 bg-gray-50 text-gray-500 border border-gray-200 rounded hover:bg-gray-100"
+                                                    >
+                                                      Not Executed
+                                                    </button>
+                                                  </div>
+                                                )}
+                                                {/* Already executed — show what was done */}
+                                                {existing.executionStatus && existing.executionStatus !== 'PENDING' && (
+                                                  <div className="flex flex-col gap-0.5 mt-0.5">
+                                                    <span className={`text-[10px] px-1.5 py-0.5 rounded border w-fit ${
+                                                      existing.executionStatus === 'EXECUTED'     ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                                      existing.executionStatus === 'PARTIAL'      ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                                                      existing.executionStatus === 'DEVIATED'     ? 'bg-red-50 text-red-700 border-red-200' :
+                                                                                                    'bg-gray-50 text-gray-500 border-gray-200'
+                                                    }`}>
+                                                      {existing.executionStatus}
+                                                    </span>
+                                                    {existing.executionNotes && (
+                                                      <p className="text-[10px] text-olive-400 italic">{existing.executionNotes}</p>
+                                                    )}
+                                                    {existing.executedByUserName && (
+                                                      <p className="text-[10px] text-olive-300">{existing.executedByUserName}</p>
+                                                    )}
+                                                  </div>
                                                 )}
                                                 <button
                                                   onClick={() => {
@@ -3657,9 +3772,9 @@ export default function AdminDashboard() {
                                                       notes: '',
                                                     })
                                                   }}
-                                                  className="text-[10px] text-olive-400 hover:text-olive-700 underline"
+                                                  className="text-[10px] text-olive-400 hover:text-olive-700 underline mt-0.5"
                                                 >
-                                                  Revise
+                                                  Revise decision
                                                 </button>
                                               </div>
                                             ) : (
@@ -3756,6 +3871,88 @@ export default function AdminDashboard() {
                                                 </button>
                                                 <button
                                                   onClick={() => setOverridingProductId(null)}
+                                                  className="text-[11px] px-3 py-1 border border-olive-200 text-olive-500 rounded hover:bg-parchment-50"
+                                                >
+                                                  Cancel
+                                                </button>
+                                              </div>
+                                            </td>
+                                          </tr>
+                                        )}
+                                        {/* Inline Record Actuals form */}
+                                        {existing && executingDecisionId === existing.id && (
+                                          <tr key={`${plan.productId}-execution`} className="bg-sky-50 border-b border-sky-100">
+                                            <td colSpan={9} className="px-4 py-3">
+                                              <p className="text-[11px] font-medium text-sky-800 mb-2">Record actuals for {plan.wineName}</p>
+                                              <div className="flex flex-wrap gap-3 mb-2">
+                                                <div>
+                                                  <label className="text-[9px] uppercase tracking-wider text-sky-600 block mb-0.5">Actual Allocation</label>
+                                                  <select
+                                                    value={executionForm.allocationSizing}
+                                                    onChange={e => setExecutionForm(f => ({ ...f, allocationSizing: e.target.value }))}
+                                                    className="text-[11px] border border-sky-200 rounded px-2 py-1 bg-white"
+                                                  >
+                                                    {['hold_flat','modest_increase','significant_increase','reduce_exposure','maintain'].map(v => (
+                                                      <option key={v} value={v}>{SIZING_LABEL[v] ?? v}</option>
+                                                    ))}
+                                                  </select>
+                                                </div>
+                                                <div>
+                                                  <label className="text-[9px] uppercase tracking-wider text-sky-600 block mb-0.5">Actual Timing</label>
+                                                  <select
+                                                    value={executionForm.releaseTiming}
+                                                    onChange={e => setExecutionForm(f => ({ ...f, releaseTiming: e.target.value }))}
+                                                    className="text-[11px] border border-sky-200 rounded px-2 py-1 bg-white"
+                                                  >
+                                                    {['accelerate','hold_until_signal','stage_two_waves','release_trade_first','release_consumer_first','no_action'].map(v => (
+                                                      <option key={v} value={v}>{TIMING_LABEL[v] ?? v}</option>
+                                                    ))}
+                                                  </select>
+                                                </div>
+                                                <div>
+                                                  <label className="text-[9px] uppercase tracking-wider text-sky-600 block mb-0.5">Actual Rollout</label>
+                                                  <select
+                                                    value={executionForm.rolloutMode}
+                                                    onChange={e => setExecutionForm(f => ({ ...f, rolloutMode: e.target.value }))}
+                                                    className="text-[11px] border border-sky-200 rounded px-2 py-1 bg-white"
+                                                  >
+                                                    {['consumer_led','trade_led','balanced','soft_launch','allocation_first'].map(v => (
+                                                      <option key={v} value={v}>{ROLLOUT_LABEL[v] ?? v}</option>
+                                                    ))}
+                                                  </select>
+                                                </div>
+                                                <div className="flex-1 min-w-[160px]">
+                                                  <label className="text-[9px] uppercase tracking-wider text-sky-600 block mb-0.5">Notes (optional)</label>
+                                                  <input
+                                                    type="text"
+                                                    value={executionForm.notes}
+                                                    onChange={e => setExecutionForm(f => ({ ...f, notes: e.target.value }))}
+                                                    placeholder="Any deviation notes…"
+                                                    className="text-[11px] border border-sky-200 rounded px-2 py-1 bg-white w-full"
+                                                  />
+                                                </div>
+                                              </div>
+                                              <div className="flex gap-2">
+                                                <button
+                                                  onClick={() => submitExecution(existing.id, plan.productId, 'EXECUTED', executionForm)}
+                                                  className="text-[11px] px-3 py-1 bg-emerald-600 text-white rounded hover:bg-emerald-700"
+                                                >
+                                                  Mark Executed
+                                                </button>
+                                                <button
+                                                  onClick={() => submitExecution(existing.id, plan.productId, 'PARTIAL', executionForm)}
+                                                  className="text-[11px] px-3 py-1 bg-amber-500 text-white rounded hover:bg-amber-600"
+                                                >
+                                                  Mark Partial
+                                                </button>
+                                                <button
+                                                  onClick={() => submitExecution(existing.id, plan.productId, 'DEVIATED', executionForm)}
+                                                  className="text-[11px] px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                                                >
+                                                  Mark Deviated
+                                                </button>
+                                                <button
+                                                  onClick={() => setExecutingDecisionId(null)}
                                                   className="text-[11px] px-3 py-1 border border-olive-200 text-olive-500 rounded hover:bg-parchment-50"
                                                 >
                                                   Cancel

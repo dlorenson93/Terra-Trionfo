@@ -166,6 +166,15 @@ enum PlanningDecisionStatus {
   DEFERRED   // Decision postponed — revisit when signal changes
 }
 
+// Phase 14 — Execution tracking: what was actually done vs what was decided
+enum PlanExecutionStatus {
+  PENDING      // Decision made, execution not yet recorded
+  EXECUTED     // Fully executed as planned (matches selected values)
+  PARTIAL      // Some elements executed, others not
+  DEVIATED     // Executed but different from the selected plan
+  NOT_EXECUTED // Decision was made, plan was never carried out
+}
+
 model User {
   id             String    @id @default(cuid())
   name           String
@@ -411,6 +420,17 @@ model ProductPlanningDecision {
   selectedReleaseTiming    String?
   selectedRolloutMode      String?
   planningDecisionNotes    String?
+
+  // Phase 14 — Execution tracking
+  executionStatus          PlanExecutionStatus @default(PENDING)
+  executedAllocationSizing String?
+  executedReleaseTiming    String?
+  executedRolloutMode      String?
+  executionNotes           String?
+  executedAt               DateTime?
+  executedByUserId         String?   // stored without named relation to avoid dual User FK complexity
+  executedByUserName       String?   // denormalised for display
+  planAdherence            String?   // derived label: matched_recommendation | matched_decision | recommendation_restored | deviated_from_decision | partially_executed | not_executed
 
   // Audit
   plannedByUserId String

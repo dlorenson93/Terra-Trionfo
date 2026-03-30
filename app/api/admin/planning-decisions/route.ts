@@ -44,6 +44,16 @@ export async function GET() {
       signalScoreAtDecision:       true,
       inventoryAtDecision:         true,
       plannedAt:                   true,
+      // Phase 14 execution fields
+      executionStatus:             true,
+      executedAllocationSizing:    true,
+      executedReleaseTiming:       true,
+      executedRolloutMode:         true,
+      executionNotes:              true,
+      executedAt:                  true,
+      executedByUserId:            true,
+      executedByUserName:          true,
+      planAdherence:               true,
       plannedBy: {
         select: { id: true, name: true, email: true },
       },
@@ -132,6 +142,16 @@ export async function POST(req: Request) {
       signalScoreAtDecision:       true,
       inventoryAtDecision:         true,
       plannedAt:                   true,
+      // Phase 14 execution fields (null on freshly created rows)
+      executionStatus:             true,
+      executedAllocationSizing:    true,
+      executedReleaseTiming:       true,
+      executedRolloutMode:         true,
+      executionNotes:              true,
+      executedAt:                  true,
+      executedByUserId:            true,
+      executedByUserName:          true,
+      planAdherence:               true,
       plannedBy: {
         select: { id: true, name: true, email: true },
       },
