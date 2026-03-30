@@ -274,6 +274,9 @@ export default function AdminDashboard() {
   const [scenarioData, setScenarioData] = useState<any>(null)
   const [loadingScenarios, setLoadingScenarios] = useState(false)
   const [expandedScenarios, setExpandedScenarios] = useState<Set<string>>(new Set())
+  // Phase 18 — strategy pattern library
+  const [strategyPatterns, setStrategyPatterns] = useState<any>(null)
+  const [loadingPatterns, setLoadingPatterns] = useState(false)
 
   useEffect(() => {
     if (!session) {
@@ -315,6 +318,9 @@ export default function AdminDashboard() {
     }
     if (activeTab === 'release-intelligence' && !scenarioData && !loadingScenarios) {
       fetchScenarios()
+    }
+    if (activeTab === 'release-intelligence' && !strategyPatterns && !loadingPatterns) {
+      fetchStrategyPatterns()
     }
   }, [activeTab])
 
@@ -533,6 +539,18 @@ export default function AdminDashboard() {
       console.error('Error fetching scenario planning:', error)
     } finally {
       setLoadingScenarios(false)
+    }
+  }
+
+  const fetchStrategyPatterns = async () => {
+    setLoadingPatterns(true)
+    try {
+      const res = await fetch('/api/admin/strategy-patterns')
+      if (res.ok) setStrategyPatterns(await res.json())
+    } catch (error) {
+      console.error('Error fetching strategy patterns:', error)
+    } finally {
+      setLoadingPatterns(false)
     }
   }
 
@@ -4173,6 +4191,30 @@ export default function AdminDashboard() {
                                                             ))}
                                                           </ul>
                                                         )}
+                                                        {/* Phase 18 — pattern library notes for this scenario */}
+                                                        {strategyPatterns && (() => {
+                                                          const allPatterns = [
+                                                            ...(strategyPatterns.winningPatterns ?? []),
+                                                            ...(strategyPatterns.riskPatterns    ?? []),
+                                                          ]
+                                                          const relevant = allPatterns.filter((p: any) => {
+                                                            const regionMatch  = p.region     && p.region     === comparison.recommended.enrichment?.region || (plan as any).region === p.region
+                                                            const styleMatch   = p.style      && (plan as any).wineStyle     === p.style
+                                                            const rolloutMatch = p.rolloutMode && p.rolloutMode === sc.rolloutMode
+                                                            const timingMatch  = p.timing      && p.timing      === sc.releaseTiming
+                                                            return !!(regionMatch || styleMatch || rolloutMatch || timingMatch)
+                                                          }).slice(0, 2)
+                                                          if (relevant.length === 0) return null
+                                                          return (
+                                                            <div className="mt-1 pt-1 border-t border-dashed border-gray-200">
+                                                              {relevant.map((p: any) => (
+                                                                <p key={p.id} className={`text-[9px] leading-tight mt-0.5 ${p.category === 'winning' ? 'text-emerald-600' : 'text-red-500'}`}>
+                                                                  {p.category === 'winning' ? '★' : '▼'} {p.pattern}
+                                                                </p>
+                                                              ))}
+                                                            </div>
+                                                          )
+                                                        })()}
                                                       </div>
                                                     )
                                                   })}
@@ -4445,6 +4487,121 @@ export default function AdminDashboard() {
 
                           <p className="text-[10px] text-olive-300 text-right">
                             Generated {new Date(dq.generatedAt).toLocaleString()}
+                          </p>
+                        </>
+                      )
+                    })()}
+                  </div>
+                )
+              })()}
+
+              {/* ── Phase 18: Portfolio Strategy Pattern Library ─────────── */}
+              {(() => {
+                const CONF_BADGE: Record<string, string> = {
+                  strong:   'bg-emerald-50 text-emerald-700 border-emerald-200',
+                  moderate: 'bg-sky-50 text-sky-700 border-sky-200',
+                  limited:  'bg-gray-50 text-gray-500 border-gray-200',
+                }
+
+                return (
+                  <div className="mb-6">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h3 className="text-sm font-semibold text-olive-800 tracking-wide uppercase">Portfolio Strategy Pattern Library</h3>
+                        <p className="text-[11px] text-olive-400 mt-0.5">Recurring strategy patterns derived from historical decisions &amp; outcomes.</p>
+                      </div>
+                      <button
+                        onClick={() => { setStrategyPatterns(null); fetchStrategyPatterns() }}
+                        className="text-[11px] text-olive-500 hover:text-olive-800 border border-olive-200 px-2 py-1 rounded"
+                      >
+                        Refresh
+                      </button>
+                    </div>
+
+                    {loadingPatterns && (
+                      <div className="flex items-center gap-2 py-6 text-sm text-olive-400">
+                        <div className="w-4 h-4 border-2 border-olive-400 border-t-transparent rounded-full animate-spin" />
+                        Deriving strategy patterns…
+                      </div>
+                    )}
+
+                    {!loadingPatterns && !strategyPatterns && (
+                      <div className="text-sm text-olive-400 py-6 text-center border border-dashed border-olive-200 rounded">
+                        No pattern data available yet.
+                      </div>
+                    )}
+
+                    {!loadingPatterns && strategyPatterns && (() => {
+                      const sp = strategyPatterns
+                      const winning: any[] = sp.winningPatterns ?? []
+                      const risk: any[]    = sp.riskPatterns    ?? []
+
+                      return (
+                        <>
+                          {/* Portfolio insight */}
+                          <div className="bg-parchment-50 border border-olive-200 rounded px-4 py-3 mb-4">
+                            <p className="text-[11px] text-olive-600 italic">{sp.portfolioInsight}</p>
+                            <div className="flex gap-3 mt-2">
+                              <span className="text-[10px] text-emerald-700 font-medium">{winning.length} winning pattern{winning.length !== 1 ? 's' : ''}</span>
+                              <span className="text-[10px] text-olive-400">·</span>
+                              <span className="text-[10px] text-red-600 font-medium">{risk.length} risk pattern{risk.length !== 1 ? 's' : ''}</span>
+                              <span className="text-[10px] text-olive-400">·</span>
+                              <span className="text-[10px] text-olive-400">{sp.totalPatternsFound} total</span>
+                            </div>
+                          </div>
+
+                          {/* Two columns: winning + risk */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Winning patterns */}
+                            <div>
+                              <p className="text-[10px] font-semibold text-emerald-700 uppercase tracking-wider mb-2">Winning Patterns</p>
+                              {winning.length === 0 ? (
+                                <p className="text-[11px] text-olive-400 italic">No confirmed winning patterns yet — record more executions.</p>
+                              ) : (
+                                <div className="space-y-2">
+                                  {winning.map((p: any) => (
+                                    <div key={p.id} className="border border-emerald-200 bg-emerald-50 rounded px-3 py-2">
+                                      <p className="text-[11px] text-olive-800 leading-snug">{p.pattern}</p>
+                                      <div className="flex items-center gap-2 mt-1">
+                                        <span className="text-[9px] text-emerald-600 italic">{p.evidence}</span>
+                                        <span className={`text-[8px] px-1 py-0.5 rounded border ${CONF_BADGE[p.confidence] ?? CONF_BADGE.limited}`}>
+                                          {p.confidence}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Risk patterns */}
+                            <div>
+                              <p className="text-[10px] font-semibold text-red-700 uppercase tracking-wider mb-2">Risk Patterns</p>
+                              {risk.length === 0 ? (
+                                <p className="text-[11px] text-olive-400 italic">No confirmed risk patterns yet.</p>
+                              ) : (
+                                <div className="space-y-2">
+                                  {risk.map((p: any) => (
+                                    <div key={p.id} className="border border-red-200 bg-red-50 rounded px-3 py-2">
+                                      <p className="text-[11px] text-olive-800 leading-snug">{p.pattern}</p>
+                                      <div className="flex items-center gap-2 mt-1">
+                                        <span className="text-[9px] text-red-500 italic">{p.evidence}</span>
+                                        <span className={`text-[8px] px-1 py-0.5 rounded border ${CONF_BADGE[p.confidence] ?? CONF_BADGE.limited}`}>
+                                          {p.confidence}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {sp.dataNote && (
+                            <p className="text-[10px] text-olive-400 italic mt-3">{sp.dataNote}</p>
+                          )}
+                          <p className="text-[10px] text-olive-300 text-right mt-2">
+                            Generated {new Date(sp.generatedAt).toLocaleString()}
                           </p>
                         </>
                       )
