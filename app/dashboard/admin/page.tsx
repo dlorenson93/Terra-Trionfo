@@ -270,6 +270,10 @@ export default function AdminDashboard() {
   // Phase 16 — predictive planning enrichment
   const [predictivePlanning, setPredictivePlanning] = useState<any>(null)
   const [loadingPredictivePlanning, setLoadingPredictivePlanning] = useState(false)
+  // Phase 17 — scenario planning
+  const [scenarioData, setScenarioData] = useState<any>(null)
+  const [loadingScenarios, setLoadingScenarios] = useState(false)
+  const [expandedScenarios, setExpandedScenarios] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     if (!session) {
@@ -308,6 +312,9 @@ export default function AdminDashboard() {
     }
     if (activeTab === 'release-intelligence' && !predictivePlanning && !loadingPredictivePlanning) {
       fetchPredictivePlanning()
+    }
+    if (activeTab === 'release-intelligence' && !scenarioData && !loadingScenarios) {
+      fetchScenarios()
     }
   }, [activeTab])
 
@@ -515,6 +522,27 @@ export default function AdminDashboard() {
     } finally {
       setLoadingPredictivePlanning(false)
     }
+  }
+
+  const fetchScenarios = async () => {
+    setLoadingScenarios(true)
+    try {
+      const res = await fetch('/api/admin/scenario-planning')
+      if (res.ok) setScenarioData(await res.json())
+    } catch (error) {
+      console.error('Error fetching scenario planning:', error)
+    } finally {
+      setLoadingScenarios(false)
+    }
+  }
+
+  const toggleScenario = (productId: string) => {
+    setExpandedScenarios(prev => {
+      const next = new Set(prev)
+      if (next.has(productId)) next.delete(productId)
+      else next.add(productId)
+      return next
+    })
   }
 
   const fetchBiasGovernance = async () => {
@@ -3673,6 +3701,18 @@ export default function AdminDashboard() {
                                           <td className="px-3 py-2.5">
                                             <p className="font-medium text-olive-900 leading-tight">{plan.wineName}</p>
                                             <p className="text-[10px] text-olive-400">{plan.company}</p>
+                                            {scenarioData?.comparisons && (
+                                              <button
+                                                onClick={() => toggleScenario(plan.productId)}
+                                                className={`mt-1 text-[9px] px-1.5 py-0.5 rounded border ${
+                                                  expandedScenarios.has(plan.productId)
+                                                    ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                                                    : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-indigo-200 hover:text-indigo-600'
+                                                }`}
+                                              >
+                                                {expandedScenarios.has(plan.productId) ? '▲ Hide scenarios' : '▼ Compare scenarios'}
+                                              </button>
+                                            )}
                                           </td>
                                           <td className="px-3 py-2.5 text-olive-600 whitespace-nowrap">{plan.releaseStatus}</td>
                                           <td className="px-3 py-2.5">
@@ -4051,6 +4091,96 @@ export default function AdminDashboard() {
                                             </td>
                                           </tr>
                                         )}
+                                        {/* Phase 17 — Scenario comparison row */}
+                                        {expandedScenarios.has(plan.productId) && (() => {
+                                          const comparison = scenarioData?.comparisons?.find((c: any) => c.productId === plan.productId)
+                                          if (!comparison) return (
+                                            <tr key={`${plan.productId}-scenarios`} className="bg-indigo-50 border-b border-indigo-100">
+                                              <td colSpan={9} className="px-4 py-3 text-[11px] text-indigo-400 italic">
+                                                {loadingScenarios ? 'Computing scenarios…' : 'No scenario data available for this product.'}
+                                              </td>
+                                            </tr>
+                                          )
+                                          const LIKE_BADGE: Record<string,string> = {
+                                            strong:            'bg-emerald-100 text-emerald-800 border-emerald-200',
+                                            moderate:          'bg-sky-100 text-sky-800 border-sky-200',
+                                            mixed:             'bg-amber-100 text-amber-800 border-amber-200',
+                                            limited:           'bg-red-100 text-red-700 border-red-200',
+                                            insufficient_data: 'bg-gray-100 text-gray-400 border-gray-200',
+                                          }
+                                          const LIKE_LABEL: Record<string,string> = {
+                                            strong:            '▲ Strong',
+                                            moderate:          '↑ Moderate',
+                                            mixed:             '~ Mixed',
+                                            limited:           '▼ Weak',
+                                            insufficient_data: '○ No data',
+                                          }
+                                          const allScenarios = [comparison.recommended, ...comparison.alternatives]
+                                          return (
+                                            <tr key={`${plan.productId}-scenarios`} className="bg-indigo-50 border-b border-indigo-100">
+                                              <td colSpan={9} className="px-4 py-3">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                  <p className="text-[11px] font-semibold text-indigo-800">Scenario comparison — {comparison.wineName}</p>
+                                                  {comparison.bestFitLabel !== 'Recommended' && (
+                                                    <span className="text-[9px] px-1.5 py-0.5 bg-amber-100 text-amber-800 border border-amber-200 rounded">
+                                                      ⚠ Alternative stronger: {comparison.bestFitLabel}
+                                                    </span>
+                                                  )}
+                                                </div>
+                                                <p className="text-[10px] text-indigo-500 italic mb-2">{comparison.spreadNote}</p>
+                                                <div className="flex flex-wrap gap-3">
+                                                  {allScenarios.map((sc: any) => {
+                                                    const isBest = sc.label === comparison.bestFitLabel
+                                                    const isRec  = sc.label === 'Recommended'
+                                                    return (
+                                                      <div
+                                                        key={sc.label}
+                                                        className={`flex-1 min-w-[180px] max-w-[260px] rounded border p-2.5 ${
+                                                          isBest
+                                                            ? 'bg-emerald-50 border-emerald-300'
+                                                            : isRec
+                                                              ? 'bg-white border-indigo-200'
+                                                              : 'bg-white border-gray-200'
+                                                        }`}
+                                                      >
+                                                        <div className="flex items-center gap-1.5 mb-1">
+                                                          <span className="text-[10px] font-semibold text-indigo-900">{sc.label}</span>
+                                                          {isBest && <span className="text-[8px] text-emerald-600 font-medium">★ best fit</span>}
+                                                          {isRec  && !isBest && <span className="text-[8px] text-indigo-400">recommended</span>}
+                                                        </div>
+                                                        <div className="flex flex-wrap gap-1 mb-1.5">
+                                                          <span className="text-[9px] px-1 py-0.5 bg-gray-100 text-gray-600 rounded">{SIZING_LABEL[sc.allocationSizing] ?? sc.allocationSizing}</span>
+                                                          <span className="text-[9px] px-1 py-0.5 bg-gray-100 text-gray-600 rounded">{TIMING_LABEL[sc.releaseTiming] ?? sc.releaseTiming}</span>
+                                                          <span className="text-[9px] px-1 py-0.5 bg-gray-100 text-gray-600 rounded">{ROLLOUT_LABEL[sc.rolloutMode] ?? sc.rolloutMode}</span>
+                                                        </div>
+                                                        <span className={`text-[9px] px-1.5 py-0.5 rounded border font-medium ${
+                                                          LIKE_BADGE[sc.enrichment.predictedSuccessLikelihood] ?? LIKE_BADGE.insufficient_data
+                                                        }`}>
+                                                          {LIKE_LABEL[sc.enrichment.predictedSuccessLikelihood] ?? '○'}
+                                                        </span>
+                                                        <p className="text-[9px] text-gray-500 italic mt-1 leading-tight">{sc.enrichment.likelihoodNote}</p>
+                                                        {sc.enrichment.supportingFactors?.length > 0 && (
+                                                          <ul className="mt-1 space-y-0.5">
+                                                            {sc.enrichment.supportingFactors.map((f: string, i: number) => (
+                                                              <li key={i} className="text-[9px] text-emerald-700 leading-tight">+ {f}</li>
+                                                            ))}
+                                                          </ul>
+                                                        )}
+                                                        {sc.enrichment.cautionFlags?.length > 0 && (
+                                                          <ul className="mt-0.5 space-y-0.5">
+                                                            {sc.enrichment.cautionFlags.map((f: string, i: number) => (
+                                                              <li key={i} className="text-[9px] text-amber-700 leading-tight">⚠ {f}</li>
+                                                            ))}
+                                                          </ul>
+                                                        )}
+                                                      </div>
+                                                    )
+                                                  })}
+                                                </div>
+                                              </td>
+                                            </tr>
+                                          )
+                                        })()}
                                       </>
                                     )
                                   })}

@@ -92,7 +92,7 @@ function humanActionLabel(actionType: string): string {
 
 // ── Per-plan enrichment ───────────────────────────────────────────────────────
 
-function enrichOnePlan(
+export function enrichOnePlan(
   plan: AllocationPlan,
   dq:   DecisionQualityOutput | null,
   er:   EffectivenessRollupOutput | null,
