@@ -267,6 +267,9 @@ export default function AdminDashboard() {
   // Phase 15 — decision quality analytics state
   const [decisionQuality, setDecisionQuality] = useState<any>(null)
   const [loadingDecisionQuality, setLoadingDecisionQuality] = useState(false)
+  // Phase 16 — predictive planning enrichment
+  const [predictivePlanning, setPredictivePlanning] = useState<any>(null)
+  const [loadingPredictivePlanning, setLoadingPredictivePlanning] = useState(false)
 
   useEffect(() => {
     if (!session) {
@@ -302,6 +305,9 @@ export default function AdminDashboard() {
     }
     if (activeTab === 'release-intelligence' && !decisionQuality && !loadingDecisionQuality) {
       fetchDecisionQuality()
+    }
+    if (activeTab === 'release-intelligence' && !predictivePlanning && !loadingPredictivePlanning) {
+      fetchPredictivePlanning()
     }
   }, [activeTab])
 
@@ -496,6 +502,18 @@ export default function AdminDashboard() {
       console.error('Error fetching decision quality:', error)
     } finally {
       setLoadingDecisionQuality(false)
+    }
+  }
+
+  const fetchPredictivePlanning = async () => {
+    setLoadingPredictivePlanning(true)
+    try {
+      const res = await fetch('/api/admin/predictive-planning')
+      if (res.ok) setPredictivePlanning(await res.json())
+    } catch (error) {
+      console.error('Error fetching predictive planning:', error)
+    } finally {
+      setLoadingPredictivePlanning(false)
     }
   }
 
@@ -3628,7 +3646,12 @@ export default function AdminDashboard() {
                                     <th className="text-left px-3 py-2 font-medium border-b border-olive-200">Timing</th>
                                     <th className="text-left px-3 py-2 font-medium border-b border-olive-200">Rollout</th>
                                     <th className="text-center px-3 py-2 font-medium border-b border-olive-200">Conf.</th>
-                                    <th className="text-left px-3 py-2 font-medium border-b border-olive-200">Rationale</th>
+                                    <th className="text-left px-3 py-2 font-medium border-b border-olive-200">
+                                      Rationale &amp; Prediction
+                                      {loadingPredictivePlanning && (
+                                        <span className="ml-1.5 text-[8px] text-olive-300 font-normal italic">loading…</span>
+                                      )}
+                                    </th>
                                     <th className="text-left px-3 py-2 font-medium border-b border-olive-200">Decision</th>
                                   </tr>
                                 </thead>
@@ -3686,6 +3709,55 @@ export default function AdminDashboard() {
                                             {plan.calibrationContext && (
                                               <p className="text-[10px] text-violet-500 italic mt-0.5">{plan.calibrationContext}</p>
                                             )}
+                                            {/* Phase 16 — Predictive enrichment */}
+                                            {predictivePlanning?.enrichments?.[plan.productId] && (() => {
+                                              const enr = predictivePlanning.enrichments[plan.productId]
+                                              const likeBadge: Record<string, string> = {
+                                                strong:            'bg-emerald-50 text-emerald-700 border-emerald-200',
+                                                moderate:          'bg-sky-50 text-sky-700 border-sky-200',
+                                                mixed:             'bg-amber-50 text-amber-700 border-amber-200',
+                                                limited:           'bg-red-50 text-red-700 border-red-200',
+                                                insufficient_data: 'bg-gray-50 text-gray-400 border-gray-200',
+                                              }
+                                              const likeLabel: Record<string, string> = {
+                                                strong:            '▲ Strong signal',
+                                                moderate:          '↑ Moderate signal',
+                                                mixed:             '~ Mixed signal',
+                                                limited:           '▼ Weak signal',
+                                                insufficient_data: '○ Insufficient data',
+                                              }
+                                              const badgeCls = likeBadge[enr.predictedSuccessLikelihood] ?? likeBadge.insufficient_data
+                                              return (
+                                                <div className="mt-1.5 pt-1.5 border-t border-olive-100">
+                                                  <div className="flex items-center gap-1.5 mb-0.5">
+                                                    <span className={`text-[9px] px-1.5 py-0.5 rounded border font-medium ${badgeCls}`}>
+                                                      {likeLabel[enr.predictedSuccessLikelihood] ?? '○'}
+                                                    </span>
+                                                    {enr.confidenceAdjustment === 'raise' && (
+                                                      <span className="text-[9px] text-emerald-600 font-medium">↑ raise conf.</span>
+                                                    )}
+                                                    {enr.confidenceAdjustment === 'lower' && (
+                                                      <span className="text-[9px] text-red-500 font-medium">↓ lower conf.</span>
+                                                    )}
+                                                  </div>
+                                                  <p className="text-[10px] text-olive-500 italic leading-tight">{enr.likelihoodNote}</p>
+                                                  {enr.supportingFactors.length > 0 && (
+                                                    <ul className="mt-0.5 space-y-0.5">
+                                                      {enr.supportingFactors.map((f: string, i: number) => (
+                                                        <li key={i} className="text-[9px] text-emerald-700 leading-tight">+ {f}</li>
+                                                      ))}
+                                                    </ul>
+                                                  )}
+                                                  {enr.cautionFlags.length > 0 && (
+                                                    <ul className="mt-0.5 space-y-0.5">
+                                                      {enr.cautionFlags.map((f: string, i: number) => (
+                                                        <li key={i} className="text-[9px] text-amber-700 leading-tight">⚠ {f}</li>
+                                                      ))}
+                                                    </ul>
+                                                  )}
+                                                </div>
+                                              )
+                                            })()}
                                           </td>
                                           {/* Decision + Execution column */}
                                           <td className="px-3 py-2.5 min-w-[130px]">
