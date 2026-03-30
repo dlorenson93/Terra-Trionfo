@@ -54,6 +54,13 @@ export async function GET() {
       executedByUserId:            true,
       executedByUserName:          true,
       planAdherence:               true,
+      // Phase 21 composition snapshot
+      compositeBaseConfidence:     true,
+      compositeBiasAdjustment:     true,
+      compositePredictiveNudge:    true,
+      compositePatternDelta:       true,
+      compositeFinalScore:         true,
+      compositeLabel:              true,
       plannedBy: {
         select: { id: true, name: true, email: true },
       },
@@ -86,6 +93,13 @@ export async function POST(req: Request) {
     selectedReleaseTiming,
     selectedRolloutMode,
     planningDecisionNotes,
+    // Phase 21 — composition snapshot (optional; omitted by clients that don't have it)
+    compositeBaseConfidence,
+    compositeBiasAdjustment,
+    compositePredictiveNudge,
+    compositePatternDelta,
+    compositeFinalScore,
+    compositeLabel,
   } = body
 
   // Validate required fields
@@ -125,6 +139,13 @@ export async function POST(req: Request) {
       selectedReleaseTiming:    selectedReleaseTiming    ?? null,
       selectedRolloutMode:      selectedRolloutMode      ?? null,
       planningDecisionNotes:    planningDecisionNotes    ?? null,
+      // Phase 21 — composition snapshot
+      compositeBaseConfidence:  compositeBaseConfidence  ?? null,
+      compositeBiasAdjustment:  compositeBiasAdjustment  ?? null,
+      compositePredictiveNudge: compositePredictiveNudge ?? null,
+      compositePatternDelta:    compositePatternDelta    ?? null,
+      compositeFinalScore:      compositeFinalScore      ?? null,
+      compositeLabel:           compositeLabel           ?? null,
       plannedByUserId: userId,
     },
     select: {
@@ -152,6 +173,13 @@ export async function POST(req: Request) {
       executedByUserId:            true,
       executedByUserName:          true,
       planAdherence:               true,
+      // Phase 21 composition snapshot
+      compositeBaseConfidence:     true,
+      compositeBiasAdjustment:     true,
+      compositePredictiveNudge:    true,
+      compositePatternDelta:       true,
+      compositeFinalScore:         true,
+      compositeLabel:              true,
       plannedBy: {
         select: { id: true, name: true, email: true },
       },

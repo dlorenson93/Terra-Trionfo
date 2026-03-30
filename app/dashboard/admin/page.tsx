@@ -279,6 +279,9 @@ export default function AdminDashboard() {
   const [loadingPatterns, setLoadingPatterns] = useState(false)
   // Phase 20 — expandable score composition per product
   const [expandedCompositions, setExpandedCompositions] = useState<Set<string>>(new Set())
+  // Phase 21 — planning outcome attribution & model trust
+  const [planningAttribution, setPlanningAttribution] = useState<any>(null)
+  const [loadingAttribution, setLoadingAttribution] = useState(false)
 
   useEffect(() => {
     if (!session) {
@@ -323,6 +326,9 @@ export default function AdminDashboard() {
     }
     if (activeTab === 'release-intelligence' && !strategyPatterns && !loadingPatterns) {
       fetchStrategyPatterns()
+    }
+    if (activeTab === 'release-intelligence' && !planningAttribution && !loadingAttribution) {
+      fetchPlanningAttribution()
     }
   }, [activeTab])
 
@@ -462,6 +468,15 @@ export default function AdminDashboard() {
       selectedReleaseTiming:       decisionStatus === 'ACCEPTED' ? plan.releaseTiming    : (override?.releaseTiming    ?? null),
       selectedRolloutMode:         decisionStatus === 'ACCEPTED' ? plan.rolloutMode      : (override?.rolloutMode      ?? null),
       planningDecisionNotes:       override?.notes ?? null,
+      // Phase 21 — persist composition snapshot at decision time
+      ...(predictivePlanning?.scoreCompositions?.[plan.productId] ? {
+        compositeBaseConfidence:  predictivePlanning.scoreCompositions[plan.productId].baseConfidenceScore,
+        compositeBiasAdjustment:  predictivePlanning.scoreCompositions[plan.productId].biasAdjustment,
+        compositePredictiveNudge: predictivePlanning.scoreCompositions[plan.productId].predictiveNudge,
+        compositePatternDelta:    predictivePlanning.scoreCompositions[plan.productId].patternInfluenceDelta,
+        compositeFinalScore:      predictivePlanning.scoreCompositions[plan.productId].finalCompositeScore,
+        compositeLabel:           predictivePlanning.scoreCompositions[plan.productId].compositeLabel,
+      } : {}),
     }
     try {
       const res = await fetch('/api/admin/planning-decisions', {
@@ -553,6 +568,18 @@ export default function AdminDashboard() {
       console.error('Error fetching strategy patterns:', error)
     } finally {
       setLoadingPatterns(false)
+    }
+  }
+
+  const fetchPlanningAttribution = async () => {
+    setLoadingAttribution(true)
+    try {
+      const res = await fetch('/api/admin/planning-attribution')
+      if (res.ok) setPlanningAttribution(await res.json())
+    } catch (error) {
+      console.error('Error fetching planning attribution:', error)
+    } finally {
+      setLoadingAttribution(false)
     }
   }
 
@@ -4741,6 +4768,137 @@ export default function AdminDashboard() {
                           )}
                           <p className="text-[10px] text-olive-300 text-right mt-2">
                             Generated {new Date(sp.generatedAt).toLocaleString()}
+                          </p>
+                        </>
+                      )
+                    })()}
+                  </div>
+                )
+              })()}
+
+              {/* ── Phase 21: Planning Trust & Attribution ─────────────────── */}
+              {(() => {
+                const RELIABILITY_BADGE: Record<string, string> = {
+                  helpful:      'bg-emerald-100 text-emerald-800 border border-emerald-200',
+                  noisy:        'bg-amber-100 text-amber-800 border border-amber-200',
+                  harmful:      'bg-red-100 text-red-800 border border-red-200',
+                  insufficient: 'bg-gray-100 text-gray-500 border border-gray-200',
+                }
+                return (
+                  <div className="rounded-xl border border-olive-200 bg-parchment-50 p-5 mb-6 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-sm font-semibold text-olive-800 tracking-wide uppercase">Planning Trust &amp; Attribution</h3>
+                      <button
+                        onClick={() => { setPlanningAttribution(null); setLoadingAttribution(false); setTimeout(() => fetchPlanningAttribution(), 50) }}
+                        className="text-[11px] text-olive-500 hover:text-olive-700 border border-olive-200 rounded px-2 py-0.5"
+                      >↻ Refresh</button>
+                    </div>
+
+                    {loadingAttribution && (
+                      <div className="flex items-center gap-2 py-6 justify-center text-olive-400 text-sm">
+                        <div className="w-4 h-4 border-2 border-olive-500 border-t-transparent rounded-full animate-spin" />
+                        Computing attribution rollups…
+                      </div>
+                    )}
+
+                    {!loadingAttribution && !planningAttribution && (
+                      <p className="text-xs text-olive-400 italic py-4 text-center">No attribution data available yet. Submit planning decisions to build history.</p>
+                    )}
+
+                    {!loadingAttribution && planningAttribution && (() => {
+                      const pa = planningAttribution
+                      return (
+                        <>
+                          {/* Summary row */}
+                          <div className="flex flex-wrap gap-4 mb-4 text-xs text-olive-700">
+                            <span>Decisions with snapshot: <strong>{pa.summary?.totalWithSnapshot ?? 0}</strong></span>
+                            <span>With outcome: <strong>{pa.summary?.totalWithOutcome ?? 0}</strong></span>
+                            {pa.summary?.overallPositiveRate != null && (
+                              <span>Overall positive rate: <strong>{pa.summary.overallPositiveRate}%</strong></span>
+                            )}
+                          </div>
+
+                          {pa.summary?.compositeCalibrationNote && (
+                            <p className="text-[11px] text-olive-600 italic mb-4">{pa.summary.compositeCalibrationNote}</p>
+                          )}
+
+                          {/* Tier accuracy table */}
+                          {pa.tierAccuracy?.length > 0 && (
+                            <div className="mb-5">
+                              <p className="text-[11px] font-semibold text-olive-700 uppercase tracking-wide mb-2">Composite Score Tier Accuracy</p>
+                              <table className="w-full text-[11px]">
+                                <thead>
+                                  <tr className="text-olive-500 border-b border-olive-100">
+                                    <th className="text-left pb-1 font-medium">Tier</th>
+                                    <th className="text-center pb-1 font-medium">Attributed</th>
+                                    <th className="text-center pb-1 font-medium">Positive Rate</th>
+                                    <th className="text-left pb-1 font-medium pl-2">Note</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {pa.tierAccuracy.map((row: any) => (
+                                    <tr key={row.tier} className="border-b border-olive-50">
+                                      <td className="py-1 capitalize font-medium text-olive-800">{row.tier}</td>
+                                      <td className="py-1 text-center text-olive-600">{row.count}</td>
+                                      <td className="py-1 text-center text-olive-700 font-semibold">
+                                        {row.count > 0 ? `${row.positiveRate}%` : '—'}
+                                      </td>
+                                      <td className="py-1 pl-2 text-olive-500 italic">{row.calibrationNote}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+
+                          {/* Contributor reliability */}
+                          {pa.contributorAccuracy?.length > 0 && (
+                            <div className="mb-5">
+                              <p className="text-[11px] font-semibold text-olive-700 uppercase tracking-wide mb-2">Contributor Reliability</p>
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                {pa.contributorAccuracy.map((c: any) => (
+                                  <div key={c.contributor} className="border border-olive-100 rounded-lg p-3 bg-white">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <span className="text-[11px] font-semibold text-olive-800 capitalize">{c.contributor}</span>
+                                      <span className={`text-[9px] px-1.5 py-0.5 rounded border font-medium ${RELIABILITY_BADGE[c.directionality] ?? RELIABILITY_BADGE.insufficient}`}>
+                                        {c.directionality}
+                                      </span>
+                                    </div>
+                                    <div className="space-y-0.5 text-[10px] text-olive-600">
+                                      <div className="flex justify-between">
+                                        <span>Active (+)</span>
+                                        <span>{c.sampleWhenActive > 0 ? `${c.rateWhenActive}% (n=${c.sampleWhenActive})` : '—'}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span>Neutral (0)</span>
+                                        <span>{c.sampleWhenNeutral > 0 ? `${c.rateWhenNeutral}% (n=${c.sampleWhenNeutral})` : '—'}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span>Drag (−)</span>
+                                        <span>{c.sampleWhenNegative > 0 ? `${c.rateWhenNegative}% (n=${c.sampleWhenNegative})` : '—'}</span>
+                                      </div>
+                                    </div>
+                                    {c.reliabilityNote && (
+                                      <p className="text-[9px] text-olive-400 italic mt-2 border-t border-olive-50 pt-1.5">{c.reliabilityNote}</p>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Model trust note */}
+                          {pa.modelTrustNote && (
+                            <div className="rounded-lg bg-olive-50 border border-olive-200 px-4 py-2.5 text-[11px] text-olive-700 italic">
+                              {pa.modelTrustNote}
+                            </div>
+                          )}
+
+                          {pa.dataNote && (
+                            <p className="text-[10px] text-olive-400 italic mt-3">{pa.dataNote}</p>
+                          )}
+                          <p className="text-[10px] text-olive-300 text-right mt-2">
+                            Generated {new Date(pa.generatedAt).toLocaleString()}
                           </p>
                         </>
                       )

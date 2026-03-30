@@ -432,6 +432,15 @@ model ProductPlanningDecision {
   executedByUserName       String?   // denormalised for display
   planAdherence            String?   // derived label: matched_recommendation | matched_decision | recommendation_restored | deviated_from_decision | partially_executed | not_executed
 
+  // Phase 21 — Score composition snapshot at decision time
+  // Persisted so attribution rollups can compare planned confidence vs actual outcome.
+  compositeBaseConfidence  Float?   // 0.40 / 0.60 / 0.80 from planConfidence
+  compositeBiasAdjustment  Float?   // bounded ±0.06 from portfolio calibration
+  compositePredictiveNudge Float?   // bounded ±0.08 from predictive likelihood
+  compositePatternDelta    Float?   // bounded ±0.08 from pattern influence engine
+  compositeFinalScore      Float?   // clamped [0.05, 0.99]
+  compositeLabel           String?  // 'high' | 'medium' | 'low' | 'uncertain'
+
   // Audit
   plannedByUserId String
   plannedBy       User    @relation(fields: [plannedByUserId], references: [id])
