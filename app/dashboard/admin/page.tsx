@@ -285,6 +285,9 @@ export default function AdminDashboard() {
   // Phase 22 — strategy execution learning & playbook candidates
   const [strategyLearning, setStrategyLearning] = useState<any>(null)
   const [loadingLearning, setLoadingLearning] = useState(false)
+  // Phase 23 — portfolio forecasting & import opportunity layer
+  const [portfolioForecasting, setPortfolioForecasting] = useState<any>(null)
+  const [loadingForecasting, setLoadingForecasting] = useState(false)
 
   useEffect(() => {
     if (!session) {
@@ -335,6 +338,9 @@ export default function AdminDashboard() {
     }
     if (activeTab === 'release-intelligence' && !strategyLearning && !loadingLearning) {
       fetchStrategyLearning()
+    }
+    if (activeTab === 'release-intelligence' && !portfolioForecasting && !loadingForecasting) {
+      fetchPortfolioForecasting()
     }
   }, [activeTab])
 
@@ -598,6 +604,18 @@ export default function AdminDashboard() {
       console.error('Error fetching strategy learning:', error)
     } finally {
       setLoadingLearning(false)
+    }
+  }
+
+  const fetchPortfolioForecasting = async () => {
+    setLoadingForecasting(true)
+    try {
+      const res = await fetch('/api/admin/portfolio-forecasting')
+      if (res.ok) setPortfolioForecasting(await res.json())
+    } catch (error) {
+      console.error('Error fetching portfolio forecasting:', error)
+    } finally {
+      setLoadingForecasting(false)
     }
   }
 
@@ -5108,6 +5126,266 @@ export default function AdminDashboard() {
                         </>
                       )
                     })()}
+                  </div>
+                )
+              })()}
+
+              {/* ── Phase 23: Portfolio Forecasting & Import Opportunity Layer ── */}
+              {loadingForecasting && (
+                <div className="bg-white border border-olive-200 p-6 flex items-center gap-3">
+                  <div className="w-4 h-4 border-2 border-olive-600 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                  <p className="text-sm text-olive-500">Computing portfolio forecasting…</p>
+                </div>
+              )}
+              {!loadingForecasting && portfolioForecasting && (() => {
+                const pf = portfolioForecasting
+                const fs = pf.forecastingSummary
+
+                const signalBadge = (signal: string) => {
+                  if (signal === 'strong' || signal === 'opportunity')
+                    return 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                  if (signal === 'moderate' || signal === 'watch')
+                    return 'bg-amber-100 text-amber-800 border border-amber-200'
+                  return 'bg-parchment-100 text-olive-500 border border-olive-200'
+                }
+
+                const channelBadge = (ctx: string) => {
+                  if (ctx === 'trade-led')    return 'bg-violet-100 text-violet-700 border border-violet-200'
+                  if (ctx === 'consumer-led') return 'bg-sky-100 text-sky-700 border border-sky-200'
+                  if (ctx === 'balanced')     return 'bg-teal-50 text-teal-700 border border-teal-200'
+                  return 'bg-parchment-100 text-olive-400 border border-olive-200'
+                }
+
+                return (
+                  <div className="bg-white border border-olive-200 p-6 space-y-6">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <h2 className="text-base font-semibold text-olive-900">Portfolio Forecasting <span className="text-olive-400 font-light">&amp;</span> Import Opportunity Layer</h2>
+                        <p className="text-xs text-olive-500 mt-0.5">Forward-looking guidance synthesised from demand signals, effectiveness history, and strategy playbooks.</p>
+                      </div>
+                      <span className="text-[10px] font-medium uppercase tracking-widest text-olive-400 border border-olive-200 px-2 py-1 flex-shrink-0">Phase 23</span>
+                    </div>
+
+                    {/* Summary cards */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {[
+                        { label: 'Import Opportunities', value: fs.totalOpportunitySignals, color: 'border-emerald-200 bg-emerald-50' },
+                        { label: 'Portfolio Gaps',        value: fs.totalGapSignals,         color: 'border-amber-200 bg-amber-50' },
+                        { label: 'Expansion Regions',     value: fs.totalExpansionSignals,    color: 'border-sky-200 bg-sky-50' },
+                        { label: 'Tier Opportunities',    value: pf.priceTierOpportunities?.filter((t: any) => t.signal === 'opportunity').length ?? 0, color: 'border-violet-200 bg-violet-50' },
+                      ].map((card) => (
+                        <div key={card.label} className={`border ${card.color} p-4`}>
+                          <p className="text-[10px] font-medium text-olive-500 uppercase tracking-wider mb-1">{card.label}</p>
+                          <p className="text-3xl font-serif font-bold text-olive-900">{card.value}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Portfolio observations */}
+                    {fs.portfolioObservations?.length > 0 && (
+                      <div className="bg-parchment-50 border border-olive-200 p-4 space-y-2">
+                        <p className="text-[10px] font-semibold uppercase tracking-widest text-olive-500 mb-2">Portfolio Observations</p>
+                        {fs.portfolioObservations.map((obs: string, i: number) => (
+                          <p key={i} className="text-xs text-olive-700 leading-relaxed border-l-2 border-olive-300 pl-3">{obs}</p>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Import Opportunity Signals */}
+                    {pf.importOpportunities?.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-semibold text-olive-900 mb-3">Import Opportunity Signals</h3>
+                        <div className="space-y-3">
+                          {pf.importOpportunities.map((sig: any) => (
+                            <div key={sig.id} className="border border-olive-200 p-4 bg-white">
+                              <div className="flex items-start justify-between gap-3 mb-2">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="text-sm font-semibold text-olive-900">{sig.style}</span>
+                                  <span className="text-[10px] font-medium px-1.5 py-0.5 bg-olive-100 text-olive-600 border border-olive-200">{sig.priceTierLabel}</span>
+                                  <span className={`text-[10px] font-medium px-1.5 py-0.5 ${signalBadge(sig.opportunityScore >= 3 ? 'opportunity' : 'watch')}`}>
+                                    Score {sig.opportunityScore}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
+                                  {sig.playbookBacked && (
+                                    <span className="text-[9px] font-medium px-1.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 uppercase tracking-wider">Playbook</span>
+                                  )}
+                                  {sig.tradeLeading && (
+                                    <span className="text-[9px] font-medium px-1.5 py-0.5 bg-violet-50 text-violet-700 border border-violet-200 uppercase tracking-wider">Trade-led</span>
+                                  )}
+                                  {sig.consumerBuilding && (
+                                    <span className="text-[9px] font-medium px-1.5 py-0.5 bg-sky-50 text-sky-700 border border-sky-200 uppercase tracking-wider">Consumer building</span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-4 text-[10px] text-olive-500 mb-2">
+                                <span>Demand: <strong className="text-olive-700">{sig.demandLevel}</strong></span>
+                                {sig.effectivenessRate !== null
+                                  ? <span>Effectiveness: <strong className="text-olive-700">{sig.effectivenessRate}%</strong> positive</span>
+                                  : <span className="text-olive-400 italic">No effectiveness history</span>
+                                }
+                                <span>Portfolio depth: <strong className="text-olive-700">{sig.portfolioDepth}</strong></span>
+                              </div>
+                              <ul className="space-y-0.5">
+                                {sig.rationale.map((r: string, i: number) => (
+                                  <li key={i} className="text-[11px] text-olive-600 leading-snug">— {r}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Style Deepening Signals */}
+                    {pf.styleDeepeningSignals?.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-semibold text-olive-900 mb-3">Style Deepening Signals</h3>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-xs">
+                            <thead>
+                              <tr className="border-b border-olive-200">
+                                <th className="text-left py-2 pr-4 font-medium text-olive-500 uppercase tracking-wider text-[10px]">Style</th>
+                                <th className="text-left py-2 pr-4 font-medium text-olive-500 uppercase tracking-wider text-[10px]">Signal</th>
+                                <th className="text-left py-2 pr-4 font-medium text-olive-500 uppercase tracking-wider text-[10px]">Channel</th>
+                                <th className="text-left py-2 pr-4 font-medium text-olive-500 uppercase tracking-wider text-[10px]">Effectiveness</th>
+                                <th className="text-left py-2 pr-4 font-medium text-olive-500 uppercase tracking-wider text-[10px]">Depth</th>
+                                <th className="text-left py-2 font-medium text-olive-500 uppercase tracking-wider text-[10px]">Concentration</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {pf.styleDeepeningSignals.map((sig: any) => (
+                                <tr key={sig.id} className="border-b border-parchment-100 last:border-0">
+                                  <td className="py-2 pr-4 font-medium text-olive-900">
+                                    {sig.style}
+                                    {sig.playbookBacked && <span className="ml-1.5 text-[9px] text-emerald-600 font-medium">▲ playbook</span>}
+                                  </td>
+                                  <td className="py-2 pr-4">
+                                    <span className={`text-[10px] px-1.5 py-0.5 font-medium ${signalBadge(sig.signalLabel === 'strong demand' ? 'strong' : 'moderate')}`}>
+                                      {sig.signalLabel}
+                                    </span>
+                                  </td>
+                                  <td className="py-2 pr-4">
+                                    <span className={`text-[10px] px-1.5 py-0.5 font-medium ${channelBadge(sig.channelContext)}`}>
+                                      {sig.channelContext}
+                                    </span>
+                                  </td>
+                                  <td className="py-2 pr-4 text-olive-600">
+                                    {sig.effectivenessRate !== null ? `${sig.effectivenessRate}%` : <span className="text-olive-300 italic">none</span>}
+                                  </td>
+                                  <td className="py-2 pr-4 text-olive-600">{sig.currentDepth}</td>
+                                  <td className="py-2 text-olive-600">{sig.demandConcentration.toFixed(1)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Region Expansion Signals */}
+                    {pf.regionExpansionSignals?.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-semibold text-olive-900 mb-3">Region Expansion Signals</h3>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-xs">
+                            <thead>
+                              <tr className="border-b border-olive-200">
+                                <th className="text-left py-2 pr-4 font-medium text-olive-500 uppercase tracking-wider text-[10px]">Region</th>
+                                <th className="text-left py-2 pr-4 font-medium text-olive-500 uppercase tracking-wider text-[10px]">Signal</th>
+                                <th className="text-left py-2 pr-4 font-medium text-olive-500 uppercase tracking-wider text-[10px]">Demand</th>
+                                <th className="text-left py-2 pr-4 font-medium text-olive-500 uppercase tracking-wider text-[10px]">Trend</th>
+                                <th className="text-left py-2 pr-4 font-medium text-olive-500 uppercase tracking-wider text-[10px]">Effectiveness</th>
+                                <th className="text-left py-2 font-medium text-olive-500 uppercase tracking-wider text-[10px]">Depth</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {pf.regionExpansionSignals.map((sig: any) => (
+                                <tr key={sig.id} className="border-b border-parchment-100 last:border-0">
+                                  <td className="py-2 pr-4 font-medium text-olive-900">
+                                    {sig.displayName}
+                                    {sig.playbookBacked && <span className="ml-1.5 text-[9px] text-emerald-600 font-medium">▲ playbook</span>}
+                                  </td>
+                                  <td className="py-2 pr-4">
+                                    <span className={`text-[10px] px-1.5 py-0.5 font-medium ${signalBadge(sig.signal)}`}>
+                                      {sig.signal}
+                                    </span>
+                                  </td>
+                                  <td className="py-2 pr-4 text-olive-600">{sig.demandLevel}</td>
+                                  <td className="py-2 pr-4 text-olive-600">{sig.trend}</td>
+                                  <td className="py-2 pr-4 text-olive-600">
+                                    {sig.effectivenessRate !== null ? `${sig.effectivenessRate}%` : <span className="text-olive-300 italic">none</span>}
+                                  </td>
+                                  <td className="py-2 text-olive-600">{sig.currentDepth}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Price Tier Opportunities */}
+                    {pf.priceTierOpportunities?.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-semibold text-olive-900 mb-3">Price-Tier Opportunity Signals</h3>
+                        <div className="space-y-2">
+                          {pf.priceTierOpportunities.map((sig: any) => (
+                            <div key={sig.id} className="flex items-start gap-4 py-3 border-b border-parchment-100 last:border-0">
+                              <div className="flex-shrink-0 w-24">
+                                <p className="text-sm font-semibold text-olive-900">{sig.label}</p>
+                                <span className={`text-[10px] font-medium px-1.5 py-0.5 ${signalBadge(sig.signal)}`}>
+                                  {sig.signal}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-4 text-[10px] text-olive-500 flex-wrap flex-1">
+                                <span>Conversion: <strong className="text-olive-700">{sig.conversionStrength}</strong></span>
+                                <span>Waitlists: <strong className="text-olive-700">{sig.totalWaitlists}</strong></span>
+                                <span>Purchases: <strong className="text-olive-700">{sig.totalPurchases}</strong></span>
+                                <span>Depth: <strong className="text-olive-700">{sig.currentDepth}</strong></span>
+                                {sig.effectivenessRate !== null && (
+                                  <span>Eff: <strong className="text-olive-700">{sig.effectivenessRate}%</strong></span>
+                                )}
+                              </div>
+                              <ul className="flex-1 space-y-0.5 hidden sm:block">
+                                {sig.rationale.map((r: string, i: number) => (
+                                  <li key={i} className="text-[10px] text-olive-500 leading-snug">— {r}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Portfolio Gap Signals */}
+                    {pf.portfolioGaps?.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-semibold text-olive-900 mb-3">Portfolio Gap Signals</h3>
+                        <div className="space-y-1">
+                          {pf.portfolioGaps.map((gap: any) => (
+                            <div key={gap.id} className="flex items-start gap-3 py-2 border-b border-parchment-100 last:border-0">
+                              <span className={`mt-0.5 flex-shrink-0 text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 ${
+                                gap.dimension === 'region'    ? 'bg-sky-50 text-sky-700 border border-sky-200' :
+                                gap.dimension === 'style'     ? 'bg-violet-50 text-violet-700 border border-violet-200' :
+                                'bg-amber-50 text-amber-700 border border-amber-200'
+                              }`}>{gap.dimension}</span>
+                              <div>
+                                <p className="text-xs font-medium text-olive-800">{gap.label}</p>
+                                <p className="text-[11px] text-olive-500 leading-snug">{gap.gapDescription}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {pf.dataNote && (
+                      <p className="text-[10px] text-olive-400 italic">{pf.dataNote}</p>
+                    )}
+                    <p className="text-[10px] text-olive-300 text-right">
+                      Generated {new Date(pf.generatedAt).toLocaleString()}
+                    </p>
                   </div>
                 )
               })()}
