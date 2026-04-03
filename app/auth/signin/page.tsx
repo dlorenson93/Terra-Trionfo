@@ -93,6 +93,12 @@ function SignInForm() {
         >
           {loading ? 'Signing in...' : 'Sign In'}
         </button>
+
+        <div className="text-right">
+          <Link href="/auth/forgot-password" className="text-sm text-olive-600 hover:text-olive-900 hover:underline">
+            Forgot your password?
+          </Link>
+        </div>
       </form>
 
       <div className="mt-6 text-center">

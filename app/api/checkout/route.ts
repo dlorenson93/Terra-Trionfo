@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { stripe } from '@/lib/stripe'
 import { checkoutSchema } from '@/lib/validation/checkout'
 
 export const dynamic = 'force-dynamic'
@@ -58,14 +59,14 @@ export async function POST(request: Request) {
     }
 
     // local delivery validation — route-based
-    let deliveryFee = 0
+    let deliveryFeeCents = 0
     if (fulfillmentType === 'LOCAL_DELIVERY') {
       if (!zoneId || !scheduledDate) {
         return NextResponse.json({ error: 'Delivery zone and scheduled date are required' }, { status: 400 })
       }
 
       const date = new Date(scheduledDate)
-      const weekday = date.getDay() // 0=Sun, 1=Mon, ..., 6=Sat
+      const weekday = date.getDay()
 
       const route = await (prisma as any).deliveryRoute.findFirst({
         where: { zoneId, deliveryDay: weekday, isActive: true },
@@ -79,7 +80,7 @@ export async function POST(request: Request) {
         }, { status: 400 })
       }
 
-      deliveryFee = settings?.deliveryFeeCents || 0
+      deliveryFeeCents = settings?.deliveryFeeCents || 0
     }
 
     // pickup validation — schedule-based
@@ -104,22 +105,23 @@ export async function POST(request: Request) {
       }
     }
 
-    // calculate totals in dollars for order
-    const total = items.reduce((sum, item) => {
-      const prodRaw = products.find((p) => p.id === item.productId)!
-      const prod = prodRaw as any
-      return sum + (prod.retailPriceCents / 100) * item.quantity
+    // calculate totals in cents for Stripe and in dollars for DB
+    const itemsTotal = items.reduce((sum, item) => {
+      const prod = products.find((p) => p.id === item.productId)! as any
+      return sum + prod.retailPriceCents * item.quantity
     }, 0)
+    const totalDollars = (itemsTotal + deliveryFeeCents) / 100
 
-    // perform transactional write: create order, items, decrement inventory
+    // Create pending order in DB — no inventory decrement here.
+    // Inventory decrements only after Stripe confirms payment via webhook.
     const order = await prisma.$transaction(async (tx) => {
-      const newOrder = await tx.order.create({
+      return tx.order.create({
         data: {
           userId: session.user.id,
-          total,
+          total: totalDollars,
           status: 'PENDING',
           fulfillmentType: fulfillmentType as any,
-          deliveryFeeCents: deliveryFee,
+          deliveryFeeCents,
           scheduledDeliveryDate: scheduledDate ? new Date(scheduledDate) : null,
           pickupLocationId: fulfillmentType === 'PICKUP' ? pickupLocationId : null,
           orderItems: {
@@ -135,19 +137,55 @@ export async function POST(request: Request) {
           },
         } as any,
       })
-
-      // decrement inventory
-      for (const item of items) {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: { inventory: { decrement: item.quantity } },
-        })
-      }
-
-      return newOrder
     })
 
-    return NextResponse.json({ success: true, orderId: order.id })
+    // Build Stripe line items
+    const origin = request.headers.get('origin') || process.env.NEXTAUTH_URL || 'https://terratrionfo.com'
+
+    const lineItems = items.map((item) => {
+      const prod = products.find((p) => p.id === item.productId)! as any
+      return {
+        price_data: {
+          currency: 'usd',
+          unit_amount: prod.retailPriceCents,
+          product_data: {
+            name: prod.name,
+            ...(prod.imageUrl ? { images: [prod.imageUrl] } : {}),
+          },
+        },
+        quantity: item.quantity,
+      }
+    })
+
+    // Add delivery fee as a separate line item if applicable
+    if (deliveryFeeCents > 0) {
+      lineItems.push({
+        price_data: {
+          currency: 'usd',
+          unit_amount: deliveryFeeCents,
+          product_data: { name: 'Delivery Fee' },
+        },
+        quantity: 1,
+      })
+    }
+
+    // Create Stripe CheckoutSession — orderId in metadata so webhook can confirm it
+    const stripeSession = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      line_items: lineItems,
+      metadata: { orderId: order.id },
+      success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}&orderId=${order.id}`,
+      cancel_url: `${origin}/cart`,
+      customer_email: session.user.email ?? undefined,
+    })
+
+    // Persist stripeSessionId on the order for webhook lookup
+    await prisma.order.update({
+      where: { id: order.id },
+      data: { stripeSessionId: stripeSession.id } as any,
+    })
+
+    return NextResponse.json({ url: stripeSession.url })
   } catch (err) {
     console.error('Checkout error:', err)
     return NextResponse.json({ error: 'Failed to process checkout' }, { status: 500 })

@@ -13,43 +13,51 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const { searchParams } = new URL(request.url)
+    const page  = Math.max(1, parseInt(searchParams.get('page')  || '1',  10))
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '20', 10)))
+    const skip  = (page - 1) * limit
+
     const where: any = {}
 
-    // Consumers see their own orders
     if (session.user.role === 'CONSUMER') {
+      // Consumers see only their own orders
       where.userId = session.user.id
+    } else if (session.user.role === 'VENDOR') {
+      // Vendors see orders that contain at least one of their products
+      const vendorCompanies = await prisma.company.findMany({
+        where: { ownerId: session.user.id },
+        select: { id: true },
+      })
+      const vendorProductIds = await prisma.product.findMany({
+        where: { companyId: { in: vendorCompanies.map((c: { id: string }) => c.id) } },
+        select: { id: true },
+      })
+      where.orderItems = {
+        some: { productId: { in: vendorProductIds.map((p: { id: string }) => p.id) } },
+      }
     }
-    // Admin sees all orders
-    // Vendors would need more complex logic to see orders containing their products
+    // ADMIN: no where constraint — sees all orders
 
-    const orders = await prisma.order.findMany({
-      where,
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-        orderItems: {
-          include: {
-            product: {
-              select: {
-                id: true,
-                name: true,
-                imageUrl: true,
-              },
+    const [orders, total] = await Promise.all([
+      prisma.order.findMany({
+        where,
+        include: {
+          user: { select: { id: true, name: true, email: true } },
+          orderItems: {
+            include: {
+              product: { select: { id: true, name: true, imageUrl: true } },
             },
           },
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    })
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.order.count({ where }),
+    ])
 
-    return NextResponse.json(orders)
+    return NextResponse.json({ orders, total, page, limit, pages: Math.ceil(total / limit) })
   } catch (error) {
     console.error('Get orders error:', error)
     return NextResponse.json(

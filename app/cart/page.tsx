@@ -134,9 +134,11 @@ export default function CartPage() {
         return
       }
 
-      // clear cart and redirect to success page with orderId
-      localStorage.removeItem('cart')
-      router.push(`/checkout/success?orderId=${data.orderId || ''}`)
+      // Redirect to Stripe Checkout — session URL returned by API
+      if (data.url) {
+        localStorage.removeItem('cart')
+        window.location.href = data.url
+      }
     } catch (error) {
       console.error('Checkout error:', error)
       setCheckoutError('Failed to process checkout')

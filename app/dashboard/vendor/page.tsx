@@ -34,6 +34,9 @@ export default function VendorDashboard() {
   const [company, setCompany] = useState<Company | null>(null)
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(false)
+  const [editingProduct, setEditingProduct] = useState<Product & { description?: string; imageUrl?: string; retailPriceCents: number } | null>(null)
+  const [editForm, setEditForm] = useState({ name: '', description: '', imageUrl: '', retailPrice: '', inventory: '' })
+  const [editLoading, setEditLoading] = useState(false)
 
   // Company form
   const [companyForm, setCompanyForm] = useState({
@@ -93,11 +96,12 @@ export default function VendorDashboard() {
         fetch('/api/companies'),
         fetch('/api/products'),
       ])
-      const companies = await companiesRes.json()
-      const products = await productsRes.json()
-      
-      if (Array.isArray(companies) && companies.length > 0) {
-        const myCompany = companies[0]
+      const companiesData = await companiesRes.json()
+      const productsData = await productsRes.json()
+
+      const companiesList = Array.isArray(companiesData) ? companiesData : (companiesData.companies ?? [])
+      if (companiesList.length > 0) {
+        const myCompany = companiesList[0]
         setCompany(myCompany)
         setCompanyForm({
           name: myCompany.name,
@@ -107,7 +111,8 @@ export default function VendorDashboard() {
           description: myCompany.description || '',
         })
       }
-      setProducts(Array.isArray(products) ? products : [])
+      const productsList = Array.isArray(productsData) ? productsData : (productsData.products ?? [])
+      setProducts(productsList)
     } catch (error) {
       console.error('Error fetching data:', error)
     }
@@ -136,6 +141,60 @@ export default function VendorDashboard() {
       alert('Failed to save company')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleProductSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!company) {
+      alert('Please register your company first')
+      return
+    }
+    if (company.status !== 'APPROVED') {
+      alert('Your company must be approved before adding products')
+      return
+    }
+  }
+
+  const openEdit = (product: Product & { description?: string; imageUrl?: string }) => {
+    setEditingProduct(product as any)
+    setEditForm({
+      name: product.name,
+      description: (product as any).description || '',
+      imageUrl: (product as any).imageUrl || '',
+      retailPrice: (product.retailPriceCents / 100).toFixed(2),
+      inventory: String(product.inventory),
+    })
+  }
+
+  const handleProductEdit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingProduct) return
+    setEditLoading(true)
+    try {
+      const res = await fetch(`/api/products/${editingProduct.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editForm.name,
+          description: editForm.description || undefined,
+          imageUrl: editForm.imageUrl || undefined,
+          retailPriceCents: editForm.retailPrice ? Math.round(parseFloat(editForm.retailPrice) * 100) : undefined,
+          inventory: parseInt(editForm.inventory) || 0,
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        alert(err.error || 'Failed to update product')
+        return
+      }
+      alert('Product updated!')
+      setEditingProduct(null)
+      fetchData()
+    } catch {
+      alert('Failed to update product')
+    } finally {
+      setEditLoading(false)
     }
   }
 
@@ -398,52 +457,35 @@ export default function VendorDashboard() {
                   <table className="w-full">
                     <thead>
                       <tr className="text-left border-b border-olive-200">
-                        <th className="pb-3 text-sm font-medium text-olive-700">
-                          Product Name
-                        </th>
-                        <th className="pb-3 text-sm font-medium text-olive-700">
-                          Category
-                        </th>
-                        <th className="pb-3 text-sm font-medium text-olive-700">
-                          Retail
-                        </th>
-                        <th className="pb-3 text-sm font-medium text-olive-700">
-                          Model
-                        </th>
-                        <th className="pb-3 text-sm font-medium text-olive-700">
-                          Inventory
-                        </th>
-                        <th className="pb-3 text-sm font-medium text-olive-700">
-                          Status
-                        </th>
+                        <th className="pb-3 text-sm font-medium text-olive-700">Product Name</th>
+                        <th className="pb-3 text-sm font-medium text-olive-700">Category</th>
+                        <th className="pb-3 text-sm font-medium text-olive-700">Retail</th>
+                        <th className="pb-3 text-sm font-medium text-olive-700">Model</th>
+                        <th className="pb-3 text-sm font-medium text-olive-700">Inventory</th>
+                        <th className="pb-3 text-sm font-medium text-olive-700">Status</th>
+                        <th className="pb-3 text-sm font-medium text-olive-700"></th>
                       </tr>
                     </thead>
                     <tbody>
                       {products.map((product) => (
                         <tr key={product.id} className="border-b border-olive-100">
-                          <td className="py-3 text-sm font-medium text-olive-900">
-                            {product.name}
-                          </td>
-                          <td className="py-3 text-sm text-olive-600">
-                            {product.category}
-                          </td>
-                          <td className="py-3 text-sm text-olive-800">
-                            ${(product.retailPriceCents / 100).toFixed(2)}
-                          </td>
+                          <td className="py-3 text-sm font-medium text-olive-900">{product.name}</td>
+                          <td className="py-3 text-sm text-olive-600">{product.category}</td>
+                          <td className="py-3 text-sm text-olive-800">${(product.retailPriceCents / 100).toFixed(2)}</td>
                           <td className="py-3 text-xs">
-                            <span className="badge bg-olive-100 text-olive-700">
-                              {product.commerceModel}
-                            </span>
+                            <span className="badge bg-olive-100 text-olive-700">{product.commerceModel}</span>
                           </td>
-                          <td className="py-3 text-sm text-olive-800">
-                            {product.inventory}
+                          <td className="py-3 text-sm text-olive-800">{product.inventory}</td>
+                          <td className="py-3">
+                            <span className={`badge badge-${product.status.toLowerCase()}`}>{product.status}</span>
                           </td>
                           <td className="py-3">
-                            <span
-                              className={`badge badge-${product.status.toLowerCase()}`}
+                            <button
+                              onClick={() => openEdit(product as any)}
+                              className="text-xs text-olive-700 hover:text-olive-900 underline"
                             >
-                              {product.status}
-                            </span>
+                              Edit
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -857,6 +899,47 @@ export default function VendorDashboard() {
           )}
         </div>
       </main>
+
+      {/* Edit Product Modal */}
+      {editingProduct && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-8">
+            <h3 className="text-xl font-serif font-bold text-olive-900 mb-6">Edit Product</h3>
+            <form onSubmit={handleProductEdit} className="space-y-4">
+              <div>
+                <label className="label">Product Name</label>
+                <input type="text" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} required className="input-field" />
+              </div>
+              <div>
+                <label className="label">Description</label>
+                <textarea value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} rows={3} className="input-field" />
+              </div>
+              <div>
+                <label className="label">Image URL</label>
+                <input type="url" value={editForm.imageUrl} onChange={(e) => setEditForm({ ...editForm, imageUrl: e.target.value })} className="input-field" placeholder="https://..." />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="label">Retail Price ($)</label>
+                  <input type="number" step="0.01" min="0" value={editForm.retailPrice} onChange={(e) => setEditForm({ ...editForm, retailPrice: e.target.value })} required className="input-field" />
+                </div>
+                <div>
+                  <label className="label">Inventory</label>
+                  <input type="number" min="0" value={editForm.inventory} onChange={(e) => setEditForm({ ...editForm, inventory: e.target.value })} required className="input-field" />
+                </div>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button type="submit" disabled={editLoading} className="btn-primary disabled:opacity-50">
+                  {editLoading ? 'Saving...' : 'Save Changes'}
+                </button>
+                <button type="button" onClick={() => setEditingProduct(null)} className="btn-outline">
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>

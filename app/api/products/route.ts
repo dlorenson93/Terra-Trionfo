@@ -12,8 +12,11 @@ export async function GET(request: Request) {
     const category = searchParams.get('category')
     const companyId = searchParams.get('companyId')
     const status = searchParams.get('status')
-    const limit = parseInt(searchParams.get('limit') || '0', 10)
     const forcePublic = searchParams.get('public') === 'true'
+    const q = searchParams.get('q')?.trim() || ''
+    const page  = Math.max(1, parseInt(searchParams.get('page')  || '1',  10))
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '48', 10)))
+    const skip  = (page - 1) * limit
 
     const where: any = {}
 
@@ -39,6 +42,16 @@ export async function GET(request: Request) {
       where.companyId = companyId
     }
 
+    if (q) {
+      where.OR = [
+        { name:        { contains: q, mode: 'insensitive' } },
+        { description: { contains: q, mode: 'insensitive' } },
+        { appellation: { contains: q, mode: 'insensitive' } },
+        { region:      { contains: q, mode: 'insensitive' } },
+        { producerDisplayName: { contains: q, mode: 'insensitive' } },
+      ]
+    }
+
     // Vendors can only see their own products
     if (session && session.user.role === 'VENDOR') {
       const companies = await prisma.company.findMany({
@@ -48,25 +61,22 @@ export async function GET(request: Request) {
       where.companyId = { in: companies.map((c: { id: string }) => c.id) }
     }
 
-    const queryOptions: any = {
-      where,
-      include: {
-        company: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            status: true,
+    const [products, total] = await Promise.all([
+      prisma.product.findMany({
+        where,
+        include: {
+          company: {
+            select: { id: true, name: true, slug: true, status: true },
           },
         },
-      },
-      orderBy: { createdAt: 'desc' },
-    }
-    if (limit > 0) queryOptions.take = limit
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.product.count({ where }),
+    ])
 
-    const products = await prisma.product.findMany(queryOptions)
-
-    return NextResponse.json(products)
+    return NextResponse.json({ products, total, page, limit, pages: Math.ceil(total / limit) })
   } catch (error) {
     console.error('Get products error:', error)
     return NextResponse.json(

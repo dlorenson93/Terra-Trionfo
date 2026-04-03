@@ -13,9 +13,12 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
-    const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!, 10) : undefined
     const isFoundingProducer = searchParams.get('isFoundingProducer')
     const forcePublic = searchParams.get('public') === 'true'
+    const q = searchParams.get('q')?.trim() || ''
+    const page  = Math.max(1, parseInt(searchParams.get('page')  || '1',  10))
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '24', 10)))
+    const skip  = (page - 1) * limit
 
     const where: any = {}
     if (status) {
@@ -36,29 +39,30 @@ export async function GET(request: Request) {
       where.ownerId = session.user.id
     }
 
-    const companies = await prisma.company.findMany({
-      where,
-      include: {
-        owner: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-        _count: {
-          select: {
-            products: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      ...(limit ? { take: limit } : {}),
-    })
+    if (q) {
+      where.OR = [
+        { name:        { contains: q, mode: 'insensitive' } },
+        { description: { contains: q, mode: 'insensitive' } },
+        { region:      { contains: q, mode: 'insensitive' } },
+        { country:     { contains: q, mode: 'insensitive' } },
+      ]
+    }
 
-    return NextResponse.json(companies)
+    const [companies, total] = await Promise.all([
+      prisma.company.findMany({
+        where,
+        include: {
+          owner: { select: { id: true, name: true, email: true } },
+          _count: { select: { products: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.company.count({ where }),
+    ])
+
+    return NextResponse.json({ companies, total, page, limit, pages: Math.ceil(total / limit) })
   } catch (error) {
     console.error('Get companies error:', error)
     return NextResponse.json(
