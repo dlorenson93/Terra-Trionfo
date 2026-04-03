@@ -144,16 +144,6 @@ export default function VendorDashboard() {
     }
   }
 
-  const handleProductSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!company) {
-      alert('Please register your company first')
-      return
-    }
-    if (company.status !== 'APPROVED') {
-      alert('Your company must be approved before adding products')
-      return
-    }
   }
 
   const openEdit = (product: Product & { description?: string; imageUrl?: string }) => {
