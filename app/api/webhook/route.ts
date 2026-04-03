@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { stripe } from '@/lib/stripe'
 import { prisma } from '@/lib/prisma'
+import { sendOrderConfirmation } from '@/lib/email'
 import Stripe from 'stripe'
 
 export const dynamic = 'force-dynamic'
@@ -56,7 +57,12 @@ export async function POST(request: Request) {
       // Decrement inventory for each product
       const order = await prisma.order.findUnique({
         where: { id: orderId },
-        include: { orderItems: true },
+        include: {
+          orderItems: {
+            include: { product: { select: { name: true } } },
+          },
+          user: { select: { name: true, email: true } },
+        },
       })
 
       if (order) {
@@ -68,6 +74,22 @@ export async function POST(request: Request) {
                 decrement: item.quantity,
               },
             },
+          })
+        }
+
+        // Send order confirmation email
+        if (order.user?.email) {
+          await sendOrderConfirmation({
+            to:           order.user.email,
+            customerName: order.user.name ?? 'Valued Customer',
+            orderId:      order.id,
+            orderItems:   order.orderItems.map((item) => ({
+              productName: item.product.name,
+              quantity:    item.quantity,
+              unitPrice:   item.unitPrice,
+            })),
+            total:           order.total,
+            fulfillmentType: order.fulfillmentType,
           })
         }
       }
