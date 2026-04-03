@@ -9,10 +9,6 @@
  *   await sendOrderConfirmation({ ... })
  */
 
-import { Resend } from 'resend'
-
-const resend = new Resend(process.env.RESEND_API_KEY)
-
 const FROM = 'Terra Trionfo <noreply@terratrionfo.com>'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -151,6 +147,8 @@ export async function sendOrderConfirmation(data: OrderConfirmationData): Promis
   }
 
   try {
+    const { Resend } = await import('resend')
+    const resend = new Resend(process.env.RESEND_API_KEY)
     const { error } = await resend.emails.send({
       from:    FROM,
       to:      data.to,
