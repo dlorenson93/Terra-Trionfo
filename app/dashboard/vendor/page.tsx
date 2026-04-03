@@ -144,8 +144,6 @@ export default function VendorDashboard() {
     }
   }
 
-  }
-
   const openEdit = (product: Product & { description?: string; imageUrl?: string }) => {
     setEditingProduct(product as any)
     setEditForm({
