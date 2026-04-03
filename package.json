@@ -16,11 +16,12 @@
   "dependencies": {
     "@prisma/client": "^5.7.1",
     "@stripe/stripe-js": "^2.2.2",
+    "bcryptjs": "^2.4.3",
     "next": "^14.0.4",
     "next-auth": "^4.24.5",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "bcryptjs": "^2.4.3",
+    "resend": "^6.10.0",
     "stripe": "^14.8.0",
     "zod": "^3.22.4"
   },
