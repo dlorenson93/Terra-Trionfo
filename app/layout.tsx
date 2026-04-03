@@ -8,6 +8,10 @@ const SommelierChat = dynamic(() => import('@/components/ai/SommelierChat'), {
   ssr: false,
 })
 
+const AgeGate = dynamic(() => import('@/components/AgeGate'), {
+  ssr: false,
+})
+
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
@@ -34,6 +38,7 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} ${playfair.variable}`}>
       <body className="font-sans bg-parchment-100 text-olive-900">
         <AuthProvider>
+          <AgeGate />
           {children}
           <SommelierChat />
         </AuthProvider>

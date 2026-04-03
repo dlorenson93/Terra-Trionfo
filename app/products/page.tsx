@@ -102,13 +102,13 @@ function ProductsContent() {
       
       const data = await response.json()
       
-      // Ensure data is an array; cast items to our Product type
-      if (Array.isArray(data)) {
-        setProducts(data as Product[])
-      } else {
-        console.error('API returned non-array data:', data)
-        setProducts([])
-      }
+      // Handle both paginated { products: [] } and legacy bare-array formats
+      const list: Product[] = Array.isArray(data)
+        ? (data as Product[])
+        : Array.isArray(data?.products)
+          ? (data.products as Product[])
+          : []
+      setProducts(list)
     } catch (error) {
       console.error('Error fetching products:', error)
       setProducts([])

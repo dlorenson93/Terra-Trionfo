@@ -4,6 +4,7 @@ import Footer from '@/components/layout/Footer'
 import { prisma } from '@/lib/prisma'
 import { PRODUCERS } from '@/data/producers'
 import { WINES } from '@/data/wines'
+import { mergeProducerContent, mergeProducerContentFromStatic } from '@/lib/content/mergeProducerContent'
 
 interface ProducerRow {
   id: string
@@ -22,6 +23,11 @@ export default async function ProducersPage() {
     orderBy: { name: 'asc' },
   })
   const producers = rawProducers as unknown as ProducerRow[]
+
+  // Build a slug → DB company map for enriching static producer cards
+  const dbBySlug = new Map(
+    producers.map((p) => [p.slug, p])
+  )
 
   const classical = PRODUCERS.filter((p) => p.collection === 'classical')
   const altNextGen = PRODUCERS.filter((p) => p.collection === 'alternative-next-generation')
@@ -89,6 +95,10 @@ export default async function ProducersPage() {
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 {classical.map((p) => {
                   const wineCount = WINES.filter((w) => w.producerId === p.id).length
+                  const dbMatch = p.slug ? dbBySlug.get(p.slug) : undefined
+                  const merged = dbMatch
+                    ? mergeProducerContent(dbMatch, p.slug)
+                    : mergeProducerContentFromStatic(p)
                   return (
                     <Link
                       key={p.id}
@@ -99,22 +109,22 @@ export default async function ProducersPage() {
                         <span className="text-[9px] font-medium text-amber-600/60 uppercase tracking-[0.3em]">
                           Classical
                         </span>
-                        {p.founded && (
+                        {merged.foundedYear && (
                           <span className="text-[9px] text-olive-400 uppercase tracking-wider">
-                            Est. {p.founded}
+                            Est. {merged.foundedYear}
                           </span>
                         )}
                       </div>
                       <h3 className="font-serif font-bold text-olive-900 text-xl leading-snug mb-1 group-hover:text-olive-700 transition-colors">
-                        {p.name}
+                        {merged.name}
                       </h3>
-                      <p className="text-xs text-olive-500 mb-4">{p.subregion}</p>
+                      <p className="text-xs text-olive-500 mb-4">{merged.subregion}</p>
                       <p className="text-sm text-olive-600 leading-relaxed line-clamp-3 flex-grow">
-                        {p.summary}
+                        {merged.shortDescription}
                       </p>
                       <div className="mt-5 pt-4 border-t border-parchment-100 flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2.5 text-[9px] text-olive-400 uppercase tracking-[0.12em]">
-                          <span>{p.region}</span>
+                          <span>{merged.region}</span>
                           <span className="w-px h-3 bg-parchment-300" />
                           <span>{wineCount} wine{wineCount !== 1 ? 's' : ''}</span>
                         </div>
@@ -136,6 +146,10 @@ export default async function ProducersPage() {
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 {altNextGen.map((p) => {
                   const wineCount = WINES.filter((w) => w.producerId === p.id).length
+                  const dbMatch = p.slug ? dbBySlug.get(p.slug) : undefined
+                  const merged = dbMatch
+                    ? mergeProducerContent(dbMatch, p.slug)
+                    : mergeProducerContentFromStatic(p)
                   return (
                     <Link
                       key={p.id}
@@ -146,22 +160,22 @@ export default async function ProducersPage() {
                         <span className="text-[9px] font-medium text-olive-500/60 uppercase tracking-[0.3em]">
                           Alt / Next Gen
                         </span>
-                        {p.founded && (
+                        {merged.foundedYear && (
                           <span className="text-[9px] text-olive-400 uppercase tracking-wider">
-                            Est. {p.founded}
+                            Est. {merged.foundedYear}
                           </span>
                         )}
                       </div>
                       <h3 className="font-serif font-bold text-olive-900 text-xl leading-snug mb-1 group-hover:text-olive-700 transition-colors">
-                        {p.name}
+                        {merged.name}
                       </h3>
-                      <p className="text-xs text-olive-500 mb-4">{p.subregion}</p>
+                      <p className="text-xs text-olive-500 mb-4">{merged.subregion}</p>
                       <p className="text-sm text-olive-600 leading-relaxed line-clamp-3 flex-grow">
-                        {p.summary}
+                        {merged.shortDescription}
                       </p>
                       <div className="mt-5 pt-4 border-t border-parchment-100 flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2.5 text-[9px] text-olive-400 uppercase tracking-[0.12em]">
-                          <span>{p.region}</span>
+                          <span>{merged.region}</span>
                           <span className="w-px h-3 bg-parchment-300" />
                           <span>{wineCount} wine{wineCount !== 1 ? 's' : ''}</span>
                         </div>

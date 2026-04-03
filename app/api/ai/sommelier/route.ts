@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { buildSystemPrompt, buildUserMessage } from '@/lib/ai/prompts'
 import { WINES } from '@/data/wines'
 import { PRODUCERS } from '@/data/producers'
+import {
+  buildPortfolioContextFromDB,
+  fetchLiveDBProducts,
+  fetchLiveDBCompanies,
+  type DBProductRef,
+} from '@/lib/ai/portfolioContext'
 import type {
   SommelierRequest,
   SommelierResponse,
@@ -55,6 +61,27 @@ async function callOpenAI(systemPrompt: string, userMessage: string): Promise<st
   return text
 }
 
+function resolveSuggestedWinesFromDB(
+  answer: string,
+  dbProducts: DBProductRef[],
+): SuggestedWine[] {
+  const lower = answer.toLowerCase()
+  return dbProducts
+    .filter((p) => {
+      const fullName = `${p.company.name} ${p.name}`.toLowerCase()
+      return lower.includes(fullName) || lower.includes(p.name.toLowerCase())
+    })
+    .slice(0, 3)
+    .map((p) => ({
+      id: p.id,
+      displayName: `${p.company.name} ${p.name}`,
+      type: p.wineStyle || 'Wine',
+      region: p.region || '',
+      price: p.retailPriceCents / 100,
+      slug: p.slug || p.id,
+    }))
+}
+
 function resolveSuggestedWines(answer: string): SuggestedWine[] {
   const lower = answer.toLowerCase()
   return WINES.filter(
@@ -70,6 +97,22 @@ function resolveSuggestedWines(answer: string): SuggestedWine[] {
       region: w.region,
       price: w.consumerPurchasePriceUSD,
       slug: w.slug,
+    }))
+}
+
+function resolveSuggestedProducersFromDB(
+  answer: string,
+  dbCompanies: Array<{ id: string; name: string; slug: string | null; region: string | null }>,
+): SuggestedProducer[] {
+  const lower = answer.toLowerCase()
+  return dbCompanies
+    .filter((c) => lower.includes(c.name.toLowerCase()))
+    .slice(0, 2)
+    .map((c) => ({
+      id: c.id,
+      name: c.name,
+      region: c.region || '',
+      slug: c.slug || c.id,
     }))
 }
 
@@ -189,7 +232,14 @@ export async function POST(request: NextRequest) {
     }
     console.log('[Sommelier] API key present, key prefix:', process.env.OPENAI_API_KEY.slice(0, 10))
 
-    const systemPrompt = buildSystemPrompt()
+    // ── DB-first: fetch live portfolio context + product/company refs in parallel ──
+    const [portfolioContext, dbProducts, dbCompanies] = await Promise.all([
+      buildPortfolioContextFromDB(),
+      fetchLiveDBProducts(),
+      fetchLiveDBCompanies(),
+    ])
+
+    const systemPrompt = buildSystemPrompt(portfolioContext)
     const userMessage = buildUserMessage(
       question,
       body.wineContext,
@@ -200,8 +250,16 @@ export async function POST(request: NextRequest) {
 
     const answerText = await callOpenAI(systemPrompt, userMessage)
 
-    const suggestedWines = resolveSuggestedWines(answerText)
-    const suggestedProducers = resolveSuggestedProducers(answerText)
+    // DB-first wine/producer resolution; fall back to static if DB returned nothing
+    const suggestedWines =
+      dbProducts.length > 0
+        ? resolveSuggestedWinesFromDB(answerText, dbProducts)
+        : resolveSuggestedWines(answerText)
+
+    const suggestedProducers =
+      dbCompanies.length > 0
+        ? resolveSuggestedProducersFromDB(answerText, dbCompanies)
+        : resolveSuggestedProducers(answerText)
     const { primary, secondary } = extractRecommendations(answerText, suggestedWines)
     const followUpPrompts = generateFollowUpPrompts(question, suggestedWines)
 

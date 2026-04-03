@@ -12,8 +12,8 @@ import type {
   SessionPreferences,
 } from './types'
 
-export function buildSystemPrompt(): string {
-  const portfolio = buildPortfolioContext()
+export function buildSystemPrompt(portfolioContextOverride?: string): string {
+  const portfolio = portfolioContextOverride ?? buildPortfolioContext()
 
   // ── System prompt: portfolio-first sommelier ────────────────────────────────
   const lines: string[] = [
