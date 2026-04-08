@@ -53,3 +53,38 @@ export const getCartCount = (): number => {
   const cart = getCart()
   return cart.reduce((total, item) => total + item.quantity, 0)
 }
+
+// ─── Inquiry basket (static / pre-import wines) ───────────────────────────────
+// Stored separately from the purchase cart so the two flows never collide.
+
+const INQUIRY_KEY = 'inquiry'
+
+export const getInquiry = (): CartItem[] => {
+  if (typeof window === 'undefined') return []
+  const raw = localStorage.getItem(INQUIRY_KEY)
+  return raw ? JSON.parse(raw) : []
+}
+
+export const addToInquiry = (item: CartItem) => {
+  const inquiry = getInquiry()
+  const existing = inquiry.find((i) => i.productId === item.productId)
+  if (existing) {
+    existing.quantity += item.quantity
+  } else {
+    inquiry.push(item)
+  }
+  localStorage.setItem(INQUIRY_KEY, JSON.stringify(inquiry))
+}
+
+export const removeFromInquiry = (productId: string) => {
+  const updated = getInquiry().filter((i) => i.productId !== productId)
+  localStorage.setItem(INQUIRY_KEY, JSON.stringify(updated))
+}
+
+export const clearInquiry = () => {
+  localStorage.removeItem(INQUIRY_KEY)
+}
+
+export const getInquiryCount = (): number => {
+  return getInquiry().reduce((total, item) => total + item.quantity, 0)
+}

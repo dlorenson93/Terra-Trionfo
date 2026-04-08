@@ -9,8 +9,29 @@ export default function Header() {
   const { data: session } = useSession()
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [inquiryCount, setInquiryCount] = useState(0)
 
   const isActive = (path: string) => pathname === path
+
+  // Read inquiry count from localStorage and refresh on same-tab updates
+  useEffect(() => {
+    const readCount = () => {
+      try {
+        const items = JSON.parse(localStorage.getItem('inquiry') || '[]')
+        return (items as any[]).reduce((sum: number, i: any) => sum + (i.quantity || 1), 0)
+      } catch {
+        return 0
+      }
+    }
+    setInquiryCount(readCount())
+    const handleUpdate = () => setInquiryCount(readCount())
+    window.addEventListener('inquiryUpdated', handleUpdate)
+    window.addEventListener('storage', handleUpdate)
+    return () => {
+      window.removeEventListener('inquiryUpdated', handleUpdate)
+      window.removeEventListener('storage', handleUpdate)
+    }
+  }, [])
 
   // Close menu on route change
   useEffect(() => {
@@ -88,6 +109,21 @@ export default function Header() {
               }`}
             >
               Contact
+            </Link>
+
+            {/* Inquiry basket — visible to all users */}
+            <Link
+              href="/inquiry"
+              className={`relative text-sm font-medium transition-colors ${
+                isActive('/inquiry') ? 'text-olive-900' : 'text-olive-600 hover:text-olive-900'
+              }`}
+            >
+              Inquiry
+              {inquiryCount > 0 && (
+                <span className="absolute -top-2 -right-3.5 w-4 h-4 bg-olive-700 text-white text-[9px] font-bold flex items-center justify-center rounded-full leading-none">
+                  {inquiryCount > 9 ? '9+' : inquiryCount}
+                </span>
+              )}
             </Link>
 
             {session ? (
@@ -219,6 +255,9 @@ export default function Header() {
           </MobileLink>
           <MobileLink href="/contact" active={isActive('/contact')} onClose={() => setMobileMenuOpen(false)}>
             Contact Us
+          </MobileLink>
+          <MobileLink href="/inquiry" active={isActive('/inquiry')} onClose={() => setMobileMenuOpen(false)}>
+            Wine Inquiry{inquiryCount > 0 ? ` (${inquiryCount})` : ''}
           </MobileLink>
         </nav>
 
