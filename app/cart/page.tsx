@@ -103,6 +103,24 @@ export default function CartPage() {
 
     setLoading(true)
     try {
+      // If pricing is hidden, submit as an inquiry/request instead of payment
+      if (!showConsumerPrices) {
+        const { addToInquiry } = await import('@/lib/cart')
+        cart.forEach((item) => {
+          addToInquiry({
+            productId: item.productId,
+            name: item.name,
+            imageUrl: item.imageUrl,
+            price: 0,
+            quantity: item.quantity,
+          })
+        })
+        localStorage.removeItem('cart')
+        window.dispatchEvent(new Event('inquiryUpdated'))
+        window.location.href = '/inquiry'
+        return
+      }
+
       const items = cart.map((item) => ({
         productId: item.productId,
         quantity: item.quantity,
@@ -413,17 +431,17 @@ export default function CartPage() {
                       </>
                     ) : (
                       <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4 text-sm text-amber-800">
-                        Pricing is currently hidden by the administrator. Order totals and checkout are unavailable until pricing is visible.
+                        Pricing is currently under review. Submit an inquiry to request these wines and we'll confirm availability and pricing.
                       </div>
                     )}
                   </div>
 
                   <button
                     onClick={checkout}
-                    disabled={loading || !showConsumerPrices}
+                    disabled={loading || cart.length === 0}
                     className="btn-primary w-full py-3 disabled:opacity-50"
                   >
-                    {loading ? 'Processing...' : showConsumerPrices ? 'Place Order' : 'Pricing hidden'}
+                    {loading ? 'Processing...' : showConsumerPrices ? 'Place Order' : 'Submit Inquiry'}
                   </button>
 
                   {checkoutError && (
