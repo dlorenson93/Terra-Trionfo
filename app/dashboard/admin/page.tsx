@@ -2797,8 +2797,8 @@ export default function AdminDashboard() {
                 </div>
                 <div className="rounded-2xl border border-olive-200 bg-white p-5">
                   <p className="text-sm text-olive-700">{showConsumerPrices
-                    ? 'Consumer pricing is currently visible on restaurant wine cards.'
-                    : 'Consumer pricing is currently hidden on restaurant wine cards. Administrators can turn this back on when pricing is ready.'}
+                    ? 'Consumer pricing is currently visible across storefront listings and the cart.'
+                    : 'Consumer pricing is currently hidden across the storefront. Administrators can turn it back on when ready.'}
                   </p>
                 </div>
               </div>

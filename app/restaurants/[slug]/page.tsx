@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
+import { usePlatformSettings } from '@/lib/usePlatformSettings'
 
 interface RestaurantWine {
   id: string
@@ -45,7 +46,8 @@ export default function RestaurantProfilePage({ params }: { params: { slug: stri
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
-  const [showConsumerPrices, setShowConsumerPrices] = useState(false)
+  const { settings } = usePlatformSettings()
+  const showConsumerPrices = settings?.showConsumerPrices ?? false
 
   useEffect(() => {
     fetch(`/api/restaurants/${params.slug}`)
@@ -57,17 +59,6 @@ export default function RestaurantProfilePage({ params }: { params: { slug: stri
       .catch(console.error)
       .finally(() => setLoading(false))
   }, [params.slug])
-
-  useEffect(() => {
-    fetch('/api/settings')
-      .then((r) => r.ok ? r.json() : null)
-      .then((data) => {
-        if (data && typeof data.showConsumerPrices === 'boolean') {
-          setShowConsumerPrices(data.showConsumerPrices)
-        }
-      })
-      .catch(console.error)
-  }, [])
 
   if (loading) {
     return (

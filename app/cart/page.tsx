@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import Image from 'next/image'
+import { usePlatformSettings } from '@/lib/usePlatformSettings'
 
 interface CartItem {
   productId: string
@@ -61,13 +62,9 @@ export default function CartPage() {
   const [deliveryZones, setDeliveryZones] = useState<{ id: string; name: string; routes: { deliveryDay: number }[] }[]>([])
   const [selectedZoneId, setSelectedZoneId] = useState('')
 
-  const [settings, setSettings] = useState<any>(null)
+  const { settings } = usePlatformSettings()
 
   useEffect(() => {
-    async function loadSettings() {
-      const res = await fetch('/api/settings')
-      if (res.ok) setSettings(await res.json())
-    }
     async function loadPickupLocations() {
       const res = await fetch('/api/pickup-locations')
       if (res.ok) setPickupLocations(await res.json())
@@ -76,7 +73,6 @@ export default function CartPage() {
       const res = await fetch('/api/delivery-zones')
       if (res.ok) setDeliveryZones(await res.json())
     }
-    loadSettings()
     loadPickupLocations()
     loadDeliveryZones()
   }, [])
@@ -148,6 +144,8 @@ export default function CartPage() {
   }
 
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
+  const showConsumerPrices = settings?.showConsumerPrices ?? false
+  const cartBlocked = !showConsumerPrices && cart.length > 0
 
   if (!session) {
     return null
@@ -232,7 +230,7 @@ export default function CartPage() {
                           {item.name}
                         </h3>
                         <p className="text-lg font-bold text-olive-800 mb-3">
-                          ${item.price.toFixed(2)}
+                          {showConsumerPrices ? `$${item.price.toFixed(2)}` : 'Pricing hidden'}
                         </p>
 
                         <div className="flex items-center gap-4">
@@ -270,7 +268,7 @@ export default function CartPage() {
                       {/* Subtotal */}
                       <div className="text-right">
                         <p className="font-bold text-olive-900">
-                          ${(item.price * item.quantity).toFixed(2)}
+                          {showConsumerPrices ? `$${(item.price * item.quantity).toFixed(2)}` : '—'}
                         </p>
                       </div>
                     </div>
@@ -387,37 +385,45 @@ export default function CartPage() {
                   )}
 
                   <div className="space-y-3 mb-6">
-                    <div className="flex justify-between text-olive-700">
-                      <span>Subtotal</span>
-                      <span>${total.toFixed(2)}</span>
-                    </div>
-                    {fulfillmentType === 'LOCAL_DELIVERY' && (
-                      <div className="flex justify-between text-olive-700">
-                        <span>Delivery Fee</span>
-                        <span>${(settings?.deliveryFeeCents || 0) / 100}</span>
+                    {showConsumerPrices ? (
+                      <>
+                        <div className="flex justify-between text-olive-700">
+                          <span>Subtotal</span>
+                          <span>${total.toFixed(2)}</span>
+                        </div>
+                        {fulfillmentType === 'LOCAL_DELIVERY' && (
+                          <div className="flex justify-between text-olive-700">
+                            <span>Delivery Fee</span>
+                            <span>${(settings?.deliveryFeeCents || 0) / 100}</span>
+                          </div>
+                        )}
+                        <div className="border-t border-olive-200 pt-3">
+                          <div className="flex justify-between text-lg font-bold text-olive-900">
+                            <span>Total</span>
+                            <span>
+                              ${(
+                                total +
+                                (fulfillmentType === 'LOCAL_DELIVERY'
+                                  ? (settings?.deliveryFeeCents || 0) / 100
+                                  : 0)
+                              ).toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4 text-sm text-amber-800">
+                        Pricing is currently hidden by the administrator. Order totals and checkout are unavailable until pricing is visible.
                       </div>
                     )}
-                    <div className="border-t border-olive-200 pt-3">
-                      <div className="flex justify-between text-lg font-bold text-olive-900">
-                        <span>Total</span>
-                        <span>
-                          ${(
-                            total +
-                            (fulfillmentType === 'LOCAL_DELIVERY'
-                              ? (settings?.deliveryFeeCents || 0) / 100
-                              : 0)
-                          ).toFixed(2)}
-                        </span>
-                      </div>
-                    </div>
                   </div>
 
                   <button
                     onClick={checkout}
-                    disabled={loading}
+                    disabled={loading || !showConsumerPrices}
                     className="btn-primary w-full py-3 disabled:opacity-50"
                   >
-                    {loading ? 'Processing...' : 'Place Order'}
+                    {loading ? 'Processing...' : showConsumerPrices ? 'Place Order' : 'Pricing hidden'}
                   </button>
 
                   {checkoutError && (
