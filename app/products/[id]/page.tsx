@@ -322,16 +322,11 @@ export default function ProductDetailPage({
                 <p className="text-olive-700 leading-relaxed mb-6">{product.description}</p>
               )}
 
-              {/* Price + CTA */}
+              {/* Action area */}
               <div className="border-t border-olive-200 pt-6">
-                <div className="flex items-baseline gap-2 mb-2">
-                  <span className="text-4xl font-bold text-olive-900">
-                    ${(product.retailPriceCents / 100).toFixed(2)}
-                  </span>
-                  {product.bottleSizeMl && (
-                    <span className="text-sm text-olive-500">/ {product.bottleSizeMl}ml</span>
-                  )}
-                </div>
+                {product.bottleSizeMl && (
+                  <p className="text-sm text-olive-600 mb-3">{product.bottleSizeMl}ml bottle</p>
+                )}
 
                 <p className="text-sm text-olive-600 mb-5">
                   {product.inventory > 0 ? `${product.inventory} available` : 'Out of stock'}
@@ -729,9 +724,6 @@ export default function ProductDetailPage({
                       <p className="text-xs font-serif font-semibold text-olive-900 leading-snug group-hover:text-olive-700 transition-colors line-clamp-2">
                         {w.name}
                       </p>
-                      <p className="text-xs font-bold text-olive-800 mt-auto pt-2">
-                        ${(w.retailPriceCents / 100).toFixed(2)}
-                      </p>
                     </div>
                   </Link>
                 ))}
@@ -790,9 +782,6 @@ export default function ProductDetailPage({
                       {w.vintage && (
                         <p className="text-[9px] text-olive-400 mt-0.5">{w.vintage}</p>
                       )}
-                      <p className="text-xs font-bold text-olive-800 mt-auto pt-2">
-                        ${(w.retailPriceCents / 100).toFixed(2)}
-                      </p>
                     </div>
                   </Link>
                 ))}

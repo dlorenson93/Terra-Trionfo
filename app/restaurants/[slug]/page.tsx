@@ -45,6 +45,7 @@ export default function RestaurantProfilePage({ params }: { params: { slug: stri
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+  const [showConsumerPrices, setShowConsumerPrices] = useState(false)
 
   useEffect(() => {
     fetch(`/api/restaurants/${params.slug}`)
@@ -56,6 +57,17 @@ export default function RestaurantProfilePage({ params }: { params: { slug: stri
       .catch(console.error)
       .finally(() => setLoading(false))
   }, [params.slug])
+
+  useEffect(() => {
+    fetch('/api/settings')
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data && typeof data.showConsumerPrices === 'boolean') {
+          setShowConsumerPrices(data.showConsumerPrices)
+        }
+      })
+      .catch(console.error)
+  }, [])
 
   if (loading) {
     return (
@@ -189,7 +201,7 @@ export default function RestaurantProfilePage({ params }: { params: { slug: stri
                     </div>
                     <div className="space-y-4">
                       {byGlass.map((rw) => (
-                        <WineEntry key={rw.id} rw={rw} />
+                        <WineEntry key={rw.id} rw={rw} showPrice={showConsumerPrices} />
                       ))}
                     </div>
                   </div>
@@ -203,7 +215,7 @@ export default function RestaurantProfilePage({ params }: { params: { slug: stri
                     </div>
                     <div className="space-y-4">
                       {bottleList.map((rw) => (
-                        <WineEntry key={rw.id} rw={rw} />
+                        <WineEntry key={rw.id} rw={rw} showPrice={showConsumerPrices} />
                       ))}
                     </div>
                   </div>
@@ -238,7 +250,7 @@ export default function RestaurantProfilePage({ params }: { params: { slug: stri
   )
 }
 
-function WineEntry({ rw }: { rw: RestaurantWine }) {
+function WineEntry({ rw, showPrice }: { rw: RestaurantWine; showPrice: boolean }) {
   const p = rw.product
   return (
     <Link
@@ -270,8 +282,8 @@ function WineEntry({ rw }: { rw: RestaurantWine }) {
           <p className="text-xs text-olive-600 mt-1 italic">"{rw.notes}"</p>
         )}
       </div>
-      <div className="text-xs text-olive-400 flex-shrink-0 self-start pt-0.5">
-        ${(p.retailPriceCents / 100).toFixed(0)}
+      <div className="text-xs text-olive-400 flex-shrink-0 self-start pt-0.5 min-w-[6rem] text-right">
+        {showPrice ? ` $${(p.retailPriceCents / 100).toFixed(0)}` : 'Pricing on request'}
       </div>
     </Link>
   )

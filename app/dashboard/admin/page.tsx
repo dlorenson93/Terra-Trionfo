@@ -288,6 +288,8 @@ export default function AdminDashboard() {
   // Phase 23 — portfolio forecasting & import opportunity layer
   const [portfolioForecasting, setPortfolioForecasting] = useState<any>(null)
   const [loadingForecasting, setLoadingForecasting] = useState(false)
+  const [showConsumerPrices, setShowConsumerPrices] = useState(false)
+  const [savingPriceVisibility, setSavingPriceVisibility] = useState(false)
 
   useEffect(() => {
     if (!session) {
@@ -347,7 +349,7 @@ export default function AdminDashboard() {
   const fetchData = async () => {
     setIsLoading(true)
     try {
-      const [statsRes, companiesRes, productsRes, restaurantsRes, zonesRes, routesRes, schedulesRes, pickupLocsRes, customersRes] = await Promise.all([
+      const [statsRes, companiesRes, productsRes, restaurantsRes, zonesRes, routesRes, schedulesRes, pickupLocsRes, customersRes, settingsRes] = await Promise.all([
         fetch('/api/admin/stats'),
         fetch('/api/companies'),
         fetch('/api/products'),
@@ -357,6 +359,7 @@ export default function AdminDashboard() {
         fetch('/api/pickup-schedules'),
         fetch('/api/pickup-locations'),
         fetch('/api/admin/customers'),
+        fetch('/api/settings'),
       ])
 
       setStats(await statsRes.json())
@@ -376,10 +379,31 @@ export default function AdminDashboard() {
       setPickupLocationsList(Array.isArray(pickupLocsData) ? pickupLocsData : [])
       const customersData = await customersRes.json()
       setCustomers(Array.isArray(customersData) ? customersData : [])
+      const settingsData = settingsRes.ok ? await settingsRes.json() : null
+      setShowConsumerPrices(settingsData?.showConsumerPrices ?? false)
     } catch (error) {
       console.error('Error fetching data:', error)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const togglePriceVisibility = async () => {
+    const nextValue = !showConsumerPrices
+    setSavingPriceVisibility(true)
+    try {
+      const response = await fetch('/api/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ showConsumerPrices: nextValue }),
+      })
+      if (!response.ok) throw new Error('Failed to save price visibility')
+      setShowConsumerPrices(nextValue)
+    } catch (error) {
+      console.error('Consumer price visibility update failed', error)
+      alert('Unable to save consumer visibility. Please try again.')
+    } finally {
+      setSavingPriceVisibility(false)
     }
   }
 
@@ -2747,19 +2771,36 @@ export default function AdminDashboard() {
           {/* Portfolio Pricing Tab */}
           {activeTab === 'portfolio-pricing' && (
             <div className="space-y-6">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-amber-600 mb-1">Internal Use Only · Not visible to consumers</p>
-                  <h2 className="text-2xl font-serif font-bold text-olive-900 mb-1">Portfolio Pricing</h2>
-                  <p className="text-sm text-olive-500">Full distribution chain economics for all 21 portfolio wines. Consumers see only the final marketplace price.</p>
+              <div className="space-y-4">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-amber-600 mb-1">Internal Use Only · Not visible to consumers</p>
+                    <h2 className="text-2xl font-serif font-bold text-olive-900 mb-1">Portfolio Pricing</h2>
+                    <p className="text-sm text-olive-500">Full distribution chain economics for all 21 portfolio wines. Consumers see only the final marketplace price.</p>
+                  </div>
+                  <div className="flex flex-col sm:items-end gap-3">
+                    <button
+                      onClick={syncAllPricesToDB}
+                      disabled={syncingAllPrices}
+                      className="shrink-0 text-sm px-4 py-2 bg-olive-700 text-parchment-100 hover:bg-olive-800 disabled:opacity-50 transition-colors"
+                    >
+                      {syncingAllPrices ? 'Syncing…' : 'Sync All Prices → DB'}
+                    </button>
+                    <button
+                      onClick={togglePriceVisibility}
+                      disabled={savingPriceVisibility}
+                      className={`shrink-0 text-sm px-4 py-2 rounded-full text-parchment-100 transition ${showConsumerPrices ? 'bg-amber-700 hover:bg-amber-800' : 'bg-olive-700 hover:bg-olive-800'} disabled:opacity-50`}
+                    >
+                      {savingPriceVisibility ? 'Saving…' : showConsumerPrices ? 'Hide consumer prices' : 'Show consumer prices'}
+                    </button>
+                  </div>
                 </div>
-                <button
-                  onClick={syncAllPricesToDB}
-                  disabled={syncingAllPrices}
-                  className="shrink-0 text-sm px-4 py-2 bg-olive-700 text-parchment-100 hover:bg-olive-800 disabled:opacity-50 transition-colors"
-                >
-                  {syncingAllPrices ? 'Syncing…' : 'Sync All Prices → DB'}
-                </button>
+                <div className="rounded-2xl border border-olive-200 bg-white p-5">
+                  <p className="text-sm text-olive-700">{showConsumerPrices
+                    ? 'Consumer pricing is currently visible on restaurant wine cards.'
+                    : 'Consumer pricing is currently hidden on restaurant wine cards. Administrators can turn this back on when pricing is ready.'}
+                  </p>
+                </div>
               </div>
 
               {/* Chain legend */}

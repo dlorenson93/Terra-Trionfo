@@ -33,6 +33,7 @@ export async function PATCH(request: Request) {
       deliveryDaysOfWeek,
       deliveryFeeCents,
       defaultMarketplaceMarkupPercent,
+      showConsumerPrices,
     } = body
 
     const updateData: any = {}
@@ -40,6 +41,7 @@ export async function PATCH(request: Request) {
     if (deliveryDaysOfWeek !== undefined) updateData.deliveryDaysOfWeek = deliveryDaysOfWeek
     if (deliveryFeeCents !== undefined) updateData.deliveryFeeCents = deliveryFeeCents
     if (defaultMarketplaceMarkupPercent !== undefined) updateData.defaultMarketplaceMarkupPercent = defaultMarketplaceMarkupPercent
+    if (showConsumerPrices !== undefined) updateData.showConsumerPrices = showConsumerPrices
 
     const updated = await prisma.settings.update({
       where: { id: 'default' },

@@ -137,10 +137,6 @@ export default function ProductCard({
         <p className="text-sm text-olive-600 mb-3">{companyName}</p>
 
         <div className="flex items-center justify-between mt-auto">
-          <span className="text-2xl font-bold text-olive-900">
-            ${retailPrice.toFixed(2)}
-          </span>
-
           <div className="flex gap-1 flex-wrap justify-end">
             {(commerceModel === 'MARKETPLACE' || commerceModel === 'HYBRID') && (
               <span className="badge bg-olive-100 text-olive-700 text-xs">

@@ -83,8 +83,8 @@ export default function WineCard({ wine, producer, standalone = true, dark = fal
         {wine.description}
       </p>
 
-      {/* Footer: collection label + COLA status + price */}
-      <div className={`flex items-center justify-between mt-auto pt-3 border-t ${dark ? 'border-parchment-100/10' : 'border-parchment-100'}`}>
+      {/* Footer: collection label */}
+      <div className={`flex items-center mt-auto pt-3 border-t ${dark ? 'border-parchment-100/10' : 'border-parchment-100'}`}>
         <div className="flex items-center gap-3">
           {producer && (
             <span
@@ -98,9 +98,6 @@ export default function WineCard({ wine, producer, standalone = true, dark = fal
             </span>
           )}
         </div>
-        <span className={`text-sm font-serif font-semibold ${dark ? 'text-parchment-100' : 'text-olive-900'}`}>
-          ${wine.consumerPurchasePriceUSD}
-        </span>
       </div>
 
       {/* Add to Inquiry button */}
