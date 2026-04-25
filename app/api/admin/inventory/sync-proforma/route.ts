@@ -94,11 +94,12 @@ function generateSKU(producerId: string, wineName: string, vintage: number | nul
 
 /**
  * Match proforma entry to existing product in DB
- * Matching criteria:
- * 1. Producer company lookup (by slug or name pattern)
- * 2. Wine name similarity (60%+ token match)
- * 3. Vintage validation (if proforma specifies vintage, must match exactly)
- * 4. Format/size validation (bottleSizeMl must match exactly)
+ * Matching hierarchy:
+ * 1. Find company by producer ID (slug/name lookup)
+ * 2. Strict match: exact name + vintage + format (60%+ token similarity)
+ * 3. Format-flexible: exact name + vintage, any format (50%+ similarity)
+ * 4. Vintage-flexible: exact name, any vintage/format (50%+ similarity)
+ * 5. Name-only fallback: best name match at 50%+ similarity
  */
 async function matchProduct(proformaEntry: (typeof PROFORMA_DATA)[0]) {
   const normalizedName = normalizeWineName(proformaEntry.name)
@@ -109,6 +110,9 @@ async function matchProduct(proformaEntry: (typeof PROFORMA_DATA)[0]) {
       OR: [
         { slug: { contains: proformaEntry.producerId.toLowerCase(), mode: 'insensitive' } },
         { name: { contains: proformaEntry.producerId, mode: 'insensitive' } },
+        // Also try just first part of producer ID for partial matches
+        { slug: { startsWith: proformaEntry.producerId.substring(0, 3).toLowerCase(), mode: 'insensitive' } },
+        { name: { startsWith: proformaEntry.producerId.substring(0, 3), mode: 'insensitive' } },
       ],
     },
   })
@@ -129,45 +133,80 @@ async function matchProduct(proformaEntry: (typeof PROFORMA_DATA)[0]) {
     return null
   }
 
-  // Step 3: Try to match by name + vintage + format
+  // Helper function to calculate name similarity
+  const calculateSimilarity = (tokens1: string[], tokens2: string[]) => {
+    if (tokens1.length === 0 || tokens2.length === 0) return 0
+    const matches = tokens1.filter(t => tokens2.some(pt => pt.includes(t) || t.includes(pt)))
+    return matches.length / tokens1.length
+  }
+
+  let bestMatch: (typeof productCandidates)[0] | null = null
+  let bestMatchScore = 0
+
   for (const product of productCandidates) {
     const productNameNorm = normalizeWineName(product.name)
-
-    // Token-based similarity matching
     const proformaTokens = normalizedName.split(/[\s\-]+/).filter(t => t.length > 2)
     const productTokens = productNameNorm.split(/[\s\-]+/).filter(t => t.length > 2)
 
-    if (proformaTokens.length === 0 || productTokens.length === 0) {
+    const nameSimilarity = calculateSimilarity(proformaTokens, productTokens)
+
+    // Skip very poor matches
+    if (nameSimilarity < 0.4) {
       continue
     }
 
-    // Calculate token matches
-    const matches = proformaTokens.filter(t =>
-      productTokens.some(pt => pt.includes(t) || t.includes(pt))
-    )
-    const similarity = matches.length / proformaTokens.length
-
-    // Require 60% similarity
-    if (similarity < 0.6) {
-      continue
-    }
-
-    // Vintage must match exactly if specified in proforma
-    if (proformaEntry.vintage !== null) {
-      if (product.vintage === null || product.vintage !== proformaEntry.vintage) {
-        continue
+    // TIER 1: Exact format + vintage match (weight: 1.0)
+    if (
+      nameSimilarity >= 0.6 &&
+      product.bottleSizeMl === proformaEntry.bottleSizeMl &&
+      (proformaEntry.vintage === null || product.vintage === proformaEntry.vintage)
+    ) {
+      const score = nameSimilarity * 1.0
+      if (score > bestMatchScore) {
+        bestMatch = product
+        bestMatchScore = score
       }
     }
 
-    // Format/size must match exactly
-    if (product.bottleSizeMl === null || product.bottleSizeMl !== proformaEntry.bottleSizeMl) {
-      continue
+    // TIER 2: Format match, vintage flexible (weight: 0.9)
+    if (
+      nameSimilarity >= 0.55 &&
+      product.bottleSizeMl === proformaEntry.bottleSizeMl &&
+      (proformaEntry.vintage === null || product.vintage === null || product.vintage === proformaEntry.vintage)
+    ) {
+      const score = nameSimilarity * 0.9
+      if (score > bestMatchScore && !bestMatch) {
+        bestMatch = product
+        bestMatchScore = score
+      }
     }
 
-    return product
+    // TIER 3: Vintage match, format flexible (weight: 0.8)
+    if (
+      nameSimilarity >= 0.5 &&
+      (product.bottleSizeMl === null ||
+        product.bottleSizeMl === proformaEntry.bottleSizeMl ||
+        Math.abs(product.bottleSizeMl - proformaEntry.bottleSizeMl) <= 50) &&
+      (proformaEntry.vintage === null || product.vintage === proformaEntry.vintage)
+    ) {
+      const score = nameSimilarity * 0.8
+      if (score > bestMatchScore && !bestMatch) {
+        bestMatch = product
+        bestMatchScore = score
+      }
+    }
+
+    // TIER 4: Name only, best effort (weight: 0.6)
+    if (nameSimilarity >= 0.5) {
+      const score = nameSimilarity * 0.6
+      if (score > bestMatchScore && !bestMatch) {
+        bestMatch = product
+        bestMatchScore = score
+      }
+    }
   }
 
-  return null
+  return bestMatch
 }
 
 interface UpdatedProduct {
