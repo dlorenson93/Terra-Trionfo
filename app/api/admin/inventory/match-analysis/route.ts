@@ -53,7 +53,7 @@ function normalizeWineName(name: string): string {
 interface MatchingAttempt {
   proformaEntry: (typeof PROFORMA_DATA)[0]
   producerMatchFound: boolean
-  companiesFound: Array<{ id: string; name: string; slug: string }>
+  companiesFound: Array<{ id: string; name: string; slug: string | null }>
   candidateWines: Array<{
     id: string
     name: string
