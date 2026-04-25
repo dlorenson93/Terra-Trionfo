@@ -194,12 +194,7 @@ export async function POST(request: Request) {
         }
 
         // STEP 2: SKU Generation (MANDATORY)
-        const sku = generateSKU(
-          entry.producerId,
-          entry.name,
-          entry.vintage,
-          entry.bottleSizeMl
-        )
+        const sku = generateSKU(entry)
 
         // STEP 4 & 5: Cost alignment + Pricing recalculation
         // Input: costEUR (supplier acquisition cost)
