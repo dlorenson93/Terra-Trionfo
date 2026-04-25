@@ -2,53 +2,9 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { PROFORMA_DATA, normalizeWineName } from '@/data/proforma'
 
 export const dynamic = 'force-dynamic'
-
-const PROFORMA_DATA = [
-  { producerId: 'LAUTIN', name: 'El Bertu 2021', vintage: 2021, format: 'bottle', bottleSizeMl: 750, quantity: 480, costEUR: 8.00 },
-  { producerId: 'LAUTIN', name: 'Gemma Vitis (Bonarda) 2025', vintage: 2025, format: 'bottle', bottleSizeMl: 750, quantity: 960, costEUR: 5.60 },
-  { producerId: 'LAUTIN', name: 'Re Nero (Pinot Nero) 2022', vintage: 2022, format: 'bottle', bottleSizeMl: 750, quantity: 360, costEUR: 8.50 },
-  { producerId: 'LAUTIN', name: 'Le Ramie (Ramìe) 2024', vintage: 2024, format: 'bottle', bottleSizeMl: 750, quantity: 180, costEUR: 12.00 },
-  { producerId: 'LAUTIN', name: 'Musca Bianca 2023', vintage: 2023, format: 'bottle', bottleSizeMl: 750, quantity: 720, costEUR: 5.60 },
-  { producerId: 'LANTIERI', name: 'Franciacorta Brut', vintage: null, format: 'bottle', bottleSizeMl: 750, quantity: 960, costEUR: 12.50 },
-  { producerId: 'LANTIERI', name: 'Franciacorta Satèn', vintage: null, format: 'bottle', bottleSizeMl: 750, quantity: 480, costEUR: 14.20 },
-  { producerId: 'LANTIERI', name: 'Franciacorta Rosé', vintage: null, format: 'bottle', bottleSizeMl: 750, quantity: 480, costEUR: 14.20 },
-  { producerId: 'FACCINELLI', name: 'Rosso di Valtellina 2024', vintage: 2024, format: 'bottle', bottleSizeMl: 750, quantity: 600, costEUR: 10.40 },
-  { producerId: 'FACCINELLI', name: 'Grumello 2022', vintage: 2022, format: 'bottle', bottleSizeMl: 750, quantity: 480, costEUR: 15.80 },
-  { producerId: 'FACCINELLI', name: 'Grumello Riserva 2021', vintage: 2021, format: 'bottle', bottleSizeMl: 750, quantity: 120, costEUR: 23.50 },
-  { producerId: 'RANDI', name: 'Blu di Burson', vintage: null, format: 'bottle', bottleSizeMl: 750, quantity: 720, costEUR: 5.80 },
-  { producerId: 'RANDI', name: 'Burson Selezione', vintage: null, format: 'bottle', bottleSizeMl: 750, quantity: 720, costEUR: 8.90 },
-  { producerId: 'RANDI', name: 'Skin Contact White', vintage: null, format: 'bottle', bottleSizeMl: 750, quantity: 720, costEUR: 6.40 },
-  { producerId: 'RANDI', name: 'Spritz 250ml', vintage: null, format: 'can', bottleSizeMl: 250, quantity: 7920, costEUR: 1.80 },
-  { producerId: 'RANDI', name: 'Bianco 187ml', vintage: null, format: 'can', bottleSizeMl: 187, quantity: 2376, costEUR: 1.75 },
-  { producerId: 'RANDI', name: 'Rosso 187ml', vintage: null, format: 'can', bottleSizeMl: 187, quantity: 2376, costEUR: 1.75 },
-  { producerId: 'RANDI', name: 'Bianco Frizzante', vintage: null, format: 'can', bottleSizeMl: 187, quantity: 2376, costEUR: 1.75 },
-  { producerId: 'RANDI', name: 'Rosato Frizzante', vintage: null, format: 'can', bottleSizeMl: 187, quantity: 2376, costEUR: 1.75 },
-  { producerId: 'STROPP', name: "Barbera d'Alba", vintage: null, format: 'bottle', bottleSizeMl: 750, quantity: 480, costEUR: 4.50 },
-  { producerId: 'STROPP', name: 'Barolo Leonardo', vintage: null, format: 'bottle', bottleSizeMl: 750, quantity: 960, costEUR: 10.50 },
-  { producerId: 'STROPP', name: 'Barolo Bricco Cogni 2019', vintage: 2019, format: 'bottle', bottleSizeMl: 750, quantity: 420, costEUR: 13.00 },
-  { producerId: 'STROPP', name: 'Barolo Bussia', vintage: null, format: 'bottle', bottleSizeMl: 750, quantity: 120, costEUR: 19.00 },
-  { producerId: 'ZANOTELLI', name: 'Kerner 2025', vintage: 2025, format: 'bottle', bottleSizeMl: 750, quantity: 720, costEUR: 7.10 },
-  { producerId: 'ZANOTELLI', name: 'Lagrein 2025', vintage: 2025, format: 'bottle', bottleSizeMl: 750, quantity: 720, costEUR: 7.30 },
-  { producerId: 'ZANOTELLI', name: 'Schiava 2024', vintage: 2024, format: 'bottle', bottleSizeMl: 750, quantity: 720, costEUR: 5.95 },
-  { producerId: 'ZANOTELLI', name: 'Riesling 2023', vintage: 2023, format: 'bottle', bottleSizeMl: 750, quantity: 6, costEUR: 0 },
-]
-
-function normalizeWineName(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/\bdocg?\b/gi, '')
-    .replace(/[éèê]/g, 'e')
-    .replace(/[àáâ]/g, 'a')
-    .replace(/[òó]/g, 'o')
-    .replace(/ô/g, 'o')
-    .replace(/ù/g, 'u')
-    .replace(/œ/g, 'oe')
-    .replace(/['\-']/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
 
 interface MatchingAttempt {
   proformaEntry: (typeof PROFORMA_DATA)[0]
@@ -92,15 +48,21 @@ export async function POST(request: Request) {
     for (const proformaEntry of PROFORMA_DATA) {
       const normalizedName = normalizeWineName(proformaEntry.name)
 
-      // Find companies for this producer
-      const companies = await prisma.company.findMany({
-        where: {
-          OR: [
-            { slug: { contains: proformaEntry.producerId.toLowerCase(), mode: 'insensitive' } },
-            { name: { contains: proformaEntry.producerId, mode: 'insensitive' } },
-          ],
-        },
+      // Find the canonical supplier by slug first, then fallback to the original producer code lookup.
+      const exactCompany = await prisma.company.findUnique({
+        where: { slug: proformaEntry.companySlug },
       })
+
+      const companies = exactCompany
+        ? [exactCompany]
+        : await prisma.company.findMany({
+            where: {
+              OR: [
+                { slug: { contains: proformaEntry.producerId.toLowerCase(), mode: 'insensitive' } },
+                { name: { contains: proformaEntry.producerId, mode: 'insensitive' } },
+              ],
+            },
+          })
 
       const analysis: MatchingAttempt = {
         proformaEntry,
