@@ -60,6 +60,18 @@
         "reveal": "always",
         "panel": "new"
       }
+    },
+    {
+      "label": "Push match-analysis fix",
+      "type": "shell",
+      "command": "git add app/api/admin/inventory/match-analysis/route.ts && git commit -m 'fix: match-analysis nullable company slug' && git push origin main",
+      "options": {
+        "cwd": "/workspaces/Terra-Trionfo"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
     }
   ]
 }

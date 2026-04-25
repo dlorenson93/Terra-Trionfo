@@ -2,54 +2,11 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { PROFORMA_PRODUCT_SLUGS } from '@/data/proforma'
 
 export const dynamic = 'force-dynamic'
 
-/**
- * PROFORMA PRODUCT IDs - Source of Truth
- * These are the exact 27 wines that should exist in the database.
- * All others will be identified as duplicates/out-of-scope.
- */
-const PROFORMA_PRODUCT_IDS = [
-  // L'AUTIN (5 wines)
-  'lautin-el-bertu-2021',
-  'lautin-gemma-vitis-bonarda-2025',
-  'lautin-re-nero-pinot-nero-2022',
-  'lautin-le-ramie-ramie-2024',
-  'lautin-musca-bianca-2023',
-
-  // LANTIERI (3 wines)
-  'lantieri-franciacorta-brut',
-  'lantieri-franciacorta-saten',
-  'lantieri-franciacorta-rose',
-
-  // LUCA FACCINELLI (3 wines)
-  'faccinelli-rosso-di-valtellina-2024',
-  'faccinelli-grumello-2022',
-  'faccinelli-grumello-riserva-2021',
-
-  // RANDI (8 wines: 3 bottles + 5 cans)
-  'randi-blu-di-burson',
-  'randi-burson-selezione',
-  'randi-skin-contact-white',
-  'randi-spritz-250ml',
-  'randi-bianco-187ml',
-  'randi-rosso-187ml',
-  'randi-bianco-frizzante',
-  'randi-rosato-frizzante',
-
-  // STROPPIANA (4 wines)
-  'stroppiana-barbera-d-alba',
-  'stroppiana-barolo-leonardo',
-  'stroppiana-barolo-bricco-cogni-2019',
-  'stroppiana-barolo-bussia',
-
-  // ZANOTELLI (4 wines)
-  'zanotelli-kerner-2025',
-  'zanotelli-lagrein-2025',
-  'zanotelli-schiava-2024',
-  'zanotelli-riesling-2023',
-]
+const canonicalProformaSlugs = new Set(PROFORMA_PRODUCT_SLUGS)
 
 interface CleanupResult {
   duplicatesRemoved: Array<{
@@ -169,10 +126,8 @@ export async function POST(request: Request) {
     const remainingProducts = allProducts.filter(p => !duplicateIds.has(p.id))
 
     for (const product of remainingProducts) {
-      // Check if this product slug is in the proforma list
-      const inProforma = PROFORMA_PRODUCT_IDS.some(
-        id => product.slug?.toLowerCase().includes(id.toLowerCase()) || id.includes(product.id)
-      )
+      const normalizedSlug = product.slug?.toLowerCase() ?? ''
+      const inProforma = canonicalProformaSlugs.has(normalizedSlug)
 
       if (!inProforma) {
         // This product is not in the proforma - mark as out-of-scope but don't delete

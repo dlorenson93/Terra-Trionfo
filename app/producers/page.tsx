@@ -60,7 +60,7 @@ export default async function ProducersPage() {
               {[
                 { number: '6', label: 'Italian Estates' },
                 { number: '4', label: 'Portfolio Regions' },
-                { number: '21', label: 'Wines Under Evaluation' },
+                { number: '27', label: 'Wines Under Evaluation' },
               ].map((stat) => (
                 <div key={stat.label} className="text-center px-6">
                   <p className="text-3xl font-serif font-bold text-parchment-100">{stat.number}</p>

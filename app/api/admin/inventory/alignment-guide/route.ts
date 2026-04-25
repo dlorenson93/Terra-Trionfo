@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { PROFORMA_DATA } from '@/data/proforma'
 
 export const dynamic = 'force-dynamic'
 
@@ -75,8 +76,8 @@ export async function GET(request: Request) {
         },
       ],
       summary: {
-        totalWines: 27,
-        producers: ['L\'AUTIN', 'LANTIERI', 'LUCA FACCINELLI', 'RANDI', 'STROPPIANA', 'ZANOTELLI'],
+        totalWines: PROFORMA_DATA.length,
+        producers: Array.from(new Set(PROFORMA_DATA.map((entry) => entry.producerId))),
         expectedDuplicateRemoval:
           'Any products with duplicate producer+name combinations (e.g., "Barolo Leonardo" appearing twice)',
         expectedSKUAssignment: 'All 27 matched products will receive SKU in format TT-{PRODUCER}-{WINE}-{VINTAGE}-{FORMAT}',

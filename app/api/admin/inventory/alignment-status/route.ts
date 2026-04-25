@@ -2,17 +2,11 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { PROFORMA_DATA, PROFORMA_COUNTS_BY_PRODUCER } from '@/data/proforma'
 
 export const dynamic = 'force-dynamic'
 
-const PROFORMA_COUNT_BY_PRODUCER = {
-  LAUTIN: 5,
-  LANTIERI: 3,
-  FACCINELLI: 3,
-  RANDI: 8,
-  STROPP: 4,
-  ZANOTELLI: 4,
-}
+const PROFORMA_COUNT_BY_PRODUCER = PROFORMA_COUNTS_BY_PRODUCER
 
 /**
  * Inventory alignment status
@@ -136,15 +130,15 @@ export async function GET(request: Request) {
       }
     }
 
-    const alignmentPercentage = (alignmentScore / 27) * 100
+    const alignmentPercentage = (alignmentScore / PROFORMA_DATA.length) * 100
 
     return NextResponse.json(
       {
         summary: {
           aligned: alignmentScore,
-          total: 27,
+          total: PROFORMA_DATA.length,
           percentage: Math.round(alignmentPercentage),
-          skuCoverage: `${totalWinesWithSKU}/27 have proforma SKU`,
+          skuCoverage: `${totalWinesWithSKU}/${PROFORMA_DATA.length} have proforma SKU`,
           dataQualityIssues: status.issues.length,
         },
         alignmentDetails,

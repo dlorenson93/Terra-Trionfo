@@ -366,7 +366,12 @@ export default function AdminDashboard() {
       const companiesData = await companiesRes.json()
       setCompanies(Array.isArray(companiesData) ? companiesData : [])
       const productsData = await productsRes.json()
-      setProducts(Array.isArray(productsData) ? productsData : [])
+      const productsList = Array.isArray(productsData)
+        ? productsData
+        : Array.isArray(productsData?.products)
+          ? productsData.products
+          : []
+      setProducts(productsList)
       const restaurantsData = await restaurantsRes.json()
       setRestaurants(Array.isArray(restaurantsData) ? restaurantsData : [])
       const zonesData = await zonesRes.json()
@@ -2776,7 +2781,7 @@ export default function AdminDashboard() {
                   <div>
                     <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-amber-600 mb-1">Internal Use Only · Not visible to consumers</p>
                     <h2 className="text-2xl font-serif font-bold text-olive-900 mb-1">Portfolio Pricing</h2>
-                    <p className="text-sm text-olive-500">Full distribution chain economics for all 21 portfolio wines. Consumers see only the final marketplace price.</p>
+                    <p className="text-sm text-olive-500">Full distribution chain economics for all 27 portfolio wines. Consumers see only the final marketplace price.</p>
                   </div>
                   <div className="flex flex-col sm:items-end gap-3">
                     <button
