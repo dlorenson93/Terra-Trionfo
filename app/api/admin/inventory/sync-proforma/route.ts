@@ -14,9 +14,9 @@ export const dynamic = 'force-dynamic'
 const PROFORMA_DATA = [
   // L'AUTIN (Piemonte Alps) - 5 wines
   { producerId: 'LAUTIN', name: 'El Bertu 2021', vintage: 2021, format: 'bottle', bottleSizeMl: 750, quantity: 480, costEUR: 8.00 },
-  { producerId: 'LAUTIN', name: 'Gemma Vitis Bonarda 2025', vintage: 2025, format: 'bottle', bottleSizeMl: 750, quantity: 960, costEUR: 5.60 },
-  { producerId: 'LAUTIN', name: 'Re Nero Pinot Nero 2022', vintage: 2022, format: 'bottle', bottleSizeMl: 750, quantity: 360, costEUR: 8.50 },
-  { producerId: 'LAUTIN', name: 'Le Ramie 2024', vintage: 2024, format: 'bottle', bottleSizeMl: 750, quantity: 180, costEUR: 12.00 },
+  { producerId: 'LAUTIN', name: 'Gemma Vitis (Bonarda) 2025', vintage: 2025, format: 'bottle', bottleSizeMl: 750, quantity: 960, costEUR: 5.60 },
+  { producerId: 'LAUTIN', name: 'Re Nero (Pinot Nero) 2022', vintage: 2022, format: 'bottle', bottleSizeMl: 750, quantity: 360, costEUR: 8.50 },
+  { producerId: 'LAUTIN', name: 'Le Ramie (Ramìe) 2024', vintage: 2024, format: 'bottle', bottleSizeMl: 750, quantity: 180, costEUR: 12.00 },
   { producerId: 'LAUTIN', name: 'Musca Bianca 2023', vintage: 2023, format: 'bottle', bottleSizeMl: 750, quantity: 720, costEUR: 5.60 },
 
   // LANTIERI (Franciacorta) - 3 wines
