@@ -246,7 +246,6 @@ model Product {
   id          String        @id @default(cuid())
   name        String
   slug        String?       @unique
-  sku         String?       @unique        // Standardized SKU: TT-PRODUCER-WINE-VINTAGE-FORMAT
   description String?
   category    ProductCategory
   imageUrl    String?
@@ -255,6 +254,7 @@ model Product {
   producerDisplayName String?
 
   // Wine / origin metadata (all optional — graceful on non-wine SKUs)
+  sku                String?       @unique  // Standardized product identifier
   vintage            Int?
   appellation        String?
   designation        String?
@@ -267,8 +267,9 @@ model Product {
   acidity            String?
   tannin             String?
   abv                Float?
-  bottleSizeMl       Int?        // Bottle/can size in ml (750, 250, 187, etc.)
-  format             String?     // 'bottle' | 'can' — explicit format tracking for inventory
+  bottleSizeMl       Int?
+  format             String?       // 'bottle' | 'can' — explicit format tracking
+  costEUR            Float?        // Supplier acquisition cost (EUR) — pricing engine input
 
   // Tasting profile
   tastingNotesShort  String?
@@ -299,7 +300,6 @@ model Product {
   // Commerce model fields
   commerceModel   CommerceModel @default(MARKETPLACE)
   listingOwner    ListingOwner  @default(VENDOR)
-  costEUR         Float?        // Supplier acquisition cost in EUR — source for pricing engine
   vendorPriceCents Int?
   wholesalePriceCents Int?
   retailPriceCents  Int            // required for consumer checkout
