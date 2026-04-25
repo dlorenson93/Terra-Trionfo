@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { PROFORMA_DATA, PROFORMA_COUNTS_BY_PRODUCER } from '@/data/proforma'
+import { PROFORMA_DATA, PROFORMA_COUNTS_BY_PRODUCER } from '../../../../../data/proforma'
 
 export const dynamic = 'force-dynamic'
 

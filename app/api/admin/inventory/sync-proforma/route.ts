@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { buildWinePricing } from '@/utils/pricingEngine'
-import { PROFORMA_DATA, generateSKU, normalizeWineName } from '@/data/proforma'
+import { PROFORMA_DATA, generateSKU, normalizeWineName } from '../../../../../data/proforma'
 
 export const dynamic = 'force-dynamic'
 
