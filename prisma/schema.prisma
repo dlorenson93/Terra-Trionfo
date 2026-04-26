@@ -602,13 +602,15 @@ model SubscriptionSelection {
 }
 
 model SubscriptionAuditLog {
-  id         String @id @default(cuid())
-  action     String
-  entityType String
-  entityId   String
-  details    Json
-  createdBy  String
-  createdAt  DateTime @default(now())
+  id            String @id @default(cuid())
+  subscriptionId String?
+  subscription  Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  action        String
+  entityType    String
+  entityId      String
+  details       Json
+  createdBy     String
+  createdAt     DateTime @default(now())
 
   @@map("subscription_audit_logs")
 }
