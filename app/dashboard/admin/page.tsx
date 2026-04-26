@@ -1537,10 +1537,10 @@ export default function AdminDashboard() {
             <div>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 {[
-                  { label: 'Vendors',  value: stats.totalVendors,              alert: stats.pendingCompanies > 0 ? `${stats.pendingCompanies} pending` : null },
-                  { label: 'Products', value: stats.totalProducts,             alert: stats.pendingProducts  > 0 ? `${stats.pendingProducts} pending`  : null },
-                  { label: 'Orders',   value: stats.totalOrders,               alert: null },
-                  { label: 'Revenue',  value: stats.totalRevenue !== undefined && stats.totalRevenue !== null ? `$${Number(stats.totalRevenue).toFixed(2)}` : '$0.00', alert: null },
+                  { label: 'Vendors',  value: stats.totalVendors || 0,              alert: (stats.pendingCompanies || 0) > 0 ? `${stats.pendingCompanies} pending` : null },
+                  { label: 'Products', value: stats.totalProducts || 0,             alert: (stats.pendingProducts || 0) > 0 ? `${stats.pendingProducts} pending`  : null },
+                  { label: 'Orders',   value: stats.totalOrders || 0,               alert: null },
+                  { label: 'Revenue',  value: stats.totalRevenue ? `$${Number(stats.totalRevenue).toFixed(2)}` : '$0.00', alert: null },
                 ].map((stat) => (
                   <div key={stat.label} className="bg-white border border-olive-200 p-5">
                     <p className="text-xs font-medium text-olive-500 uppercase tracking-wider mb-2">{stat.label}</p>
