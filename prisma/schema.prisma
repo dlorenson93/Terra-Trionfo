@@ -532,6 +532,7 @@ model Order {
   orderItems OrderItem[]
   subscriptionShipment SubscriptionShipment? @relation(fields: [subscriptionShipmentId], references: [id], onDelete: Cascade)
 
+  @@index([subscriptionShipmentId])
   @@map("orders")
 }
 
