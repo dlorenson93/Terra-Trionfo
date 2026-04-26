@@ -389,6 +389,24 @@ export default function AdminDashboard() {
       setShowConsumerPrices(settingsData?.showConsumerPrices ?? false)
     } catch (error) {
       console.error('Error fetching data:', error)
+      // Set default empty data to prevent dashboard crash
+      setStats({
+        totalVendors: 0,
+        totalProducts: 0,
+        totalOrders: 0,
+        totalRevenue: 0,
+        pendingCompanies: 0,
+        pendingProducts: 0,
+        recentOrders: [],
+      })
+      setCompanies([])
+      setProducts([])
+      setRestaurants([])
+      setDeliveryZones([])
+      setDeliveryRoutes([])
+      setPickupSchedules([])
+      setPickupLocationsList([])
+      setCustomers([])
     } finally {
       setIsLoading(false)
     }
