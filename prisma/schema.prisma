@@ -384,6 +384,7 @@ model Product {
   tradeInterests  TradeInterest[]
   recommendationHistory ProductRecommendationHistory[]
   planningDecisions     ProductPlanningDecision[]
+  subscriptionSelections SubscriptionSelection[]
 
   @@map("products")
 }
