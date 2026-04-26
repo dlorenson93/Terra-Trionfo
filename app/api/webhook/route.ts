@@ -178,11 +178,14 @@ export async function POST(request: Request) {
             'stripe-webhook',
           )
 
+          // Fetch the Stripe subscription to get the current billing period end
+          const stripeSubscription = await stripe.subscriptions.retrieve(stripeSubscriptionId)
+
           await prisma.subscription.update({
             where: { id: subscription.id },
             data: {
-              nextBillingDate: invoice.current_period_end
-                ? new Date(invoice.current_period_end * 1000)
+              nextBillingDate: stripeSubscription.current_period_end
+                ? new Date(stripeSubscription.current_period_end * 1000)
                 : null,
             },
           })
