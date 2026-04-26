@@ -71,6 +71,37 @@ enum ProductCategory {
   MERCH
 }
 
+enum ProductReleaseStatus {
+  UPCOMING
+  AVAILABLE
+  SOLD_OUT
+  ALLOCATED
+}
+
+enum OrderType {
+  STANDARD
+  SUBSCRIPTION
+}
+
+enum MembershipTier {
+  APERTURA
+  COLLEZIONE
+  RISERVA
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAUSED
+  CANCELLED
+}
+
+enum SubscriptionShipmentStatus {
+  DRAFT
+  VALIDATED
+  GENERATED
+  FULFILLED
+}
+
 // Controls staged public visibility — content can be fully prepared
 // before being made public. LIVE is the only state visible to the public.
 enum ContentStatus {
@@ -197,6 +228,7 @@ model User {
   // Relations
   companies Company[]
   orders    Order[]
+  subscriptions Subscription[]
   addresses CustomerAddress[]
   recommendationActions ProductRecommendationHistory[]
   planningDecisions     ProductPlanningDecision[]
@@ -308,6 +340,8 @@ model Product {
 
   inventory Int     @default(0)
   status    ProductStatus @default(PENDING)
+  releaseStatus ProductReleaseStatus @default(AVAILABLE)
+  allocationRemaining Int @default(0)
 
   // Release intelligence metadata — populated by admin review or optimization engine
   releaseActivatedAt       DateTime?
@@ -480,12 +514,14 @@ model BiasGovernance {
 model Order {
   id        String      @id @default(cuid())
   total     Float
+  orderType OrderType   @default(STANDARD)
   status    OrderStatus @default(PENDING)
   fulfillmentType FulfillmentType
   deliveryFeeCents Int @default(0)
   scheduledDeliveryDate DateTime?
   pickupLocationId String?
   stripeSessionId  String?  @unique
+  subscriptionShipmentId String?
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
 
@@ -493,6 +529,7 @@ model Order {
   userId     String
   user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   orderItems OrderItem[]
+  subscriptionShipment SubscriptionShipment? @relation(fields: [subscriptionShipmentId], references: [id], onDelete: Cascade)
 
   @@map("orders")
 }
@@ -510,6 +547,68 @@ model OrderItem {
   product   Product @relation(fields: [productId], references: [id])
 
   @@map("order_items")
+}
+
+model Subscription {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tier              MembershipTier
+  status            SubscriptionStatus @default(ACTIVE)
+  monthlyPriceCents Int
+  bottlesPerMonth   Int
+  stripeSubscriptionId String? @unique
+  nextBillingDate   DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  shipments         SubscriptionShipment[]
+  auditLogs         SubscriptionAuditLog[]
+
+  @@map("subscriptions")
+}
+
+model SubscriptionShipment {
+  id             String   @id @default(cuid())
+  subscriptionId String
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  month          Int
+  year           Int
+  status         SubscriptionShipmentStatus @default(DRAFT)
+  generatedAt    DateTime?
+  fulfilledAt    DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  orders         Order[]
+
+  @@index([subscriptionId])
+  @@index([month, year])
+  @@map("subscription_shipments")
+}
+
+model SubscriptionSelection {
+  id        String @id @default(cuid())
+  tier      MembershipTier
+  month     Int
+  year      Int
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity  Int
+  createdAt DateTime @default(now())
+
+  @@unique([tier, month, year, productId])
+  @@map("subscription_selections")
+}
+
+model SubscriptionAuditLog {
+  id         String @id @default(cuid())
+  action     String
+  entityType String
+  entityId   String
+  details    Json
+  createdBy  String
+  createdAt  DateTime @default(now())
+
+  @@map("subscription_audit_logs")
 }
 
 model Settings {

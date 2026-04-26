@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
+import MembershipAdminPanel from '@/components/admin/MembershipAdminPanel'
 import { WINES } from '@/data/wines'
 import { PRODUCERS } from '@/data/producers'
 import {
@@ -175,7 +176,7 @@ export default function AdminDashboard() {
   const [products, setProducts] = useState<Product[]>([])
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
-  const [activeTab, setActiveTab] = useState<'overview' | 'companies' | 'products' | 'restaurants' | 'fulfillment' | 'portfolio-pricing' | 'customers' | 'release-intelligence'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'companies' | 'products' | 'restaurants' | 'fulfillment' | 'portfolio-pricing' | 'customers' | 'memberships' | 'release-intelligence'>('overview')
   const [fulfillmentSubTab, setFulfillmentSubTab] = useState<'zones' | 'routes' | 'schedules'>('zones')
 
   // Inline product edit state
@@ -1390,6 +1391,7 @@ export default function AdminDashboard() {
                 { key: 'companies',              label: 'Companies',  badge: stats?.pendingCompanies  },
                 { key: 'products',               label: 'Products',   badge: stats?.pendingProducts   },
                 { key: 'customers',              label: 'Customers' },
+                { key: 'memberships',            label: 'Memberships' },
                 'divider',
                 { key: 'restaurants',            label: 'Restaurants' },
                 'divider',
@@ -1578,6 +1580,12 @@ export default function AdminDashboard() {
               </div>
             </div>
           )}
+          {/* Memberships Tab */}
+          {activeTab === 'memberships' && (
+            <div className="bg-white border border-olive-200 p-6">
+              <MembershipAdminPanel />
+            </div>
+          )}
           {/* Customers Tab */}
           {activeTab === 'customers' && (
             <div className="bg-white border border-olive-200 p-6">
@@ -1725,6 +1733,13 @@ export default function AdminDashboard() {
                   </tbody>
                 </table>
               </div>
+            </div>
+          )}
+
+          {/* Memberships Tab */}
+          {activeTab === 'memberships' && (
+            <div className="bg-white border border-olive-200 p-6">
+              <MembershipAdminPanel />
             </div>
           )}
 
