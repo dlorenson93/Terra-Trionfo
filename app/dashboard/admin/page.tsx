@@ -1522,7 +1522,7 @@ export default function AdminDashboard() {
                   { label: 'Vendors',  value: stats.totalVendors,              alert: stats.pendingCompanies > 0 ? `${stats.pendingCompanies} pending` : null },
                   { label: 'Products', value: stats.totalProducts,             alert: stats.pendingProducts  > 0 ? `${stats.pendingProducts} pending`  : null },
                   { label: 'Orders',   value: stats.totalOrders,               alert: null },
-                  { label: 'Revenue',  value: `$${stats.totalRevenue.toFixed(2)}`, alert: null },
+                  { label: 'Revenue',  value: stats.totalRevenue !== undefined && stats.totalRevenue !== null ? `$${Number(stats.totalRevenue).toFixed(2)}` : '$0.00', alert: null },
                 ].map((stat) => (
                   <div key={stat.label} className="bg-white border border-olive-200 p-5">
                     <p className="text-xs font-medium text-olive-500 uppercase tracking-wider mb-2">{stat.label}</p>

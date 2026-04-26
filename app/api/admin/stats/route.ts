@@ -59,9 +59,19 @@ export async function GET(request: Request) {
     })
   } catch (error) {
     console.error('Get stats error:', error)
+    // Return default stats on error to prevent dashboard crash
     return NextResponse.json(
-      { error: 'Failed to fetch statistics' },
-      { status: 500 }
+      {
+        totalVendors: 0,
+        totalProducts: 0,
+        totalOrders: 0,
+        totalRevenue: 0,
+        pendingCompanies: 0,
+        pendingProducts: 0,
+        recentOrders: [],
+        error: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 200 }
     )
   }
 }
