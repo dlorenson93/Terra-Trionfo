@@ -265,7 +265,29 @@ async function main() {
 
   console.log(`✅ ${WINES.length} portfolio wines seeded as products`)
 
-  const provisionProducts = [
+  interface ProvisionProduct {
+    id: string
+    slug: string
+    name: string
+    description: string
+    category: ProductCategory
+    region: string
+    country: string
+    commerceModel: CommerceModel
+    listingOwner: ListingOwner
+    retailPriceCents: number
+    wholesalePriceCents: number
+    inventory: number
+    status: ProductStatus
+    contentStatus: string
+    companyId: string
+    bottleSizeMl: number
+    format: string
+    producerDisplayName: string
+    isFeatured?: boolean
+  }
+
+  const provisionProducts: ProvisionProduct[] = [
     {
       id: 'organic-olive-oil-sicily-075l',
       slug: 'organic-extra-virgin-olive-oil-sicily-075l',
