@@ -1,0 +1,6 @@
+-- AlterTable
+ALTER TYPE "ProductCategory" ADD VALUE 'PASTA';
+ALTER TYPE "ProductCategory" ADD VALUE 'ESPRESSO';
+ALTER TYPE "ProductCategory" ADD VALUE 'SALUMI';
+ALTER TYPE "ProductCategory" ADD VALUE 'RED_WINE_VINEGAR';
+ALTER TYPE "ProductCategory" ADD VALUE 'ARTISANAL_CRACKERS';

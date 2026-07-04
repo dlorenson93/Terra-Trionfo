@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
+import { getAllowedCommerceModelsForCategory } from '@/lib/productCommerceRules'
 
 interface Company {
   id: string
@@ -78,6 +79,8 @@ export default function VendorDashboard() {
     foodPairings: '',
   })
 
+  const allowedCommerceModels = useMemo(() => getAllowedCommerceModelsForCategory(productForm.category), [productForm.category])
+
   useEffect(() => {
     if (!session) {
       router.push('/auth/signin')
@@ -89,6 +92,12 @@ export default function VendorDashboard() {
     }
     fetchData()
   }, [session])
+
+  useEffect(() => {
+    if (productForm.category && !allowedCommerceModels.includes(productForm.commerceModel as any)) {
+      setProductForm((prev) => ({ ...prev, commerceModel: allowedCommerceModels[0] ?? 'MARKETPLACE' }))
+    }
+  }, [allowedCommerceModels, productForm.category, productForm.commerceModel])
 
   const fetchData = async () => {
     try {
@@ -190,6 +199,11 @@ export default function VendorDashboard() {
     e.preventDefault()
     if (!company) {
       alert('Please register your company first')
+      return
+    }
+
+    if (!allowedCommerceModels.includes(productForm.commerceModel as any)) {
+      alert(`This category can only be listed as: ${allowedCommerceModels.join(', ')}`)
       return
     }
     if (company.status !== 'APPROVED') {
@@ -546,6 +560,11 @@ export default function VendorDashboard() {
                         <option value="">Select category</option>
                         <option value="WINE">Wine</option>
                         <option value="OLIVE_OIL">Olive Oil</option>
+                        <option value="PASTA">Pasta</option>
+                        <option value="ESPRESSO">Espresso</option>
+                        <option value="SALUMI">Salumi</option>
+                        <option value="RED_WINE_VINEGAR">Red Wine Vinegar</option>
+                        <option value="ARTISANAL_CRACKERS">Artisanal Crackers</option>
                       </select>
                     </div>
 
@@ -831,9 +850,9 @@ export default function VendorDashboard() {
                           required
                           className="input-field"
                         >
-                          <option value="MARKETPLACE">Marketplace</option>
-                          <option value="WHOLESALE">Wholesale</option>
-                          <option value="HYBRID">Hybrid</option>
+                          {allowedCommerceModels.map((model) => (
+                            <option key={model} value={model}>{model === 'MARKETPLACE' ? 'Marketplace' : model === 'WHOLESALE' ? 'Wholesale' : 'Hybrid'}</option>
+                          ))}
                         </select>
                       </div>
                       <div>

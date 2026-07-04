@@ -5,6 +5,11 @@
 export const VISIBLE_CATEGORIES = [
   'WINE',
   'OLIVE_OIL',
+  'PASTA',
+  'ESPRESSO',
+  'SALUMI',
+  'RED_WINE_VINEGAR',
+  'ARTISANAL_CRACKERS',
 ] as const
 
 export type VisibleCategory = (typeof VISIBLE_CATEGORIES)[number]
@@ -13,6 +18,11 @@ export type VisibleCategory = (typeof VISIBLE_CATEGORIES)[number]
 export const CATEGORY_LABELS: Record<string, string> = {
   WINE: 'Wine',
   OLIVE_OIL: 'Olive Oil',
+  PASTA: 'Pasta',
+  ESPRESSO: 'Espresso',
+  SALUMI: 'Salumi',
+  RED_WINE_VINEGAR: 'Red Wine Vinegar',
+  ARTISANAL_CRACKERS: 'Artisanal Crackers',
   SPIRITS: 'Spirits',
   BEER: 'Beer',
   FOOD: 'Artisan Food',
@@ -24,6 +34,11 @@ export const CATEGORY_LABELS: Record<string, string> = {
 export const CATEGORY_ICONS: Record<string, string> = {
   WINE: '🍷',
   OLIVE_OIL: '🫒',
+  PASTA: '🍝',
+  ESPRESSO: '☕',
+  SALUMI: '🥩',
+  RED_WINE_VINEGAR: '🧴',
+  ARTISANAL_CRACKERS: '🥨',
   SPIRITS: '🥃',
   BEER: '🍺',
   FOOD: '🧀',

@@ -64,6 +64,11 @@ enum FulfillmentType {
 enum ProductCategory {
   WINE
   OLIVE_OIL
+  PASTA
+  ESPRESSO
+  SALUMI
+  RED_WINE_VINEGAR
+  ARTISANAL_CRACKERS
   SPIRITS
   BEER
   FOOD

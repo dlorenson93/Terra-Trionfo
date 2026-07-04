@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { VISIBLE_CATEGORIES } from '@/config/marketplace'
+import { getAllowedCommerceModelsForCategory, isCategoryEligibleForCommerceModel } from '@/lib/productCommerceRules'
 
 export const dynamic = 'force-dynamic'
 
@@ -114,6 +115,14 @@ export async function POST(request: Request) {
     if (!companyId || !name || !category || !commerceModel || !listingOwner) {
       return NextResponse.json(
         { error: 'Missing required fields' },
+        { status: 400 }
+      )
+    }
+
+    if (!isCategoryEligibleForCommerceModel(category, commerceModel)) {
+      const allowedModels = getAllowedCommerceModelsForCategory(category).join(', ')
+      return NextResponse.json(
+        { error: `Category ${category} can only be listed under: ${allowedModels}` },
         { status: 400 }
       )
     }

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { getAllowedCommerceModelsForCategory, isCategoryEligibleForCommerceModel } from '@/lib/productCommerceRules'
 
 export const dynamic = 'force-dynamic'
 
@@ -209,6 +210,14 @@ export async function PATCH(
       servingTemperature, decantingNotes, foodPairings, sustainabilityNotes,
       producerStoryExcerpt, isLimitedAllocation, isFeatured, isFoundingWine, badgeText,
     } = requestBody
+    if (commerceModel && category && !isCategoryEligibleForCommerceModel(category, commerceModel)) {
+      const allowedModels = getAllowedCommerceModelsForCategory(category).join(', ')
+      return NextResponse.json(
+        { error: `Category ${category} can only be listed under: ${allowedModels}` },
+        { status: 400 }
+      )
+    }
+
     const vendorData: any = {
       name, description, category, imageUrl, commerceModel,
       retailPriceCents, wholesalePriceCents, vendorPriceCents, inventory,

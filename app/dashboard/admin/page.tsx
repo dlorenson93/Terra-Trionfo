@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import MembershipAdminPanel from '@/components/admin/MembershipAdminPanel'
+import { getAllowedCommerceModelsForCategory } from '@/lib/productCommerceRules'
 import { WINES } from '@/data/wines'
 import { PRODUCERS } from '@/data/producers'
 import {
@@ -182,6 +183,7 @@ export default function AdminDashboard() {
   // Inline product edit state
   const [editingProduct, setEditingProduct] = useState<{
     id: string
+    category: string
     commerceModel: string
     listingOwner: string
     retailPriceDollars: string
@@ -893,6 +895,7 @@ export default function AdminDashboard() {
   const editProduct = (prod: Product) => {
     setEditingProduct({
       id: prod.id,
+      category: prod.category,
       commerceModel: prod.commerceModel,
       listingOwner: prod.listingOwner,
       retailPriceDollars: (prod.retailPriceCents / 100).toFixed(2),
@@ -902,6 +905,8 @@ export default function AdminDashboard() {
       isLimitedAllocation: prod.isLimitedAllocation,
     })
   }
+
+  const allowedCommerceModelsForEditingProduct = editingProduct ? getAllowedCommerceModelsForCategory(editingProduct.category) : []
 
   const saveProductEdit = async () => {
     if (!editingProduct) return
@@ -1482,9 +1487,9 @@ export default function AdminDashboard() {
                       value={editingProduct.commerceModel}
                       onChange={(e) => setEditingProduct((p) => p ? { ...p, commerceModel: e.target.value } : null)}
                     >
-                      <option value="MARKETPLACE">Marketplace</option>
-                      <option value="WHOLESALE">Wholesale</option>
-                      <option value="HYBRID">Hybrid</option>
+                      {allowedCommerceModelsForEditingProduct.map((model) => (
+                        <option key={model} value={model}>{model === 'MARKETPLACE' ? 'Marketplace' : model === 'WHOLESALE' ? 'Wholesale' : 'Hybrid'}</option>
+                      ))}
                     </select>
                   </div>
                   <div>
