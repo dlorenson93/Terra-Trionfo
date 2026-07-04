@@ -17,6 +17,8 @@ interface ProducerRow {
   isFoundingProducer?: boolean
 }
 
+export const dynamic = 'force-dynamic'
+
 export default async function ProducersPage() {
   const rawProducers = await prisma.company.findMany({
     where: { status: 'APPROVED', contentStatus: 'LIVE' },

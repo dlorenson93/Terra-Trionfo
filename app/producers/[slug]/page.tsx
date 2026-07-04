@@ -29,6 +29,8 @@ interface ProducerFull {
   isFoundingProducer?: boolean
 }
 
+export const dynamic = 'force-dynamic'
+
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const slug = params.slug
   const rawCompany = await prisma.company.findFirst({

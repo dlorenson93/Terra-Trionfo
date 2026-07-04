@@ -8,6 +8,8 @@ import Collections from '@/components/home/Collections'
 import FeaturedProducers from '@/components/home/FeaturedProducers'
 import FeaturedProducts from '@/components/home/FeaturedProducts'
 
+export const dynamic = 'force-dynamic'
+
 export default function HomePage() {
   return (
     <div className="min-h-screen flex flex-col">
