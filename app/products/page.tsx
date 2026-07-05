@@ -68,10 +68,8 @@ function ProductsContent() {
   const selectedCategoryLabel = selectedCategoryKey ? CATEGORY_LABELS[selectedCategoryKey] ?? selectedCategoryKey : 'All'
   const isWineView = !selectedCategoryKey || selectedCategoryKey === 'WINE'
   const isOliveOilView = selectedCategoryKey === 'OLIVE_OIL'
-  const fallbackTitle = isOliveOilView ? 'Curated Olive Oil' : 'Curated Wines'
-  const fallbackDescription = isOliveOilView
-    ? 'Organic and small-production olive oils selected for their freshness, structure, and origin.'
-    : 'Estates and wines currently being tasted for U.S. import. Pricing available to on-trade partners upon request.'
+  const shouldShowWinePortfolioFallback = isWineView && products.length === 0
+  const shouldShowCategoryEmptyState = products.length === 0 && !shouldShowWinePortfolioFallback
 
   // Filtered portfolio wines derived from both filter dimensions
   const filteredWines = useMemo(() => {
@@ -172,8 +170,8 @@ function ProductsContent() {
               <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-olive-700"></div>
               <p className="text-olive-700 mt-4">Loading products...</p>
             </div>
-          ) : (isWineView || isOliveOilView) && products.length === 0 ? (
-            // No live products yet — show the incoming portfolio inline
+          ) : shouldShowWinePortfolioFallback ? (
+            // No live products yet — show the incoming portfolio inline for the wine view only.
             <div>
               {/* Section header */}
               <div className="mb-6">
@@ -181,10 +179,10 @@ function ProductsContent() {
                   Curated Selection
                 </p>
                 <h2 className="text-2xl font-serif font-bold text-olive-900 mb-1">
-                  {fallbackTitle}
+                  Curated Wines
                 </h2>
                 <p className="text-sm text-olive-500 max-w-2xl leading-relaxed">
-                  {fallbackDescription}
+                  Estates and wines currently being tasted for U.S. import. Pricing available to on-trade partners upon request.
                 </p>
               </div>
 
@@ -315,22 +313,21 @@ function ProductsContent() {
                 />
               )) : null}
             </div>
-          ) : (
-            // Category has no products yet and no portfolio section applies (e.g. Olive Oil)
+          ) : shouldShowCategoryEmptyState ? (
             <div className="py-24 text-center">
               <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-olive-400 mb-5">
-                Coming Soon
+                Curated category
               </p>
               <h2 className="text-2xl font-serif font-semibold text-olive-800 mb-4">
-                {selectedCategoryLabel === 'All' ? 'Curated Selection' : `${selectedCategoryLabel} Selection in Curation`}
+                {isOliveOilView ? 'Olive Oil selections are being curated' : `${selectedCategoryLabel} selections are being curated`}
               </h2>
               <p className="text-sm text-olive-500 max-w-sm mx-auto leading-relaxed">
-                We are actively sourcing exceptional single-estate producers for this
-                category. Selections will be added as estates complete the Terra Trionfo
-                review process.
+                {isOliveOilView
+                  ? 'Olive oil selections will appear here as approved products are published to the portfolio.'
+                  : 'This category will appear here as soon as approved products are published to the portfolio.'}
               </p>
             </div>
-          )}
+          ) : null}
         </div>
       </main>
 
