@@ -66,6 +66,12 @@ function ProductsContent() {
   const [regionFilter, setRegionFilter] = useState<string>('all')
   const [producerFilter, setProducerFilter] = useState<string>('all')
   const categories = ['All', ...VISIBLE_CATEGORIES.map((c) => CATEGORY_LABELS[c] ?? c)]
+  const isWineView = selectedCategory === '' || selectedCategory === 'Wine'
+  const isOliveOilView = selectedCategory === 'Olive Oil'
+  const fallbackTitle = isOliveOilView ? 'Curated Olive Oil' : 'Curated Wines'
+  const fallbackDescription = isOliveOilView
+    ? 'Organic and small-production olive oils selected for their freshness, structure, and origin.'
+    : 'Estates and wines currently being tasted for U.S. import. Pricing available to on-trade partners upon request.'
 
   // Filtered portfolio wines derived from both filter dimensions
   const filteredWines = useMemo(() => {
@@ -169,20 +175,19 @@ function ProductsContent() {
               <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-olive-700"></div>
               <p className="text-olive-700 mt-4">Loading products...</p>
             </div>
-          ) : (selectedCategory === '' || selectedCategory === 'Wine') && products.length === 0 ? (
-            // No live products yet — show the incoming portfolio wines inline
+          ) : (isWineView || isOliveOilView) && products.length === 0 ? (
+            // No live products yet — show the incoming portfolio inline
             <div>
               {/* Section header */}
               <div className="mb-6">
                 <p className="text-[10px] font-medium tracking-[0.14em] uppercase text-olive-400 mb-2">
-                  Incoming Portfolio
+                  Curated Selection
                 </p>
                 <h2 className="text-2xl font-serif font-bold text-olive-900 mb-1">
-                  Wines Under Evaluation
+                  {fallbackTitle}
                 </h2>
                 <p className="text-sm text-olive-500 max-w-2xl leading-relaxed">
-                  Estates and wines currently being tasted for U.S. import.
-                  Pricing available to on-trade partners upon request.
+                  {fallbackDescription}
                 </p>
               </div>
 
