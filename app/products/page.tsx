@@ -49,25 +49,25 @@ function ProductsContent() {
   const searchParams = useSearchParams()
 
   // Initialise from URL param ?category=WINE (enum key) on first render
-  const initialCategory = (() => {
+  const initialCategoryKey = (() => {
     const param = searchParams.get('category')
     if (!param) return ''
-    // Accept either enum key (WINE) or display label (Wine)
-    if (VISIBLE_CATEGORIES.includes(param as any)) return CATEGORY_LABELS[param as keyof typeof CATEGORY_LABELS] ?? ''
+    if (VISIBLE_CATEGORIES.includes(param as any)) return param
     const byLabel = VISIBLE_CATEGORIES.find((c) => CATEGORY_LABELS[c]?.toLowerCase() === param.toLowerCase())
-    return byLabel ? CATEGORY_LABELS[byLabel] : ''
+    return byLabel ?? ''
   })()
 
-  const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory)
+  const [selectedCategoryKey, setSelectedCategoryKey] = useState<string>(initialCategoryKey)
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [collectionFilter, setCollectionFilter] = useState<string>('all')
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [regionFilter, setRegionFilter] = useState<string>('all')
   const [producerFilter, setProducerFilter] = useState<string>('all')
-  const categories = ['All', ...VISIBLE_CATEGORIES.map((c) => CATEGORY_LABELS[c] ?? c)]
-  const isWineView = selectedCategory === '' || selectedCategory === 'Wine'
-  const isOliveOilView = selectedCategory === 'Olive Oil'
+  const categories = [{ key: '', label: 'All' }, ...VISIBLE_CATEGORIES.map((c) => ({ key: c, label: CATEGORY_LABELS[c] ?? c }))]
+  const selectedCategoryLabel = selectedCategoryKey ? CATEGORY_LABELS[selectedCategoryKey] ?? selectedCategoryKey : 'All'
+  const isWineView = !selectedCategoryKey || selectedCategoryKey === 'WINE'
+  const isOliveOilView = selectedCategoryKey === 'OLIVE_OIL'
   const fallbackTitle = isOliveOilView ? 'Curated Olive Oil' : 'Curated Wines'
   const fallbackDescription = isOliveOilView
     ? 'Organic and small-production olive oils selected for their freshness, structure, and origin.'
@@ -88,14 +88,13 @@ function ProductsContent() {
 
   useEffect(() => {
     fetchProducts()
-  }, [selectedCategory])
+  }, [selectedCategoryKey])
 
   const fetchProducts = async () => {
     setLoading(true)
     try {
-      // Map display label back to enum key
-      const categoryKey = selectedCategory && selectedCategory !== 'All'
-        ? VISIBLE_CATEGORIES.find((c) => CATEGORY_LABELS[c] === selectedCategory) ?? selectedCategory
+      const categoryKey = selectedCategoryKey && selectedCategoryKey !== ''
+        ? selectedCategoryKey
         : ''
       const url = categoryKey
         ? `/api/products?category=${encodeURIComponent(categoryKey)}&public=true`
@@ -152,18 +151,16 @@ function ProductsContent() {
             <div className="flex flex-wrap gap-2">
               {categories.map((category) => (
                 <button
-                  key={category}
-                  onClick={() =>
-                    setSelectedCategory(category === 'All' ? '' : category)
-                  }
+                  key={category.key || 'all'}
+                  onClick={() => setSelectedCategoryKey(category.key)}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    (category === 'All' && !selectedCategory) ||
-                    selectedCategory === category
+                    (category.key === '' && !selectedCategoryKey) ||
+                    selectedCategoryKey === category.key
                       ? 'bg-olive-700 text-parchment-50'
                       : 'bg-white text-olive-700 border border-olive-300 hover:bg-olive-50'
                   }`}
                 >
-                  {category}
+                  {category.label}
                 </button>
               ))}
             </div>
@@ -325,7 +322,7 @@ function ProductsContent() {
                 Coming Soon
               </p>
               <h2 className="text-2xl font-serif font-semibold text-olive-800 mb-4">
-                {selectedCategory} Selection in Curation
+                {selectedCategoryLabel === 'All' ? 'Curated Selection' : `${selectedCategoryLabel} Selection in Curation`}
               </h2>
               <p className="text-sm text-olive-500 max-w-sm mx-auto leading-relaxed">
                 We are actively sourcing exceptional single-estate producers for this
