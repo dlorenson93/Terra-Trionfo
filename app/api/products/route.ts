@@ -23,12 +23,16 @@ export async function GET(request: Request) {
 
     // Public consumers see only approved + LIVE products from approved companies
     const session = await getServerSession(authOptions)
-    if (forcePublic || !session || session.user.role === 'CONSUMER') {
+    const isPublicRequest = forcePublic || !session || session.user.role === 'CONSUMER'
+
+    if (isPublicRequest) {
       where.status = 'APPROVED'
       where.contentStatus = 'LIVE'
       where.company = { status: 'APPROVED' }
       // Only show currently visible categories to public
-      where.category = { in: VISIBLE_CATEGORIES as unknown as string[] }
+      if (!category) {
+        where.category = { in: VISIBLE_CATEGORIES as unknown as string[] }
+      }
     }
 
     if (status && session && session.user.role !== 'CONSUMER') {
